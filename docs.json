@@ -1,12 +1,12 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "OneLink Docs",
+  "name": "OneLink",
   "description": "Product, platform, API, and domain documentation for the OneLink platform.",
   "logo": {
-    "dark": "/logo/brand.svg",
-    "light": "/logo/brand.svg"
+    "dark": "/logo/icon.svg",
+    "light": "/logo/icon.svg"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.ico",
   "colors": {
     "primary": "#111111",
     "light": "#2F2F2F",
