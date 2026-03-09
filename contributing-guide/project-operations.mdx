@@ -22,6 +22,7 @@ Onelink currently spans these operational surfaces:
 
 - application code repository: `onelink`
 - documentation repository mounted as `onelink/docs`
+- versioned project skill source under `onelink/.codex/skills`
 - local Codex skill library under `$CODEX_HOME/skills`
 - deployment assets under `deployment/`, `docker/`, and `docker-compose*.yaml`
 - API contract surfaces under `swagger/` and `onelink/docs/openapi/`
@@ -115,6 +116,19 @@ Flow:
 2. push the docs repo
 3. update the submodule pointer in the parent `onelink` repo if needed
 
+### Skill Source
+
+Skills now have two locations:
+
+- versioned project source in `onelink/.codex/skills`
+- installed runtime copy in `$CODEX_HOME/skills`
+
+Flow:
+
+1. edit and commit the versioned project copy in `onelink/.codex/skills`
+2. sync to the installed Codex copy with `./.codex/scripts/sync-skills.sh to-codex-home`
+3. if a local runtime skill changed first, sync it back with `./.codex/scripts/sync-skills.sh from-codex-home`
+
 ### Upstream Sync
 
 Use dedicated sync branches when bringing Chatwoot changes into the fork. Do not treat `develop` in this fork as the product base branch.
@@ -175,6 +189,7 @@ For coordinated work across people and AI agents:
 - keep repo boundaries clean:
   - app code commit in `onelink`
   - docs content commit in `onelink-docs`
+  - versioned skill changes commit in `onelink/.codex/skills`
 
 Use [AI Agent Operating Model](/contributing-guide/ai-agent-operating-model) and [Skill Map](/contributing-guide/skill-map) for the working rules.
 

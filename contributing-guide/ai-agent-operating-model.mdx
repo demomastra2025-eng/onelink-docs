@@ -34,14 +34,17 @@ The agent works across these boundaries:
   - application code repository
 - `onelink/docs`
   - docs repository mounted as submodule
+- `onelink/.codex/skills`
+  - versioned project skill source
 - `$CODEX_HOME/skills`
-  - local skill library
+  - installed local skill library
 
 Rule:
 
 - edit code in `onelink`
 - edit docs content in `onelink/docs`
-- edit skill definitions in `$CODEX_HOME/skills`
+- edit versioned skill definitions in `onelink/.codex/skills`
+- sync installed runtime skills in `$CODEX_HOME/skills`
 
 Do not blur these commit boundaries.
 
@@ -94,8 +97,9 @@ When files under `docs/` change:
 
 When local skills change:
 
-- update the files in `$CODEX_HOME/skills`
-- treat them as local workspace instructions unless they are also stored in a versioned repo
+- update the versioned files in `onelink/.codex/skills`
+- sync the installed copy with `./.codex/scripts/sync-skills.sh to-codex-home`
+- commit the versioned project copy in `onelink`
 
 ## Staging Discipline
 

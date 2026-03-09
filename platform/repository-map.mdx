@@ -14,20 +14,23 @@ sidebarTitle: Repository Map
 
 ## Repository Set
 
-Onelink currently operates across three local knowledge and change surfaces:
+Onelink currently operates across four local knowledge and change surfaces:
 
 1. `onelink`
    - the main Rails/Vue application repository
 2. `onelink/docs`
    - the Mintlify documentation repository mounted into the app repo as a git submodule
-3. `$CODEX_HOME/skills`
-   - the local Codex skill library used to guide AI agents in this workspace
+3. `onelink/.codex/skills`
+   - the versioned project copy of the Onelink skill family
+4. `$CODEX_HOME/skills`
+   - the installed local Codex skill library used by the runtime agent in this workspace
 
 Practical rule:
 
 - product code, migrations, routes, jobs, services, and tests belong to `onelink`
 - docs content, docs navigation, Mintlify config, and local OpenAPI docs belong to `onelink/docs`
-- Codex skill definitions belong to `$CODEX_HOME/skills`
+- versioned Codex skill definitions belong to `onelink/.codex/skills`
+- installed Codex runtime skills belong to `$CODEX_HOME/skills`
 
 ## Main Application Repository
 
@@ -132,7 +135,26 @@ Key parts:
 
 Use [Docs Repository Workflow](/contributing-guide/docs-repository-workflow) for commit and sync rules.
 
-## Local Skill Library
+## Project Skill Source
+
+The versioned project copy of the Onelink skill family lives under:
+
+- `onelink/.codex/skills`
+
+This copy should be committed with the project when skill behavior changes.
+
+Current skill families stored there are:
+
+- `onelink-builder`
+- `onelink-backend`
+- `onelink-frontend`
+- `onelink-api`
+- `onelink-integrations`
+- `onelink-captain`
+- `onelink-documentation`
+- `onelink-deployment`
+
+## Installed Skill Library
 
 The local Codex skill library currently lives under:
 
@@ -159,6 +181,14 @@ Onelink-specific skills are split into:
   - self-hosted deployment and runtime operations
 
 Use [Skill Map](/contributing-guide/skill-map) for when to invoke each skill.
+
+### Skill Sync Rule
+
+Use the project script:
+
+- `./.codex/scripts/sync-skills.sh to-codex-home`
+
+to copy the versioned project skills into the installed Codex skill directory.
 
 ## Where To Edit By Task
 
@@ -226,6 +256,7 @@ Use this reading order before editing:
 2. [Current Architecture](/platform/current-architecture)
 3. [Repository Map](/platform/repository-map)
 4. the relevant execution guide under `contributing-guide/`
-5. the relevant specialized skill in `$CODEX_HOME/skills`
+5. the relevant skill in `onelink/.codex/skills`
+6. the installed runtime copy in `$CODEX_HOME/skills` if you need to confirm what Codex is currently loading
 
 If docs and code disagree, trust the code.
