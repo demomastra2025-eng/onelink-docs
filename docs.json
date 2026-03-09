@@ -3,8 +3,8 @@
   "name": "OneLink",
   "description": "Product, platform, API, and domain documentation for the OneLink platform.",
   "logo": {
-    "dark": "/logo/icon.svg",
-    "light": "/logo/icon.svg"
+    "dark": "/logo/brand.svg",
+    "light": "/logo/brand.svg"
   },
   "favicon": "/favicon.ico",
   "colors": {
