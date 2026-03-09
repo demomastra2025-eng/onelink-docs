@@ -49,6 +49,8 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
   `app/javascript/dashboard/api/captain/`
 - integration-specific clients:
   `app/javascript/dashboard/api/integrations/`
+- native scheduling feature clients:
+  `app/javascript/dashboard/api/scheduling/`
 
 ### Pinia Store Pattern
 
@@ -56,6 +58,8 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
   `app/javascript/dashboard/stores/companies.js`
 - store factory bridge for `Vuex` and `Pinia`:
   `app/javascript/dashboard/store/storeFactory.js`
+- standalone feature stores without store factory:
+  `app/javascript/dashboard/stores/scheduling/`
 
 ### Route-Level Page Pattern
 
@@ -67,6 +71,8 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
   `app/javascript/dashboard/routes/dashboard/settings/integrations/`
 - captain route composition:
   `app/javascript/dashboard/routes/dashboard/captain/`
+- native multi-page module with calendar/admin/finance flows:
+  `app/javascript/dashboard/routes/dashboard/scheduling/`
 
 ### Feature Component Pattern
 
@@ -78,6 +84,8 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
   `app/javascript/dashboard/components-next/HelpCenter/`
 - captain feature UI:
   `app/javascript/dashboard/components-next/captain/`
+- scheduling feature UI:
+  `app/javascript/dashboard/components-next/Scheduling/`
 
 ### Form And Validation Pattern
 
@@ -92,6 +100,9 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
 
 - API client spec:
   `app/javascript/dashboard/api/specs/companies.spec.js`
+- standalone `Pinia` feature store specs:
+  `app/javascript/dashboard/stores/scheduling/calendar.spec.js`
+  `app/javascript/dashboard/stores/scheduling/kassa.spec.js`
 
 ## Backend Examples
 
@@ -105,6 +116,8 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
   `app/controllers/api/v1/accounts/integrations/`
 - captain controllers:
   `enterprise/app/controllers/api/v1/accounts/captain/`
+- scheduling controllers:
+  `app/controllers/api/v1/accounts/scheduling/`
 
 ### Policy Pattern
 
@@ -141,6 +154,10 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
   `spec/enterprise/policies/company_policy_spec.rb`
 - contacts controller spec:
   `spec/controllers/api/v1/accounts/contacts_controller_spec.rb`
+- scheduling request specs:
+  `spec/requests/api/v1/accounts/scheduling/`
+- scheduling service specs:
+  `spec/services/scheduling/`
 
 ## Good Default Reference Sets
 

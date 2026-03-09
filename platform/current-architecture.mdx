@@ -21,6 +21,7 @@ The current codebase is primarily:
 - a shared communication core around `Account`, `Inbox`, `ContactInbox`, `Conversation`, and `Message`
 - an inherited `enterprise/` technical split under `enterprise/`; in Onelink this is an implementation layer, not a separate product/paywall boundary, because enterprise capabilities are currently opened for the project
 - a set of CRM-adjacent primitives such as `Contact`, `Company`, `Note`, `Label`, and `CustomAttributeDefinition`
+- a native shared scheduling and kassa capability under `app/models/scheduling`, `app/services/scheduling`, and `app/javascript/dashboard/routes/dashboard/scheduling`
 - an event-driven application with listeners, jobs, hooks, reporting, automations, and AI/Captain features around the conversation core
 
 ## Frontend Runtime
@@ -32,6 +33,7 @@ The implemented frontend shape today is:
 - incremental frontend modernization with both `Vuex` and `Pinia` active in the dashboard
 - a newer shared UI layer in `app/javascript/dashboard/components-next/`
 - older shared UI layers and route-local composition still present across the dashboard
+- a native scheduling dashboard module using `Pinia` stores, `dashboard/api/scheduling/*`, and `components-next/Scheduling/*`
 - Tailwind preferred for new work, while SCSS and scoped styles remain in older surfaces
 - `Histoire` and `Vitest` already available for component development and verification
 
@@ -155,6 +157,29 @@ Important limit:
 - this is not yet a full shared CRM engine
 - `Deal`, `Task`, `Pipeline`, `Stage`, and normalized `Activity` are not implemented as first-class runtime entities
 
+### Scheduling And Kassa
+
+Implemented today:
+
+- `Scheduling::Resource`
+- `Scheduling::Service`
+- `Scheduling::Appointment`
+- `Scheduling::WorkRule`
+- `Scheduling::BreakRule`
+- `Scheduling::Holiday`
+- `Scheduling::WorkdayOverride`
+- `Scheduling::TimeOff`
+- `Scheduling::Payment`
+- `Scheduling::Expense`
+- native dashboard module under `app/javascript/dashboard/routes/dashboard/scheduling/`
+
+Key behavior:
+
+- scheduling is implemented as a shared platform capability, not a healthcare-only subsystem
+- backend is account-scoped and reuses `Account`, `Contact`, `Company`, `Conversation`, and `User`
+- dashboard surfaces already exist for calendar, resources, services, exceptions, and kassa
+- finance behavior is native to the module and exposed through scheduling endpoints rather than an iframe app
+
 ## Primary Runtime Flows
 
 ### Inbound Message Flow
@@ -207,6 +232,9 @@ When adding features, check these before introducing new models:
 - `Integrations::App`
 - `Integrations::Hook`
 - `Captain::*`
+- `Scheduling::Resource`
+- `Scheduling::Service`
+- `Scheduling::Appointment`
 
 ## Not Implemented Yet
 

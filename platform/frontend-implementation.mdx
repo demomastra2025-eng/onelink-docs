@@ -106,8 +106,9 @@ When designing or implementing a new component, use sources in this order:
 2. existing route screens or feature modules that already solve a similar interaction
 3. `reka-ui` for accessible headless primitives
 4. `shadcn-vue` for recipes, APIs, and code patterns
-5. `Inspira UI` for visual inspiration and motion ideas
-6. feature-local specialist libraries only after checking that the current stack and wrappers are insufficient
+5. `PrimeVue` for dense admin/table/filter patterns only when existing local components and wrappers are insufficient
+6. `Inspira UI` for visual inspiration and motion ideas
+7. feature-local specialist libraries only after checking that the current stack and wrappers are insufficient
 
 For the exact reuse-vs-extend-vs-create workflow, use [Frontend Agent Playbook](/contributing-guide/frontend-agent-playbook).
 
@@ -139,6 +140,16 @@ Use `shadcn-vue` as:
 
 Do not treat `shadcn-vue` as a second design system that should be imported wholesale into `onelink`.
 
+### `PrimeVue`
+
+Use `PrimeVue` as:
+
+- a reference for dense admin layouts
+- a reference for data-table, filter bar, and journal interactions
+- an optional specialist source only after checking whether the same surface can be built with local components and wrappers first
+
+Do not treat `PrimeVue` as the default visual layer of the dashboard, and do not let raw `PrimeVue` components become the public UI API of a feature.
+
 ### `Inspira UI`
 
 Use `Inspira UI` as:
@@ -148,6 +159,29 @@ Use `Inspira UI` as:
 - a source for specific aesthetic ideas when a surface needs to feel more polished or intentional
 
 Do not use `Inspira UI` as the architectural base for dashboard/admin UI, and do not import a Nuxt-oriented app shell into the Rails dashboard.
+
+## Implemented Reference Module
+
+The native scheduling module is now the strongest in-repo reference for a new account-scoped dashboard feature that combines:
+
+- `Pinia` stores
+- feature-local API clients
+- reusable `components-next` feature primitives
+- route-level pages
+- backend-driven CRUD and finance flows
+
+Reference paths:
+
+- routes:
+  `app/javascript/dashboard/routes/dashboard/scheduling/`
+- feature components:
+  `app/javascript/dashboard/components-next/Scheduling/`
+- stores:
+  `app/javascript/dashboard/stores/scheduling/`
+- API clients:
+  `app/javascript/dashboard/api/scheduling/`
+
+Use this module as the first concrete example when building new native platform capabilities with standalone pages, drawers, filters, and journals.
 
 ### Specialist Libraries
 

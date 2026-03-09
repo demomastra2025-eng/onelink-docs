@@ -24,6 +24,7 @@ The codebase already has:
 - `Account` as the workspace and data-isolation boundary
 - `Inbox`, `ContactInbox`, `Conversation`, and `Message` as the communication core
 - `Contact`, `Company`, `Note`, `Label`, and `CustomAttributeDefinition` as CRM-adjacent primitives
+- a native shared scheduling and kassa capability with backend services under `app/services/scheduling/` and dashboard pages under `app/javascript/dashboard/routes/dashboard/scheduling/`
 - event-driven automation, hooks, notifications, reporting, and Captain/AI around the conversation model
 - an inherited `enterprise/` mechanism under `enterprise/`; in Onelink this is a technical split with enterprise capabilities currently opened for the project
 
@@ -56,7 +57,8 @@ Frontend delivery should follow these constraints across all phases:
   2. similar route screens already implemented in `onelink`
   3. `reka-ui` for headless accessible primitives
   4. `shadcn-vue` for recipes and component patterns
-  5. `Inspira UI` for visual inspiration only
+  5. `PrimeVue` for dense admin/table/filter patterns only when local wrappers are insufficient
+  6. `Inspira UI` for visual inspiration only
 - wrap third-party primitives in local components instead of letting external libraries become the public UI API of the app
 - use `Histoire` for reusable components and `Vitest` for targeted frontend verification
 
@@ -528,8 +530,8 @@ Async/event-driven work:
 
 If the goal is "start implementation now", the next practical sequence is:
 
-1. finish Phase 1 account profile/capability plumbing
-2. stabilize Phase 2 shared CRM foundation around `Company` and related access/UI contracts
-3. ship Phase 3 `Deal` MVP
-4. ship Phase 4 `Task` MVP
-5. add Phase 5 workflow depth only after `Deal` and `Task` prove their shape
+1. harden and iterate on the native scheduling and kassa module only where real product gaps remain
+2. finish Phase 1 account profile/capability plumbing
+3. stabilize Phase 2 shared CRM foundation around `Company` and related access/UI contracts
+4. ship Phase 3 `Deal` MVP
+5. ship Phase 4 `Task` MVP
