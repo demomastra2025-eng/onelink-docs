@@ -44,14 +44,23 @@
         "icon": "sitemap",
         "pages": [
           {
-            "group": "Overview",
+            "group": "Current State",
             "pages": [
               "platform/overview",
+              "platform/current-architecture",
+              "platform/repository-map",
+              "platform/frontend-implementation",
+              "platform/integrations-architecture"
+            ]
+          },
+          {
+            "group": "Direction And Decisions",
+            "pages": [
               "contributing-guide/domain-access-architecture",
               "platform/crm-architecture",
               "platform/entity-matrix",
               "platform/decision-matrix",
-              "platform/integrations-architecture"
+              "platform/implementation-roadmap"
             ]
           }
         ]
@@ -79,6 +88,9 @@
             "group": "Start Here",
             "pages": [
               "contributing-guide",
+              "contributing-guide/project-operations",
+              "contributing-guide/ai-agent-operating-model",
+              "contributing-guide/skill-map",
               "development/upstream-sync",
               "contributing-guide/domain-access-architecture"
             ]
@@ -109,12 +121,31 @@
             "pages": ["contributing-guide/tests/cypress"]
           },
           {
-            "group": "Additional Guides",
+            "group": "Implementation Playbooks",
+            "pages": [
+              "platform/frontend-implementation",
+              "contributing-guide/backend-agent-playbook",
+              "contributing-guide/backend-feature-template",
+              "contributing-guide/frontend-agent-playbook",
+              "contributing-guide/frontend-dependency-policy",
+              "contributing-guide/dashboard-feature-template",
+              "contributing-guide/design-tokens-and-ui-conventions",
+              "contributing-guide/implementation-examples-map",
+              "contributing-guide/testing-strategy-for-agents",
+              "contributing-guide/docs-repository-workflow"
+            ]
+          },
+          {
+            "group": "API And Docs",
             "pages": [
               "contributing-guide/apis",
               "contributing-guide/api-documentation",
-              "contributing-guide/docs-repository-workflow",
-              "contributing-guide/platform-apis",
+              "contributing-guide/platform-apis"
+            ]
+          },
+          {
+            "group": "Additional Guides",
+            "pages": [
               "contributing-guide/security-reports",
               "contributing-guide/translation-guidelines",
               "contributing-guide/community-guidelines",

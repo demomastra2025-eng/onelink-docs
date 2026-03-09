@@ -7,6 +7,7 @@ It contains:
 - Onelink platform and architecture documentation
 - inherited operational and deployment guides from Chatwoot where still applicable
 - API and contributor documentation for the fork
+- repository and workflow guidance for human analysts and AI agents working across app code, docs, and deployment surfaces
 
 ### Repository Layout
 
@@ -29,6 +30,18 @@ You can edit the docs in two ways:
 The web editor is still Git-backed. Changes are saved to branches or pull requests in this repository.
 
 If the docs were edited in Mintlify, pull the latest changes in the `docs/` repository before assuming the local files are current.
+
+### Recommended Reading Order
+
+For structural or project-wide work, start with:
+
+1. `platform/current-architecture.mdx`
+2. `platform/repository-map.mdx`
+3. `contributing-guide/project-operations.mdx`
+4. `contributing-guide/ai-agent-operating-model.mdx`
+5. `contributing-guide/skill-map.mdx`
+
+Then move to the surface-specific implementation guide under `contributing-guide/` or `self-hosted/`.
 
 ### Local Preview
 

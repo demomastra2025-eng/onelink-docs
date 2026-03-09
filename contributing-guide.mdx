@@ -30,6 +30,7 @@ Before starting a substantial feature, decide whether the work belongs to shared
    - `app/`
    - `enterprise/`
    - existing docs and API surfaces
+   - [Repository Map](/platform/repository-map) if you need to locate the correct repo or directory before editing
    - remember that Onelink currently runs with inherited enterprise capabilities opened, so `enterprise/` is a technical code split, not a separate product tier
 
 4. **Decide whether the feature should stay isolated**:
@@ -81,6 +82,7 @@ Use `sync/...` branches only for bringing Chatwoot changes into the fork.
 - Ensure all user-facing strings remain translatable
 - Update docs when the product direction, architecture, or API behavior changes
 - Do not push product changes to `upstream`
+- If docs changed under `onelink/docs`, follow the separate docs repo flow in [Docs Repository Workflow](/contributing-guide/docs-repository-workflow)
 
 ### Worktree Recommendation
 
@@ -227,6 +229,7 @@ Use the dedicated [Upstream Sync Strategy](/development/upstream-sync) document 
 - Prefer Onelink terminology over generic upstream wording in active product docs
 - Use the Onelink architecture docs as the source of truth for platform/domain direction
 - Follow the [Docs Repository Workflow](/contributing-guide/docs-repository-workflow) when changing `onelink/docs`, because docs live in a separate Git repository mounted as a submodule inside the main app repo
+- Use [Project Operations](/contributing-guide/project-operations), [AI Agent Operating Model](/contributing-guide/ai-agent-operating-model), and [Skill Map](/contributing-guide/skill-map) when the change affects how people or agents operate the project rather than only a feature implementation
 
 ### Internationalization
 - All user-facing text must be translatable

@@ -1,0 +1,153 @@
+---
+title: AI Agent Operating Model
+description: Rules for how AI agents should navigate Onelink code, docs, repos, and commits without losing project structure.
+sidebarTitle: AI Agent Model
+---
+
+# AI Agent Operating Model
+
+## Purpose
+
+This page defines how AI agents should work inside the Onelink workspace so that edits remain structurally correct for both the human team and the repository layout.
+
+Use this page when:
+
+- an AI agent is making code or docs changes
+- a human analyst needs to understand how the agent should reason about the repo
+- a task spans code, docs, deployment, or multiple repos
+
+## Working Assumptions
+
+An agent working in Onelink should assume:
+
+- code is the primary source of truth for what exists today
+- docs are required to explain current architecture, operating rules, and target direction
+- target-direction pages do not prove that a runtime feature already exists
+- `enterprise/` is an active technical layer and must be checked before editing shared logic
+- `docs/` is a separate Git repository mounted inside the app repo
+
+## Repository Boundaries
+
+The agent works across these boundaries:
+
+- `onelink`
+  - application code repository
+- `onelink/docs`
+  - docs repository mounted as submodule
+- `$CODEX_HOME/skills`
+  - local skill library
+
+Rule:
+
+- edit code in `onelink`
+- edit docs content in `onelink/docs`
+- edit skill definitions in `$CODEX_HOME/skills`
+
+Do not blur these commit boundaries.
+
+## Read Order
+
+Before changing a feature, the agent should normally read in this order:
+
+1. the concrete code paths in `app/`, `enterprise/`, `config/`, `db/`, `spec/`, and `swagger/`
+2. [Current Architecture](/platform/current-architecture)
+3. [Repository Map](/platform/repository-map)
+4. the surface-specific execution guide
+5. the matching specialized skill
+
+If the task is docs-specific, also read:
+
+- [Docs Repository Workflow](/contributing-guide/docs-repository-workflow)
+- `/Users/akhanbakhitov/Documents/zeroprompt/onelink/docs/AGENTS.md`
+
+## Task Classification
+
+The agent should classify each task before editing:
+
+- backend
+- frontend
+- api
+- integrations
+- captain/ai
+- docs
+- deployment
+- mixed
+
+If a task is mixed, the agent should still keep repo-specific commits separate.
+
+## Commit Discipline
+
+### App Code
+
+When files outside `docs/` change:
+
+- commit in `onelink`
+
+### Docs Content
+
+When files under `docs/` change:
+
+- commit in `onelink/docs` first
+- then update the submodule pointer in `onelink` if needed
+
+### Skills
+
+When local skills change:
+
+- update the files in `$CODEX_HOME/skills`
+- treat them as local workspace instructions unless they are also stored in a versioned repo
+
+## Staging Discipline
+
+The agent should avoid mixing unrelated work in one commit.
+
+Rules:
+
+- do not commit unrelated staged files just because they are already staged
+- use path-limited commits when the repo already has other local work in progress
+- if a task touches app code and docs, create separate commits in the correct repos
+
+## Verification Discipline
+
+Verification should match the touched surface:
+
+- backend:
+  - narrow request/model/service specs
+- frontend:
+  - narrow Vitest, Histoire, or manual dashboard smoke check
+- api:
+  - request specs plus Swagger build
+- docs:
+  - validate `docs.json`, navigation references, and OpenAPI sync where relevant
+- deployment:
+  - syntax and config checks appropriate to the touched files
+
+Do not claim verification that was not run.
+
+## Skill Selection
+
+The main coordinator skill is:
+
+- `onelink-builder`
+
+Specialized skills are:
+
+- `onelink-backend`
+- `onelink-frontend`
+- `onelink-api`
+- `onelink-integrations`
+- `onelink-captain`
+- `onelink-documentation`
+- `onelink-deployment`
+
+Use [Skill Map](/contributing-guide/skill-map) for the exact role of each.
+
+## Handoff Rule
+
+At the end of a task, the agent should leave the project in a state where a human can answer these questions quickly:
+
+- what changed
+- in which repo it changed
+- what was verified
+- what remains uncommitted locally
+- whether the parent repo still needs a docs submodule pointer update

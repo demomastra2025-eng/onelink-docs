@@ -1,0 +1,174 @@
+---
+title: Skill Map
+description: Map of the Onelink skill family for Codex agents and the project surfaces each skill owns.
+sidebarTitle: Skill Map
+---
+
+# Skill Map
+
+## Purpose
+
+Onelink now uses a small skill family instead of one overloaded project skill.
+
+This gives AI agents:
+
+- a top-level coordinator for broad tasks
+- specialized execution guidance for the major project surfaces
+- cleaner prompts and smaller context when a task is narrow
+
+## Skill Family
+
+### `onelink-builder`
+
+Role:
+
+- top-level coordinator skill
+- use when the task is broad, crosses multiple project surfaces, or you need help choosing the correct specialized skill
+
+Responsibilities:
+
+- classify the task
+- select the right execution surface
+- point the agent to the correct docs and specialized skill
+- preserve repo boundaries between app code, docs, and skills
+
+### `onelink-backend`
+
+Use for:
+
+- Rails models
+- services
+- controllers
+- jobs
+- policies
+- account-scoped backend features
+
+Primary docs:
+
+- [Current Architecture](/platform/current-architecture)
+- [Backend Agent Playbook](/contributing-guide/backend-agent-playbook)
+- [Backend Feature Template](/contributing-guide/backend-feature-template)
+
+### `onelink-frontend`
+
+Use for:
+
+- dashboard UI
+- widget
+- portal
+- survey
+- SDK frontend work
+- component sourcing and frontend state decisions
+
+Primary docs:
+
+- [Frontend Implementation Guide](/platform/frontend-implementation)
+- [Frontend Agent Playbook](/contributing-guide/frontend-agent-playbook)
+- [Frontend Dependency Policy](/contributing-guide/frontend-dependency-policy)
+
+### `onelink-api`
+
+Use for:
+
+- application, platform, public, or survey APIs
+- request and response contracts
+- Swagger and OpenAPI updates
+- API docs sync into Mintlify
+
+Primary docs:
+
+- [API Documentation](/contributing-guide/api-documentation)
+- [Onelink APIs](/contributing-guide/apis)
+- [Project Operations](/contributing-guide/project-operations)
+
+### `onelink-integrations`
+
+Use for:
+
+- omnichannel providers
+- inbox/channel setup
+- hooks
+- provider-specific flows
+- TikTok, WhatsApp, Instagram, Facebook, Line, Telegram, email, and similar surfaces
+
+Primary docs:
+
+- [Current Architecture](/platform/current-architecture)
+- [Integrations Architecture](/platform/integrations-architecture)
+- the relevant integration or self-hosted setup page
+
+### `onelink-captain`
+
+Use for:
+
+- Captain
+- copilot
+- documents
+- custom tools
+- assistant/scenario flows
+- AI-connected enterprise overlays
+
+Primary docs:
+
+- [Current Architecture](/platform/current-architecture)
+- [Implementation Examples Map](/contributing-guide/implementation-examples-map)
+
+### `onelink-documentation`
+
+Use for:
+
+- Mintlify docs structure
+- page organization
+- docs content updates
+- docs repo workflow
+- OpenAPI file sync into docs
+
+Primary docs:
+
+- [Docs Repository Workflow](/contributing-guide/docs-repository-workflow)
+- [Project Operations](/contributing-guide/project-operations)
+- `onelink/docs/AGENTS.md`
+
+### `onelink-deployment`
+
+Use for:
+
+- self-hosted deployment docs
+- runtime operations
+- Docker and compose flows
+- deployment scripts
+- environment and infrastructure operating guidance
+
+Primary docs:
+
+- [Self-Hosted Overview](/self-hosted)
+- [Deployment Architecture](/self-hosted/deployment/architecture)
+- [Project Operations](/contributing-guide/project-operations)
+
+## Selection Rules
+
+Use this decision order:
+
+1. if the task crosses multiple surfaces, start with `onelink-builder`
+2. if the task is narrow and obvious, use the specialized skill directly
+3. if the task changes docs and app code, use the surface-specific skill plus the docs workflow rules
+
+## Repo Awareness Rule
+
+All skills should respect these repo boundaries:
+
+- app code changes commit in `onelink`
+- docs content changes commit in `onelink/docs`
+- the parent app repo commits only the updated docs submodule pointer after docs changes
+
+## Where Skills Live
+
+The local skill library is expected under:
+
+- `$CODEX_HOME/skills`
+
+In this workspace the current path is:
+
+- `/Users/akhanbakhitov/.codex/skills`
+
+These skills are local workspace assets, not public product features.
