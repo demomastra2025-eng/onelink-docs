@@ -18,7 +18,7 @@ It is used in two ways:
 - as its own Git repository: `demomastra2025-eng/onelink-docs`
 - as the `docs/` submodule inside the main Onelink app repository
 
-When you open `/Users/akhanbakhitov/Documents/zeroprompt/onelink/docs`, you are already working inside this separate docs repository.
+When you open the `docs/` directory inside the main Onelink repository, you are already working inside this separate docs repository.
 
 ### Editing Content
 

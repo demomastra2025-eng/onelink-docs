@@ -184,12 +184,19 @@ For coordinated work across people and AI agents:
   - captain/ai
   - docs
   - deployment
+  - gitops/upstream
 - load the matching docs pages before editing
 - use the specialized skill for that surface when available
 - keep repo boundaries clean:
   - app code commit in `onelink`
   - docs content commit in `onelink-docs`
   - versioned skill changes commit in `onelink/.codex/skills`
+
+### If the task is mainly GitHub, branch, or upstream-sync work
+
+- use the `onelink-gitops` skill
+- use `onelink-main` as the base branch
+- use `sync/...` branches only for Chatwoot upstream intake
 
 Use [AI Agent Operating Model](/contributing-guide/ai-agent-operating-model) and [Skill Map](/contributing-guide/skill-map) for the working rules.
 

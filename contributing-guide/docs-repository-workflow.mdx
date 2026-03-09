@@ -11,7 +11,7 @@ The Onelink documentation has its own Git repository:
 
 That same repository is mounted inside the main app repository at:
 
-- `/Users/akhanbakhitov/Documents/zeroprompt/onelink/docs`
+- `docs/`
 
 This means `onelink/docs` is both:
 
@@ -32,7 +32,7 @@ If you edit `onelink/docs/*.mdx`, `docs.json`, `README.md`, `openapi/*`, or `scr
 For a normal documentation change:
 
 ```bash
-cd /Users/akhanbakhitov/Documents/zeroprompt/onelink/docs
+cd docs
 git switch main
 git pull
 # edit docs files
@@ -44,7 +44,7 @@ git push
 If the main `onelink` repository should point to the new docs commit too:
 
 ```bash
-cd /Users/akhanbakhitov/Documents/zeroprompt/onelink
+cd ..
 git add docs
 git commit -m "chore(docs): update docs submodule pointer"
 git push origin HEAD
@@ -73,14 +73,14 @@ That means:
 If docs were edited in Mintlify, refresh locally:
 
 ```bash
-cd /Users/akhanbakhitov/Documents/zeroprompt/onelink/docs
+cd docs
 git pull
 ```
 
 Then, if needed, update the parent repo pointer:
 
 ```bash
-cd /Users/akhanbakhitov/Documents/zeroprompt/onelink
+cd ..
 git add docs
 git commit -m "chore(docs): bump docs submodule"
 git push origin HEAD
@@ -93,14 +93,14 @@ The API reference uses local files under `openapi/`.
 From the submodule path inside the app repo:
 
 ```bash
-cd /Users/akhanbakhitov/Documents/zeroprompt/onelink/docs
+cd docs
 ./scripts/sync-openapi-from-onelink.sh
 ```
 
 From a standalone sibling clone:
 
 ```bash
-cd /Users/akhanbakhitov/Documents/zeroprompt/onelink-docs
+cd /path/to/onelink-docs
 ./scripts/sync-openapi-from-onelink.sh ../onelink
 ```
 

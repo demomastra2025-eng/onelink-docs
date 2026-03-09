@@ -145,6 +145,23 @@ Primary docs:
 - [Deployment Architecture](/self-hosted/deployment/architecture)
 - [Project Operations](/contributing-guide/project-operations)
 
+### `onelink-gitops`
+
+Use for:
+
+- Git and GitHub workflow
+- branch discipline
+- docs submodule pointer updates
+- versioned skill sync
+- upstream sync from Chatwoot
+
+Primary docs:
+
+- [Project Operations](/contributing-guide/project-operations)
+- [AI Agent Operating Model](/contributing-guide/ai-agent-operating-model)
+- [Upstream Sync](/development/upstream-sync)
+- [Docs Repository Workflow](/contributing-guide/docs-repository-workflow)
+
 ## Selection Rules
 
 Use this decision order:
@@ -160,6 +177,15 @@ All skills should respect these repo boundaries:
 - app code changes commit in `onelink`
 - docs content changes commit in `onelink/docs`
 - the parent app repo commits only the updated docs submodule pointer after docs changes
+- versioned skills change in `onelink/.codex/skills`
+
+## Documentation Rule
+
+Every implementation skill should:
+
+- read the relevant docs before editing
+- update `docs/` when behavior, contracts, operator flow, or repo workflow changed
+- keep docs commits separate when the docs repository is involved
 
 ## Where Skills Live
 
@@ -173,7 +199,7 @@ The installed local skill library is expected under:
 
 In this workspace the current path is:
 
-- `/Users/akhanbakhitov/.codex/skills`
+- `~/.codex/skills` unless `CODEX_HOME` points elsewhere
 
 Use:
 

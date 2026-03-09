@@ -61,7 +61,7 @@ Before changing a feature, the agent should normally read in this order:
 If the task is docs-specific, also read:
 
 - [Docs Repository Workflow](/contributing-guide/docs-repository-workflow)
-- `/Users/akhanbakhitov/Documents/zeroprompt/onelink/docs/AGENTS.md`
+- `docs/AGENTS.md`
 
 ## Task Classification
 
@@ -74,6 +74,7 @@ The agent should classify each task before editing:
 - captain/ai
 - docs
 - deployment
+- gitops/upstream
 - mixed
 
 If a task is mixed, the agent should still keep repo-specific commits separate.
@@ -143,6 +144,7 @@ Specialized skills are:
 - `onelink-captain`
 - `onelink-documentation`
 - `onelink-deployment`
+- `onelink-gitops`
 
 Use [Skill Map](/contributing-guide/skill-map) for the exact role of each.
 

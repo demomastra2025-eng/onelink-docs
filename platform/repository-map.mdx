@@ -118,7 +118,7 @@ These files are the main runtime and build control points:
 
 The docs repository is mounted at:
 
-- `/Users/akhanbakhitov/Documents/zeroprompt/onelink/docs`
+- `docs/`
 
 Key parts:
 
@@ -159,7 +159,7 @@ Current skill families stored there are:
 The local Codex skill library currently lives under:
 
 - `$CODEX_HOME/skills`
-- in this workspace that is `/Users/akhanbakhitov/.codex/skills`
+- typically `~/.codex/skills` if `CODEX_HOME` is not customized
 
 Onelink-specific skills are split into:
 
@@ -179,6 +179,8 @@ Onelink-specific skills are split into:
   - Mintlify docs, docs structure, docs repo workflow
 - `onelink-deployment`
   - self-hosted deployment and runtime operations
+- `onelink-gitops`
+  - GitHub flow, submodule updates, skill sync, and upstream sync
 
 Use [Skill Map](/contributing-guide/skill-map) for when to invoke each skill.
 
