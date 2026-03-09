@@ -1,6 +1,6 @@
 ---
 title: Welcome to OneLink Docs
-description: Central documentation hub for the OneLink product, platform architecture, deployment, and development workflow.
+description: Central documentation hub for the OneLink product, platform architecture, domain profiles, and APIs.
 sidebarTitle: Introduction
 ---
 
@@ -11,23 +11,16 @@ sidebarTitle: Introduction
   <Card
     title="Platform Architecture"
     icon="sitemap"
-    href="/contributing-guide/domain-access-architecture"
+    href="/platform/current-architecture"
   >
     Understand how OneLink is evolving from its upstream base into a shared platform with isolated domain zones
   </Card>
   <Card
-    title="Development Guide"
-    icon="code"
-    href="/contributing-guide"
+    title="Domain Profiles"
+    icon="blocks"
+    href="/domains/overview"
   >
-    Build and maintain OneLink with our workflow, branching, coding, and architecture rules
-  </Card>
-  <Card
-    title="Deployment & Setup"
-    icon="server"
-    href="/self-hosted"
-  >
-    Run OneLink on your infrastructure using the current deployment and configuration guides
+    Explore how generic, healthcare, and construction profiles fit into the shared platform
   </Card>
   <Card
     title="API Reference"
@@ -37,18 +30,11 @@ sidebarTitle: Introduction
     Explore the APIs that power accounts, agents, conversations, contacts, and integrations
   </Card>
   <Card
-    title="Repository Map"
+    title="Platform Overview"
     icon="folder-tree"
-    href="/platform/repository-map"
+    href="/platform/overview"
   >
-    See where the app repo, docs repo, deployment assets, and skill surfaces actually live
-  </Card>
-  <Card
-    title="AI Agent Workflow"
-    icon="bot"
-    href="/contributing-guide/ai-agent-operating-model"
-  >
-    Understand how agents should read, edit, verify, and commit across app code, docs, and skills
+    See the current shape of the platform, its layers, and the direction of the OneLink fork
   </Card>
 </CardGroup>
 
@@ -57,35 +43,14 @@ sidebarTitle: Introduction
 Choose your path based on what you want to accomplish:
 
 ### I want to understand the OneLink direction
-Start with the [Domain and Access Architecture](/contributing-guide/domain-access-architecture) document. It captures:
-- the account-scoped access model inherited from the upstream base platform
-- the target platform layering for OneLink
+Start with the [Platform Overview](/platform/overview) and [Current Architecture](/platform/current-architecture) documents. They capture:
+- the current shape of the shared platform
+- the inherited account-scoped communication model
 - the planned split between shared platform logic and domain zones like healthcare and construction
-- the CRM direction for shared entities, custom attributes, and domain-specific behavior
-
-### I want to work on the product
-Read the [Development Guide](/contributing-guide) to:
-- Set up your development environment
-- Follow the `onelink-main` branch workflow
-- Understand upstream sync expectations
-- Apply platform vs domain architecture rules while shipping features
-
-Then use:
-
-- [Project Operations](/contributing-guide/project-operations) for whole-project runtime and delivery flow
-- [AI Agent Operating Model](/contributing-guide/ai-agent-operating-model) for correct repo and commit boundaries
-- [Skill Map](/contributing-guide/skill-map) to understand which project skill should own which task
-
-### I want to deploy or configure the product
-Use the [Installation & Setup](/self-hosted) section. Much of this content is inherited from the upstream deployment base and remains operationally relevant for OneLink:
-- Docker
-- Kubernetes
-- cloud providers
-- environment configuration
-- monitoring and maintenance
+- the CRM and domain direction around shared entities and domain-specific behavior
 
 ### I want to build integrations or extend APIs
-Use the [API Reference](/api-reference/introduction) and the development docs for:
+Use the [API Reference](/api-reference/introduction) for:
 - application APIs
 - platform APIs
 - client APIs
@@ -111,4 +76,4 @@ This docs folder should increasingly reflect OneLink itself:
 
 ---
 
-Use the architecture and development sections as the source of truth for new work in this repository.
+Use the platform, domain, and API sections as the primary entry points in this interface.
