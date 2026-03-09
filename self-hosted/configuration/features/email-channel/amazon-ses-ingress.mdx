@@ -91,7 +91,7 @@ Save and enable the rule.
 Note: You don't have to turn on Transport Layer Security (TLS) or Spam and virus scanning for this setup. Now SES will publish every inbound email event to your SNS topic.
 
 
-### Step 4: Configure Chatwoot Environment Variables
+### Step 4: Configure OneLink environment variables
 
 Before creating the SNS subscription, you must configure two environment variables in your Chatwoot installation:
 
@@ -106,7 +106,7 @@ ACTION_MAILBOX_SES_SNS_TOPIC=
 Why this matters:
 Chatwoot needs to know that SES will be used for inbound email. Chatwoot must be ready to valid the SNS topic once the subscription is created.
 
-### Step 5: Create SNS Subscription to Forward to Chatwoot
+### Step 5: Create an SNS subscription to forward to OneLink
 
 SNS needs to send the email payload directly to Chatwoot.
 
@@ -125,7 +125,7 @@ Save.
 Note: SNS will send a confirmation request. Chatwoot will automatically confirm the subscription.
 
 
-### Step 6: Add Email Channel in Chatwoot
+### Step 6: Add the email channel in OneLink
 
 1. Go to your Chatwoot account. Settings → Inboxes → Add Inbox.
 2. Choose Email -> Other Providers.

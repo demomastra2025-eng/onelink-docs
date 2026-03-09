@@ -195,7 +195,7 @@ Create bastion servers in both public subnets. These servers will be used to ssh
 
 Repeat and create another bastion, `chatwoot-bastion-b` in the other AZ.
 
-## Install Chatwoot
+## Install OneLink
 
 1. Navigate to the EC2 section, and click on launch instance.
 2. Use an `Ubuntu 20.04 image` with a `c5.xlarge` instance type.
@@ -218,7 +218,7 @@ chmod 755 install.sh
 ./install.sh --install
 ```
 
-## Configure Chatwoot
+## Configure OneLink
 
 11. Once the installation is complete, switch to the chatwoot user and navigate to the chatwoot folder. Edit the .env file and replace the Postgres and Redis credentials with RDS and elasticache values.
 
@@ -267,7 +267,7 @@ sudo cwctl --restart
 
 1. Refer to https://one-link.kz/docs/self-hosted/monitoring/apm-and-error-monitoring
 
-## Updating Chatwoot
+## Updating OneLink
 
 1. log in to one of the application servers and complete the update instructions. Run migrations if needed. Refer to https://one-link.kz/docs/self-hosted/deployment/linux-vm#upgrading-to-a-newer-version-of-chatwoot
 2. Create a new ami and update the launch config.

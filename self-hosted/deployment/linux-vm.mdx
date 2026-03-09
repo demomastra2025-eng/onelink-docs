@@ -1,6 +1,6 @@
 ---
 title: Production deployment guide for Linux VM
-description: Deploy Chatwoot on Ubuntu 24.04 LTS using the automated installation script
+description: Deploy OneLink on Ubuntu 24.04 LTS using the automated installation script
 sidebarTitle: Linux VM
 ---
 
@@ -63,7 +63,7 @@ nano .env
 
 Refer **[Environment variables](/self-hosted/configuration/environment-variables)** and update the required variables. Save the `.env` file.
 
-### 3. Restart the Chatwoot server
+### 3. Restart the OneLink server
 
 <Note>
 If you have Chatwoot CLI(`cwctl`) installed, use `cwctl -r`.
@@ -73,7 +73,7 @@ If you have Chatwoot CLI(`cwctl`) installed, use `cwctl -r`.
 sudo systemctl restart chatwoot.target
 ```
 
-## Upgrading to a newer version of Chatwoot
+## Upgrading to a newer version of OneLink
 
 Whenever a new version of Chatwoot is released, use the following steps to upgrade your instance.
 
@@ -90,10 +90,10 @@ If you are on an older version of Chatwoot(< 2.7), follow the manual upgrade ste
 Run the following steps on your VM. Make changes based on your OS if you are on a non-Ubuntu system.
 
 ```bash
-# Login as Chatwoot user
+# Login as the OneLink user
 sudo -i -u chatwoot
 
-# Navigate to the Chatwoot directory
+# Navigate to the OneLink directory
 cd chatwoot
 
 # Pull the latest version of the master branch
@@ -135,10 +135,10 @@ If you have Chatwoot CLI(`cwctl`) installed, use `cwctl -c`.
 </Note>
 
 ```bash
-# Login as Chatwoot user
+# Login as the OneLink user
 sudo -i -u chatwoot
 
-# Navigate to the Chatwoot directory
+# Navigate to the OneLink directory
 cd chatwoot
 
 # start rails console
@@ -161,7 +161,7 @@ journalctl -u chatwoot-web.1.service -f
 journalctl -u chatwoot-worker.1.service -f
 ```
 
-## Install or Upgrade Chatwoot CLI
+## Install or Upgrade the OneLink CLI
 
 If you used an older version of install script(< 2.0), you will not have `cwctl` in your PATH. To install/upgrade Chatwoot CLI,
 

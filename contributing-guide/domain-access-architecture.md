@@ -1,6 +1,6 @@
 ---
 title: "Domain Access Architecture"
-description: "Internal architecture of accounts, users, contacts, roles, visibility, integrations, attributes, and labels in Onelink/Chatwoot."
+description: "Internal architecture of accounts, users, contacts, roles, visibility, integrations, attributes, and labels in the OneLink platform."
 sidebarTitle: Domain Architecture
 ---
 

@@ -1,10 +1,10 @@
 ---
-title: Onelink Platform Overview
-description: Current shape and target direction for the Onelink platform.
+title: OneLink Platform Overview
+description: Current shape and target direction for the OneLink platform.
 sidebarTitle: Overview
 ---
 
-# Onelink Platform Overview
+# OneLink Platform Overview
 
 ## Status
 
@@ -14,32 +14,32 @@ sidebarTitle: Overview
 
 ## Current Implemented System
 
-Today, Onelink is primarily:
+Today, OneLink is primarily:
 
-- a Chatwoot-derived Rails monolith with Vue 3/Vite frontend surfaces
+- a Rails monolith with Vue 3/Vite frontend surfaces inherited from the upstream base platform
 - an account-scoped omnichannel support platform
 - a system organized around `Account`, `Inbox`, `ContactInbox`, `Conversation`, and `Message`
 - a product with CRM-adjacent primitives such as `Contact`, `Company`, `Note`, `Label`, and `CustomAttributeDefinition`
-- an event-driven application with an inherited `enterprise/` technical split, active Captain/AI, automations, integrations, and help center; for Onelink this split is technical rather than a separate product tier
+- an event-driven application with an inherited `enterprise/` technical split, active Captain/AI, automations, integrations, and help center; for OneLink this split is technical rather than a separate product tier
 
 Read [Current Architecture](/platform/current-architecture) first when the question is "what exists in code now?"
 Read [Repository Map](/platform/repository-map) when the question is "where does that surface live in the repos?"
 
 ## Target Direction
 
-Onelink is intended to evolve from a Chatwoot fork into a product platform with:
+OneLink is intended to evolve from an upstream fork into a product platform with:
 
 - a shared communication and CRM foundation
 - white-label and product-specific capabilities
 - isolated domain zones such as healthcare and construction
-- controlled compatibility with upstream Chatwoot
+- controlled compatibility with the upstream base
 
 ## Target Layers
 
 ```mermaid
 flowchart TD
-    A[Chatwoot Upstream] --> B[Onelink Core Fork]
-    B --> C[Onelink Shared Platform]
+    A[Upstream Base] --> B[OneLink Core Fork]
+    B --> C[OneLink Shared Platform]
     C --> D[Generic Product Profile]
     C --> E[Healthcare Domain Zone]
     C --> F[Construction Domain Zone]
@@ -49,7 +49,7 @@ flowchart TD
 
 ### Upstream / Core
 
-- keep compatibility with Chatwoot where practical
+- keep compatibility with the upstream base where practical
 - absorb upstream fixes and product updates
 - avoid unnecessary hard forks
 

@@ -1,16 +1,16 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "Onelink Product Docs",
-  "description": "Product, platform, architecture, deployment, and developer documentation for the Onelink fork built on top of Chatwoot.",
+  "name": "OneLink Docs",
+  "description": "Product, platform, architecture, deployment, and developer documentation for the OneLink platform.",
   "logo": {
-    "dark": "/logo/dark.png",
-    "light": "/logo/light.png"
+    "dark": "/logo/brand.svg",
+    "light": "/logo/brand.svg"
   },
-  "favicon": "/favicon.png",
+  "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#0069ED",
-    "light": "#4D9CFF",
-    "dark": "#0050B4"
+    "primary": "#111111",
+    "light": "#2F2F2F",
+    "dark": "#000000"
   },
   "fonts": {
     "heading": {
@@ -67,7 +67,6 @@
       },
       {
         "anchor": "Domains",
-        "icon": "blocks",
         "pages": [
           {
             "group": "Profiles",
@@ -301,7 +300,7 @@
         "groups": [
           {
             "group": "Getting Started",
-            "description": "Learn about the API surfaces exposed by the Onelink fork",
+            "description": "Learn about the API surfaces exposed by the OneLink platform",
             "pages": ["api-reference/introduction"]
           },
           {
@@ -358,7 +357,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/demomastra2025-eng/chatwoot"
+      "github": "https://github.com/demomastra2025-eng/onelink-docs"
     }
   }
 }

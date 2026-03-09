@@ -1,14 +1,14 @@
 ---
-title: Contributing to Onelink
-description: Development guide for the Onelink product fork: setup, workflow, upstream sync, architecture rules, and contribution expectations.
+title: Contributing to OneLink
+description: "Development guide for the OneLink product fork: setup, workflow, upstream sync, architecture rules, and contribution expectations."
 sidebarTitle: Introduction
 ---
 
 # Development Guide
 
-This guide is for developing the Onelink product fork in the main repository root.
+This guide is for developing the OneLink product fork in the main repository root.
 
-Onelink is built on top of Chatwoot, but active product development should follow Onelink's own architecture direction, branching workflow, and domain boundaries.
+OneLink is built on top of an upstream base product, but active product development should follow OneLink's own architecture direction, branching workflow, and domain boundaries.
 
 ## Getting Started
 
@@ -31,7 +31,7 @@ Before starting a substantial feature, decide whether the work belongs to shared
    - `enterprise/`
    - existing docs and API surfaces
    - [Repository Map](/platform/repository-map) if you need to locate the correct repo or directory before editing
-   - remember that Onelink currently runs with inherited enterprise capabilities opened, so `enterprise/` is a technical code split, not a separate product tier
+   - remember that OneLink currently runs with inherited enterprise capabilities opened, so `enterprise/` is a technical code split, not a separate product tier
 
 4. **Decide whether the feature should stay isolated**:
    - if needed by multiple domains, move toward shared platform code
@@ -39,7 +39,7 @@ Before starting a substantial feature, decide whether the work belongs to shared
    - if needed by one tenant, prefer config/custom attributes before new shared code
 
 5. **Keep upstream compatibility in mind**:
-   - minimize invasive patches in shared Chatwoot-like code
+   - minimize invasive patches in shared core code
    - prefer extension points, services, overlays, and isolated routes/screens where possible
 
 ## Git and Pull Request Workflow
@@ -52,8 +52,8 @@ The main working branch in this fork is `onelink-main`, not `develop`.
 
 - Branch from `onelink-main`
 - Use a focused branch name such as `feature/...`, `fix/...`, `chore/...`, or `sync/...`
-- Keep `origin` as the writable remote for Onelink work
-- Treat `upstream` as the read-only Chatwoot source
+- Keep `origin` as the writable remote for OneLink work
+- Treat `upstream` as the read-only upstream source
 - Push branches to GitHub over SSH, not HTTPS
 
 ### Default Delivery Path
@@ -74,7 +74,7 @@ Then:
 - open a pull request into `onelink-main`
 - merge into `onelink-main` after review or maintainer verification
 
-Use `sync/...` branches only for bringing Chatwoot changes into the fork.
+Use `sync/...` branches only for bringing upstream changes into the fork.
 
 ### Before Submitting
 
@@ -162,7 +162,7 @@ Use our [Make commands](/contributing-guide/environment-setup/make) to speed up 
 
 ## Project Setup
 
-Once you have set up the environment, follow these guides to get Onelink running locally:
+Once you have set up the environment, follow these guides to get OneLink running locally:
 
 1. **[Quick Setup Guide](/contributing-guide/setup-guide)** - Step-by-step setup instructions
 2. **[Environment Variables](/contributing-guide/environment-variables)** - Configuration options
@@ -177,7 +177,7 @@ If you're working on specific integrations:
 
 ## Architecture Expectations
 
-Onelink development should follow these rules:
+OneLink development should follow these rules:
 
 - one shared platform, not multiple unrelated products
 - domain zones such as healthcare and construction stay isolated from each other where possible
@@ -211,7 +211,7 @@ npm run cypress:open
 
 ## Upstream Sync
 
-Because this repository is a fork of Chatwoot, not a greenfield application:
+Because this repository is a fork of an upstream product, not a greenfield application:
 
 - keep the fork diff intentional
 - prefer extension and composition over large hard forks
@@ -226,8 +226,8 @@ Use the dedicated [Upstream Sync Strategy](/development/upstream-sync) document 
 - Keep documentation clear and concise
 - Include code examples where helpful
 - Update documentation when changing functionality
-- Prefer Onelink terminology over generic upstream wording in active product docs
-- Use the Onelink architecture docs as the source of truth for platform/domain direction
+- Prefer OneLink terminology over generic upstream wording in active product docs
+- Use the OneLink architecture docs as the source of truth for platform/domain direction
 - Follow the [Docs Repository Workflow](/contributing-guide/docs-repository-workflow) when changing `onelink/docs`, because docs live in a separate Git repository mounted as a submodule inside the main app repo
 - Use [Project Operations](/contributing-guide/project-operations), [AI Agent Operating Model](/contributing-guide/ai-agent-operating-model), and [Skill Map](/contributing-guide/skill-map) when the change affects how people or agents operate the project rather than only a feature implementation
 
@@ -248,7 +248,7 @@ We strive to maintain a welcoming and inclusive community:
 
 If you're working on API-related features:
 
-- **[Onelink APIs](/contributing-guide/apis)** - API development guide
+- **[OneLink APIs](/contributing-guide/apis)** - API development guide
 - **[API Documentation](https://one-link.kz/docs/contributing-guide/other/api-documentation)** - Documenting APIs
 - **[Platform APIs](/contributing-guide/platform-apis)** - Platform-level APIs
 

@@ -1,6 +1,6 @@
 ---
 title: Repository Map
-description: Practical map of the Onelink repositories, top-level directories, runtime surfaces, and where to make changes.
+description: Practical map of the OneLink repositories, top-level directories, runtime surfaces, and where to make changes.
 sidebarTitle: Repository Map
 ---
 
@@ -14,14 +14,14 @@ sidebarTitle: Repository Map
 
 ## Repository Set
 
-Onelink currently operates across four local knowledge and change surfaces:
+OneLink currently operates across four local knowledge and change surfaces:
 
 1. `onelink`
    - the main Rails/Vue application repository
 2. `onelink/docs`
    - the Mintlify documentation repository mounted into the app repo as a git submodule
 3. `onelink/.codex/skills`
-   - the versioned project copy of the Onelink skill family
+   - the versioned project copy of the OneLink skill family
 4. `$CODEX_HOME/skills`
    - the installed local Codex skill library used by the runtime agent in this workspace
 
@@ -34,7 +34,7 @@ Practical rule:
 
 ## Main Application Repository
 
-The main application repository is a Chatwoot-derived Rails monolith with several major code surfaces.
+The main application repository is a Rails monolith extended by the OneLink fork, with several major code surfaces.
 
 ### Top-Level Directories
 
@@ -137,7 +137,7 @@ Use [Docs Repository Workflow](/contributing-guide/docs-repository-workflow) for
 
 ## Project Skill Source
 
-The versioned project copy of the Onelink skill family lives under:
+The versioned project copy of the OneLink skill family lives under:
 
 - `onelink/.codex/skills`
 
@@ -161,7 +161,7 @@ The local Codex skill library currently lives under:
 - `$CODEX_HOME/skills`
 - typically `~/.codex/skills` if `CODEX_HOME` is not customized
 
-Onelink-specific skills are split into:
+OneLink-specific skills are split into:
 
 - `onelink-builder`
   - top-level coordinator skill

@@ -24,11 +24,11 @@ Click here to learn more about [Microsoft Setup](./azure-app-setup).
 
 This configuration supports any custom mail provider by allowing you to set standard SMTP credentials for outbound mail and IMAP credentials for inbound. This works with on‑prem servers, commercial providers, or any setup that supports username/password authentication.
 
-### Forwarding Rule (Email → Chatwoot Ingress)
+### Forwarding Rule (Email → OneLink Ingress)
 
 Instead of configuring IMAP, some teams prefer to forward incoming emails directly to Chatwoot. If your mail provider supports forwarding rules, you can send inbound email to Chatwoot’s ingress address, which Chatwoot will process as incoming messages. Outbound email will use your configured SMTP provider.
 
-### IMAP (Inbound Only) + Chatwoot Mailer (Outbound)
+### IMAP (Inbound Only) + OneLink Mailer (Outbound)
 
 In this mode, Chatwoot pulls inbound email through IMAP but sends outbound messages using Chatwoot’s mailer configuration. This is useful when your mail provider imposes SMTP restrictions or when you want a consistent outbound delivery method across channels.
 
