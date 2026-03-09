@@ -8,6 +8,17 @@ It contains:
 - inherited operational and deployment guides from Chatwoot where still applicable
 - API and contributor documentation for the fork
 
+### Repository Layout
+
+This repository is the source of truth for the documentation content.
+
+It is used in two ways:
+
+- as its own Git repository: `demomastra2025-eng/onelink-docs`
+- as the `docs/` submodule inside the main Onelink app repository
+
+When you open `/Users/akhanbakhitov/Documents/zeroprompt/onelink/docs`, you are already working inside this separate docs repository.
+
 ### Editing Content
 
 You can edit the docs in two ways:
@@ -16,6 +27,8 @@ You can edit the docs in two ways:
 - in the Mintlify web editor after this repository is connected through the Mintlify GitHub app
 
 The web editor is still Git-backed. Changes are saved to branches or pull requests in this repository.
+
+If the docs were edited in Mintlify, pull the latest changes in the `docs/` repository before assuming the local files are current.
 
 ### Local Preview
 
@@ -40,8 +53,23 @@ The API reference in `docs.json` uses the OpenAPI files stored in [`openapi/`](.
 To refresh those files from the main Onelink app repository, run:
 
 ```bash
+./scripts/sync-openapi-from-onelink.sh
+```
+
+If you are running this repository as a standalone sibling checkout instead of as `onelink/docs`, you can also pass the app path explicitly:
+
+```bash
 ./scripts/sync-openapi-from-onelink.sh ../onelink
 ```
+
+### Commit Flow
+
+When docs change, the normal flow is:
+
+1. Commit and push the content change in this repository.
+2. In the main `onelink` repository, commit the updated `docs` submodule pointer.
+
+If a task changes both product code and docs, keep the docs commit in `onelink-docs` and the product code commit in `onelink`.
 
 ### Production Domain
 

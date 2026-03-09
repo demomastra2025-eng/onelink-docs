@@ -113,6 +113,7 @@
             "pages": [
               "contributing-guide/apis",
               "contributing-guide/api-documentation",
+              "contributing-guide/docs-repository-workflow",
               "contributing-guide/platform-apis",
               "contributing-guide/security-reports",
               "contributing-guide/translation-guidelines",

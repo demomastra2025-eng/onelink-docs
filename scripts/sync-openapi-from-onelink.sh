@@ -2,7 +2,14 @@
 
 set -euo pipefail
 
-SOURCE_REPO_PATH="${1:-../onelink}"
+if [[ $# -ge 1 ]]; then
+  SOURCE_REPO_PATH="$1"
+elif [[ -d "../swagger/tag_groups" ]]; then
+  SOURCE_REPO_PATH=".."
+else
+  SOURCE_REPO_PATH="../onelink"
+fi
+
 SOURCE_OPENAPI_DIR="${SOURCE_REPO_PATH%/}/swagger/tag_groups"
 TARGET_OPENAPI_DIR="$(cd "$(dirname "$0")/.." && pwd)/openapi"
 

@@ -1,0 +1,107 @@
+---
+title: Docs Repository Workflow
+description: How the Onelink documentation repository works as a standalone Git repo and as the docs submodule inside the main app repo.
+---
+
+# Docs Repository Workflow
+
+The Onelink documentation has its own Git repository:
+
+- `demomastra2025-eng/onelink-docs`
+
+That same repository is mounted inside the main app repository at:
+
+- `/Users/akhanbakhitov/Documents/zeroprompt/onelink/docs`
+
+This means `onelink/docs` is both:
+
+- a normal folder that people and agents can read and edit
+- a separate Git repository with its own commits, pull requests, and Mintlify publishing flow
+
+## Source Of Truth
+
+Use this rule:
+
+- documentation content lives in `onelink-docs`
+- the main `onelink` repository stores only the submodule pointer to a docs commit
+
+If you edit `onelink/docs/*.mdx`, `docs.json`, `README.md`, `openapi/*`, or `scripts/*`, you are changing the docs repository.
+
+## Human Workflow
+
+For a normal documentation change:
+
+```bash
+cd /Users/akhanbakhitov/Documents/zeroprompt/onelink/docs
+git switch main
+git pull
+# edit docs files
+git add .
+git commit -m "docs: update <topic>"
+git push
+```
+
+If the main `onelink` repository should point to the new docs commit too:
+
+```bash
+cd /Users/akhanbakhitov/Documents/zeroprompt/onelink
+git add docs
+git commit -m "chore(docs): update docs submodule pointer"
+git push origin HEAD
+```
+
+## Agent Workflow
+
+When an agent works inside `onelink`:
+
+- read and edit docs under `onelink/docs`
+- commit the content change in the `onelink/docs` repository first
+- then update the `docs` submodule pointer in the parent `onelink` repository when needed
+
+Do not mix product code commits and docs content commits into one repository when the changed files live in different repos.
+
+## Mintlify Workflow
+
+Mintlify hosts and edits the `onelink-docs` repository.
+
+That means:
+
+- people can change text in the Mintlify web editor
+- the change lands in `onelink-docs`
+- local `onelink/docs` will not see it until you pull the latest docs commit
+
+If docs were edited in Mintlify, refresh locally:
+
+```bash
+cd /Users/akhanbakhitov/Documents/zeroprompt/onelink/docs
+git pull
+```
+
+Then, if needed, update the parent repo pointer:
+
+```bash
+cd /Users/akhanbakhitov/Documents/zeroprompt/onelink
+git add docs
+git commit -m "chore(docs): bump docs submodule"
+git push origin HEAD
+```
+
+## OpenAPI Sync
+
+The API reference uses local files under `openapi/`.
+
+From the submodule path inside the app repo:
+
+```bash
+cd /Users/akhanbakhitov/Documents/zeroprompt/onelink/docs
+./scripts/sync-openapi-from-onelink.sh
+```
+
+From a standalone sibling clone:
+
+```bash
+cd /Users/akhanbakhitov/Documents/zeroprompt/onelink-docs
+./scripts/sync-openapi-from-onelink.sh ../onelink
+```
+
+After syncing OpenAPI files, commit the changes in `onelink-docs`.
