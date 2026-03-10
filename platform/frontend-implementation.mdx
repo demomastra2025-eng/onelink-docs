@@ -25,6 +25,7 @@ The current codebase frontend is:
 - split into dashboard, widget, portal, survey, and SDK entrypoints
 - booted in the dashboard with both `Vuex` and `Pinia`, because migration is incremental rather than complete
 - organized around several UI layers instead of one fully unified design system
+- already using `VueUse` as the main utility/composable layer for interactive behavior and browser APIs
 
 ## Implemented Frontend Layers
 
@@ -104,19 +105,33 @@ When designing or implementing a new component, use sources in this order:
 
 1. existing `components-next` components and Histoire stories
 2. existing route screens or feature modules that already solve a similar interaction
-3. `reka-ui` for accessible headless primitives
-4. `shadcn-vue` for recipes, APIs, and code patterns
-5. `PrimeVue` for dense admin/table/filter patterns only when existing local components and wrappers are insufficient
-6. `Inspira UI` for visual inspiration and motion ideas
-7. feature-local specialist libraries only after checking that the current stack and wrappers are insufficient
+3. `VueUse` for composables, directives, interaction helpers, and browser APIs
+4. `reka-ui` for accessible headless primitives
+5. `originui-vue` for copy-paste Vue component composition and polished Tailwind app patterns
+6. `shadcn-vue` for recipes, APIs, and code patterns
+7. `Inspira UI` for visual inspiration and motion ideas
+8. feature-local specialist libraries only after checking that the current stack and wrappers are insufficient
 
 For the exact reuse-vs-extend-vs-create workflow, use [Frontend Agent Playbook](/contributing-guide/frontend-agent-playbook).
 
 ## External Source Policy
 
+### `VueUse`
+
+Use `VueUse` as the preferred external source for:
+
+- composables and directives
+- browser API wrappers
+- outside-click behavior
+- resize, scroll, and viewport helpers
+- storage, debounce, throttle, and small UI state helpers
+- route/query synchronization helpers when they fit the existing router flow
+
+Treat `VueUse` as a utility layer, not as a visual design system.
+
 ### `reka-ui`
 
-Use `reka-ui` as the preferred external source for accessible primitives such as:
+Use `reka-ui` as the preferred external source for accessible headless primitives such as:
 
 - dialog
 - popover
@@ -130,6 +145,16 @@ Use `reka-ui` as the preferred external source for accessible primitives such as
 
 Wrap `reka-ui` usage inside local `components-next` components so the external library does not become the public UI API of the app.
 
+### `originui-vue`
+
+Use `originui-vue` as:
+
+- a copy-paste Vue component source
+- a visual and composition reference for polished Tailwind app UI
+- a source of ideas for inputs, lists, settings surfaces, cards, checkboxes, radios, switches, and other app-shell patterns
+
+Do not treat `originui-vue` as a second runtime UI kit. Adapt its ideas to the current Tailwind 3 setup, local tokens, and local wrappers instead of importing its design system wholesale.
+
 ### `shadcn-vue`
 
 Use `shadcn-vue` as:
@@ -139,16 +164,6 @@ Use `shadcn-vue` as:
 - a code pattern library for how a component can be composed
 
 Do not treat `shadcn-vue` as a second design system that should be imported wholesale into `onelink`.
-
-### `PrimeVue`
-
-Use `PrimeVue` as:
-
-- a reference for dense admin layouts
-- a reference for data-table, filter bar, and journal interactions
-- an optional specialist source only after checking whether the same surface can be built with local components and wrappers first
-
-Do not treat `PrimeVue` as the default visual layer of the dashboard, and do not let raw `PrimeVue` components become the public UI API of a feature.
 
 ### `Inspira UI`
 

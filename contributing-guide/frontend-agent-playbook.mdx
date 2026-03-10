@@ -168,7 +168,18 @@ Use this for:
 - i18n patterns
 - store and form patterns
 
-### Source 2: `reka-ui`
+### Source 2: `VueUse`
+
+Use for:
+
+- composables and directives
+- browser APIs and DOM observers
+- outside-click, resize, scroll, media query, and storage helpers
+- debounce, throttle, and lightweight query-param behavior
+
+Treat `VueUse` as the first external utility layer, not as a visual component system.
+
+### Source 3: `reka-ui`
 
 Use for:
 
@@ -179,7 +190,17 @@ Use for:
 
 Do not expose raw `reka-ui` primitives directly throughout feature code. Wrap them locally first.
 
-### Source 3: `shadcn-vue`
+### Source 4: `originui-vue`
+
+Use for:
+
+- copy-paste Vue component composition
+- polished Tailwind app UI patterns
+- input, settings, list, card, and control layouts that already fit an admin/dashboard feel
+
+Treat it as a source of adapted local code, not as a runtime design system dependency.
+
+### Source 5: `shadcn-vue`
 
 Use for:
 
@@ -190,7 +211,7 @@ Use for:
 
 Treat it as reference code, not as the main design system runtime.
 
-### Source 4: `Inspira UI`
+### Source 6: `Inspira UI`
 
 Use for:
 
@@ -308,13 +329,15 @@ Use this quick rule set:
 
 1. Is there already a near-match in `components-next`?
    If yes: reuse or extend it.
-2. Is the missing part a reusable primitive?
+2. Is the missing part behavior-only and already covered by `VueUse`?
+   If yes: use `VueUse` before adding a new helper package.
+3. Is the missing part a reusable primitive?
    If yes: wrap `reka-ui` or another approved primitive source in `components-next`.
-3. Is the UI specific to one route?
+4. Is the UI specific to one route?
    If yes: keep it route-local and compose existing shared parts.
-4. Does the feature need shared entity state?
+5. Does the feature need shared entity state?
    If yes: use `Pinia`.
-5. Is the feature only adding domain-specific fields to a shared workflow?
+6. Is the feature only adding domain-specific fields to a shared workflow?
    If yes: layer that on top of the shared screen, do not fork the whole module.
 
 ## What The Agent Should Avoid
@@ -322,7 +345,7 @@ Use this quick rule set:
 - adding `Nuxt` or another application shell
 - importing third-party kits wholesale into production feature code
 - building new reusable feature state in `Vuex`
-- copying `shadcn-vue` or `Inspira UI` code without adapting it to local tokens and patterns
+- copying `originui-vue`, `shadcn-vue`, or `Inspira UI` code without adapting it to local tokens and patterns
 - introducing a second design system under a new folder parallel to `components-next`
 - inventing new abstractions before checking nearby route implementations
 

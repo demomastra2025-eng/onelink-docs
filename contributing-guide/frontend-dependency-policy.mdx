@@ -28,6 +28,23 @@ If step 1 or 2 solves the task cleanly, do not add a package.
 
 ## Approved Source Roles
 
+### `VueUse`
+
+Approved as the default utility and composable layer for frontend behavior.
+
+Typical use:
+
+- event listeners and DOM observers
+- outside-click behavior
+- resize, viewport, and media query helpers
+- debounce, throttle, and timing helpers
+- storage and query-param synchronization
+
+Rule:
+
+- use `VueUse` before adding small behavior-only utility packages
+- do not treat it as a visual component library
+
 ### `reka-ui`
 
 Approved as a source of accessible headless primitives for reusable dashboard UI.
@@ -46,6 +63,21 @@ Typical use:
 Rule:
 
 - wrap it locally in `components-next`
+
+### `originui-vue`
+
+Approved as a copy-paste Vue component and visual composition source.
+
+Typical use:
+
+- inputs and controls
+- list and settings layouts
+- polished card and admin-shell patterns
+
+Rule:
+
+- treat it as a source of adapted local code, not as a default runtime dependency
+- do not import its token system or component APIs wholesale into `onelink`
 
 ### `shadcn-vue`
 
@@ -117,6 +149,7 @@ If the source is only for ideas:
 ## Do Not Add A New Dependency When
 
 - the repo already has a similar solution
+- the need is already covered by `VueUse` or another existing project dependency
 - the requirement is mostly visual and can be implemented with local code
 - the library is tightly coupled to `Nuxt`
 - the library would become the public UI API of the app without wrappers

@@ -39,6 +39,19 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
 - combobox story:
   `app/javascript/dashboard/components-next/combobox/ComboBox.story.vue`
 
+### VueUse Utility Pattern
+
+- `useEventListener` in interactive overlays and panels:
+  `app/javascript/dashboard/components-next/sidebar/Sidebar.vue`
+  `app/javascript/dashboard/components-next/Scheduling/SchedulingDrawer.vue`
+- `OnClickOutside` and `vOnClickOutside` wrappers:
+  `app/javascript/dashboard/components-next/dialog/Dialog.vue`
+  `app/javascript/dashboard/components-next/combobox/ComboBox.vue`
+- `useWindowSize`, `useElementSize`, and `useResizeObserver` for layout behavior:
+  `app/javascript/dashboard/routes/dashboard/Dashboard.vue`
+  `app/javascript/dashboard/components-next/tabbar/TabBar.vue`
+  `app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue`
+
 ### API Client Pattern
 
 - account-scoped CRUD-style client:
@@ -194,6 +207,14 @@ Read this set first:
 ## Rule
 
 When the agent is unsure how to implement a pattern, it should consult this examples map before inventing a new structure.
+
+For external idea sources, the current preferred order is:
+
+1. `VueUse` for composables and directives
+2. `reka-ui` for headless primitives
+3. `originui-vue` for copy-paste Vue app UI patterns
+4. `shadcn-vue` for recipes and implementation patterns
+5. `Inspira UI` for visual inspiration only
 
 ## Related Documents
 
