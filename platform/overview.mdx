@@ -1,117 +1,114 @@
 ---
-title: OneLink Platform Overview
-description: Current shape and target direction for the OneLink platform.
-sidebarTitle: Overview
+title: Обзор платформы One Link Cloud
+description: Единая модель продукта, основные возможности и логика работы One Link Cloud.
+sidebarTitle: Обзор
 ---
 
-# OneLink Platform Overview
+# Обзор One Link Cloud
 
-## Status
+One Link Cloud — это единая операционная платформа, а не набор отдельных отраслевых продуктов.
 
-- document type: mixed overview
-- source of truth for current implementation: code plus `/platform/current-architecture`
-- source of truth for target direction: this page plus the linked planning docs
+Персонализация для клиента строится внутри общего ядра через:
 
-## Current Implemented System
+- права доступа
+- кастомные поля
+- автоматизации
+- интеграции
+- настройки Captain AI
 
-Today, OneLink is primarily:
+One Link Cloud — это одна общая операционная платформа. Она не делится на отдельные отраслевые продукты; один и тот же продукт настраивается под клиента через доступы, кастомные поля, автоматизации, интеграции и конфигурацию AI.
 
-- a Rails monolith with Vue 3/Vite frontend surfaces inherited from the upstream base platform
-- an account-scoped omnichannel support platform
-- a system organized around `Account`, `Inbox`, `ContactInbox`, `Conversation`, and `Message`
-- a product with CRM-adjacent primitives such as `Contact`, `Company`, `Note`, `Label`, and `CustomAttributeDefinition`
-- an event-driven application with an inherited `enterprise/` technical split, active Captain/AI, automations, integrations, and help center; for OneLink this split is technical rather than a separate product tier
-
-Read [Current Architecture](/platform/current-architecture) first when the question is "what exists in code now?"
-Read [Repository Map](/platform/repository-map) when the question is "where does that surface live in the repos?"
-
-## Target Direction
-
-OneLink is intended to evolve from an upstream fork into a product platform with:
-
-- a shared communication and CRM foundation
-- white-label and product-specific capabilities
-- isolated domain zones such as healthcare and construction
-- controlled compatibility with the upstream base
-
-## Target Layers
+## Основные уровни возможностей
 
 ```mermaid
 flowchart TD
-    A[Upstream Base] --> B[OneLink Core Fork]
-    B --> C[OneLink Shared Platform]
-    C --> D[Generic Product Profile]
-    C --> E[Healthcare Domain Zone]
-    C --> F[Construction Domain Zone]
+    A[Аккаунт Workspace] --> B[Коммуникация]
+    A --> C[CRM]
+    A --> D[Планирование]
+    A --> E[Captain AI]
+    A --> F[Автоматизации и интеграции]
+    A --> G[База знаний]
 ```
 
-## Layer Responsibilities
+## Что включено
 
-### Upstream / Core
+### Коммуникация
 
-- keep compatibility with the upstream base where practical
-- absorb upstream fixes and product updates
-- avoid unnecessary hard forks
+- inbox-очереди и каналы
+- контакты и диалоги
+- сообщения, заметки, метки и назначения
 
-### Shared Platform
+### CRM
 
-- branding and product direction
-- shared access model
-- shared CRM behavior and future CRM entities
-- shared integrations
-- shared UI shell and patterns
+- контакты и компании
+- воронки и этапы
+- сделки и задачи
+- гибкие определения полей
 
-### Domain Zones
+### Планирование
 
-- domain-specific fields
-- workflows and validations
-- specialized screens and reports
-- domain-specific vocabulary and lifecycle rules
+- ресурсы и услуги
+- встречи календаря
+- платежи, расходы и касса
 
-## Working Rule
+### Captain AI
 
-- if a capability is needed by multiple domains, move it into the shared platform
-- if a capability is needed by one domain only, keep it inside that domain zone
-- if a need is specific to one tenant, prefer configuration before new shared code
+- помощники
+- документы
+- сценарии
+- пользовательские инструменты
+- copilot-потоки
 
-## Reading Guide
+### Автоматизации и интеграции
 
-- current codebase structure: [Current Architecture](/platform/current-architecture)
-- repository and repo-boundary map: [Repository Map](/platform/repository-map)
-- backend execution workflow for AI agents and contributors: [Backend Agent Playbook](/contributing-guide/backend-agent-playbook)
-- backend feature blueprint: [Backend Feature Template](/contributing-guide/backend-feature-template)
-- frontend stack and component sourcing rules: [Frontend Implementation Guide](/platform/frontend-implementation)
-- frontend execution workflow for AI agents and contributors: [Frontend Agent Playbook](/contributing-guide/frontend-agent-playbook)
-- frontend dependency rules: [Frontend Dependency Policy](/contributing-guide/frontend-dependency-policy)
-- dashboard feature blueprint: [Dashboard Feature Template](/contributing-guide/dashboard-feature-template)
-- UI conventions and token usage: [Design Tokens And UI Conventions](/contributing-guide/design-tokens-and-ui-conventions)
-- concrete implementation references: [Implementation Examples Map](/contributing-guide/implementation-examples-map)
-- verification guidance: [Testing Strategy For Agents](/contributing-guide/testing-strategy-for-agents)
-- implementation sequence and build order: [Implementation Roadmap](/platform/implementation-roadmap)
-- current access and native entity rules: [Domain Access Architecture](/contributing-guide/domain-access-architecture)
-- target CRM shape: [CRM Architecture](/platform/crm-architecture)
-- target entity reuse rules: [Entity Matrix](/platform/entity-matrix)
-- target decision rules: [Decision Matrix](/platform/decision-matrix)
-- target domain profile direction: [Domain Profiles](/domains/overview)
+- правила автоматизации
+- macros
+- webhooks
+- интеграция на уровне аккаунта и inbox
 
-## Key References
+### База знаний
 
-- [Domain Access Architecture](/contributing-guide/domain-access-architecture)
-- [Current Architecture](/platform/current-architecture)
-- [Repository Map](/platform/repository-map)
-- [Backend Agent Playbook](/contributing-guide/backend-agent-playbook)
-- [Backend Feature Template](/contributing-guide/backend-feature-template)
-- [Frontend Implementation Guide](/platform/frontend-implementation)
-- [Frontend Agent Playbook](/contributing-guide/frontend-agent-playbook)
-- [Frontend Dependency Policy](/contributing-guide/frontend-dependency-policy)
-- [Dashboard Feature Template](/contributing-guide/dashboard-feature-template)
-- [Design Tokens And UI Conventions](/contributing-guide/design-tokens-and-ui-conventions)
-- [Implementation Examples Map](/contributing-guide/implementation-examples-map)
-- [Testing Strategy For Agents](/contributing-guide/testing-strategy-for-agents)
-- [Implementation Roadmap](/platform/implementation-roadmap)
-- [CRM Architecture](/platform/crm-architecture)
-- [Entity Matrix](/platform/entity-matrix)
-- [Decision Matrix](/platform/decision-matrix)
-- [Integrations Architecture](/platform/integrations-architecture)
-- [Domain Profiles](/domains/overview)
-- [Development Guide](/contributing-guide)
+- portals
+- категории
+- папки
+- статьи
+
+## Как работает продукт
+
+1. Вся работа начинается внутри workspace.
+2. Взаимодействие с клиентами осуществляется на платформе через inbox-очереди и каналы.
+3. В одном и том же workspace обслуживают клиента, компанию CRM, расписание и контекст AI.
+4. Автоматизации и интеграции реагируют на общие события, а не на изолированные подсистемы.
+5. Команды адаптируют один и тот же продукт к своему процессу, не определяя уровень выполнения для каждой отрасли.
+
+## Персонализация без разветвления продукта
+
+Адаптация к потребностям клиента должна происходить следующим образом:
+
+- роли, команды и доступ inbox
+- настройки workspace
+- метки и заметки
+- пользовательские атрибуты для контактов и разговоров
+- определение управляемых полей для сделок, задач и встреч
+- правила автоматизации и macros
+- integrations и hooks
+- Captain assistants, scenarios и tools
+
+## Примеры рабочих моделей
+
+| Сценарий | Как One Link Cloud адаптируется |
+| --- | --- |
+| Поддержка организации | Inbox-очереди, команда, SLA, автоматизация, база знаний |
+| Продажи workspace | Воронки, этапы, сделки, задачи, настраиваемые поля, подсказки Captain |
+| Сервисный бизнес | Планирование, ресурсы, встречи, платежи, отслеживание разговоров |
+| Многопрофильная компания | Один workspace с несколькими командами, inbox-очередями, стандартными маршрутами и интеграциями. |
+
+## Путь чтения
+
+- [Ключевые сущности](/platform/entity-matrix)
+- [Рабочее пространство и доступ](/platform/workspace-and-access)
+- [Коммуникационные процессы](/platform/communication-workflows)
+- [CRM и гибкая структура данных](/platform/crm-architecture)
+- [Расписание и оплаты](/platform/scheduling-and-payments)
+- [Captain AI](/platform/captain-ai)
+- [Автоматизации и интеграции](/platform/integrations-architecture)

@@ -1,0 +1,63 @@
+---
+title: Internal Automation And Integrations
+description: Internal runtime documentation for automation rules, macros, webhooks, installed integrations, and external sync patterns.
+---
+
+# Internal Automation And Integrations
+
+## Runtime Building Blocks
+
+| Subsystem | Main entities |
+| --- | --- |
+| Automations | `AutomationRule` |
+| Operator shortcuts | `Macro` |
+| Outbound events | `Webhook` |
+| Installable integrations | `Integrations::App`, `Integrations::Hook` |
+| AI action surface | `Captain::CustomTool` |
+
+## Event Model
+
+Automation rules currently support events across:
+
+- conversations
+- deals
+- tasks
+- appointments
+
+This is a key internal point: automation is not conversation-only anymore.
+
+## Installed Integration Model
+
+`Integrations::App` defines the catalog and UI-facing configuration model.
+
+`Integrations::Hook` represents the installed instance and can be:
+
+- account-scoped
+- inbox-scoped
+
+## Current Integration Examples In Code
+
+The repo includes runtime integration surfaces such as:
+
+- Slack
+- Linear
+- Notion
+- Shopify
+- LeadSquared
+- Medelement
+- MacroCRM
+
+## Macros
+
+Macros are a structured, user-triggered action list. They remain important for human-in-the-loop workflows even when automation exists.
+
+## Webhooks
+
+The base webhook model handles outbound event delivery for account-level or inbox-level subscriptions.
+
+## Design Rules
+
+1. If the need is a full external app lifecycle, start with `Integrations::App` and `Integrations::Hook`.
+2. If the need is filtered business-event reaction, consider `AutomationRule`.
+3. If the need is operator-triggered repeatability, consider `Macro`.
+4. If the need is AI-triggered external action, consider `Captain::CustomTool`.

@@ -1,0 +1,81 @@
+---
+title: Internal Repository Structure
+description: Internal map of the One Link application repository, major directories, and ownership boundaries.
+---
+
+# Internal Repository Structure
+
+## Root Layout
+
+The main repository is a Rails monolith with co-located frontend surfaces, a technical `enterprise/` overlay, a docs submodule, and versioned platform assets.
+
+## Major Directories
+
+| Path | Responsibility |
+| --- | --- |
+| `app/` | Main Rails application code, API controllers, models, jobs, services, views, and JS app |
+| `enterprise/` | Technical overlay for advanced models, policies, jobs, services, and concerns |
+| `config/` | Rails configuration, routes, initializers, environments |
+| `db/` | Migrations, schema, and seed data |
+| `lib/` | Shared library code, formatters, integration helpers, and runtime support |
+| `spec/` | Backend, enterprise, and service-level tests |
+| `app/javascript/` | All frontend entrypoints and shared JS/Vue code |
+| `docs/` | Separate documentation repository mounted as submodule |
+| `.codex/` | Versioned project-specific AI/agent assets and scripts |
+
+## App Directory Shape
+
+The backend is organized around standard Rails layers plus service-heavy runtime code:
+
+- `app/controllers/`
+- `app/models/`
+- `app/services/`
+- `app/jobs/`
+- `app/listeners/`
+- `app/policies/`
+- `app/presenters/`
+- `app/builders/`
+
+## Frontend Directory Shape
+
+The frontend is not a separate SPA repository. It lives under `app/javascript/` with several entrypoints:
+
+- `dashboard/`
+- `widget/`
+- `portal/`
+- `survey/`
+- `sdk/`
+- `superadmin_pages/`
+- `shared/`
+- `design-system/`
+
+## Repo Boundary Rules
+
+### Main Product Code
+
+All runtime application behavior belongs in the main `onelink` repository.
+
+### Documentation
+
+Docs live in the separate `docs/` repository but are mounted locally inside the main repo as a submodule.
+
+### Technical Overlay
+
+The `enterprise/` tree is a technical extension layer used by the current product. It should be treated as part of the runtime, not as a separate customer-visible product.
+
+## Developer Orientation
+
+If you are tracing a feature, the usual path is:
+
+1. `config/routes.rb`
+2. relevant controller
+3. model and policy
+4. service object or listener
+5. job if async work exists
+6. frontend route and page under `app/javascript/dashboard/routes`
+
+## Useful Internal References
+
+- [Backend Architecture](/internal/backend-architecture)
+- [Frontend Architecture](/internal/frontend-architecture)
+- [API And Routes](/internal/api-and-routes)

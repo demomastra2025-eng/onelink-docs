@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.4",
   "info": {
-    "title": "Onelink",
-    "description": "This is the API documentation for the Onelink server.",
+    "title": "API One Link Cloud",
+    "description": "Документация API сервера One Link Cloud.",
     "version": "1.1.0",
     "termsOfService": "https://one-link.kz",
     "contact": {
@@ -30,8 +30,8 @@
           "CSAT Survey Page"
         ],
         "operationId": "get-csat-survey-page",
-        "summary": "Get CSAT survey page",
-        "description": "You can redirect the client to this URL, instead of implementing the CSAT survey component yourself.",
+        "summary": "Получить страницу CSAT-опроса",
+        "description": "Можно перенаправить клиента на этот URL вместо самостоятельной реализации CSAT-компонента.",
         "security": [],
         "responses": {
           "200": {
@@ -5127,26 +5127,26 @@
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token can be obtained by visiting the profile page or via rails console. Provides access to  endpoints based on the user permissions levels. This token can be saved by an external system when user is created via API, to perform activities on behalf of the user."
+        "description": "Токен пользователя для доступа к API в рамках его прав. Обычно передаётся внешней системе после создания пользователя через API."
       },
       "agentBotApiKey": {
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token should be provided by system admin or obtained via rails console. This token can be used to build bot integrations and can only access limited apis."
+        "description": "Токен агент-бота для ограниченного набора API и bot-интеграций."
       },
       "platformAppApiKey": {
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token can be obtained by the system admin after creating a platformApp. This token should be used to provision agent bots, accounts, users and their roles."
+        "description": "Платформенный токен для provisioning аккаунтов, пользователей и agent bots."
       }
     }
   },
   "tags": [
     {
-      "name": "CSAT Survey Page",
-      "description": "Customer satisfaction survey"
+      "name": "Страница CSAT-опроса",
+      "description": "Опрос удовлетворённости клиентов"
     }
   ],
   "x-tagGroups": [

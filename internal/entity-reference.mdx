@@ -1,0 +1,74 @@
+---
+title: Internal Entity Reference
+description: Internal mapping of the main One Link Cloud entities to their runtime purpose and source files.
+---
+
+# Internal Entity Reference
+
+## Workspace And Access
+
+| Entity | Source file | Responsibility |
+| --- | --- | --- |
+| `Account` | `app/models/account.rb` | Tenant boundary, settings, feature flags, major associations |
+| `AccountUser` | `app/models/account_user.rb` | User membership, account role, availability |
+| `Team` | `app/models/team.rb` | Operational group and ownership layer |
+| `Inbox` | `app/models/inbox.rb` | Channel entry point and assignment boundary |
+| `InboxMember` | `app/models/inbox_member.rb` | User access to an inbox |
+
+## Communication
+
+| Entity | Source file | Responsibility |
+| --- | --- | --- |
+| `Contact` | `app/models/contact.rb` | Person-level customer record |
+| `ContactInbox` | `app/models/contact_inbox.rb` | Channel identity for a contact |
+| `Conversation` | `app/models/conversation.rb` | Main operational communication aggregate |
+| `Message` | `app/models/message.rb` | Atomic communication event |
+| `Note` | `app/models/note.rb` | Internal notes |
+| `Label` | `app/models/label.rb` | Lightweight segmentation and classification |
+
+## CRM
+
+| Entity | Source file | Responsibility |
+| --- | --- | --- |
+| `Company` | `enterprise/app/models/company.rb` | Organization-level customer record |
+| `Crm::Pipeline` | `app/models/crm/pipeline.rb` | Deal flow container |
+| `Crm::Stage` | `app/models/crm/stage.rb` | Deal stage inside a pipeline |
+| `Crm::Deal` | `app/models/crm/deal.rb` | Pipeline-based commercial record |
+| `Crm::TaskStatus` | `app/models/crm/task_status.rb` | Task lifecycle status catalog |
+| `Crm::Task` | `app/models/crm/task.rb` | Actionable follow-up work |
+| `CustomAttributeDefinition` | `app/models/custom_attribute_definition.rb` | Custom fields for contact and conversation |
+| `Crm::FieldDefinition` | `app/models/crm/field_definition.rb` | Managed fields for deal, task, and appointment |
+
+## Scheduling
+
+| Entity | Source file | Responsibility |
+| --- | --- | --- |
+| `Scheduling::Resource` | `app/models/scheduling/resource.rb` | Bookable resource |
+| `Scheduling::Service` | `app/models/scheduling/service.rb` | Service catalog record |
+| `Scheduling::Appointment` | `app/models/scheduling/appointment.rb` | Scheduled event with customer and payment context |
+| `Scheduling::Payment` | `app/models/scheduling/payment.rb` | Appointment payment record |
+| `Scheduling::Expense` | `app/models/scheduling/expense.rb` | Finance-side cost record |
+
+## Captain
+
+| Entity | Source file | Responsibility |
+| --- | --- | --- |
+| `Captain::Assistant` | `enterprise/app/models/captain/assistant.rb` | Configured assistant and inbox AI surface |
+| `Captain::Document` | `enterprise/app/models/captain/document.rb` | Knowledge source for assistants |
+| `Captain::Scenario` | `enterprise/app/models/captain/scenario.rb` | Branching and behavior rules |
+| `Captain::CustomTool` | `enterprise/app/models/captain/custom_tool.rb` | Callable external or internal action |
+| `CopilotThread` | `enterprise/app/models/copilot_thread.rb` | Copilot conversation |
+| `CopilotMessage` | `enterprise/app/models/copilot_message.rb` | Copilot message event |
+
+## Integrations And Content
+
+| Entity | Source file | Responsibility |
+| --- | --- | --- |
+| `AutomationRule` | `app/models/automation_rule.rb` | Event-driven workflow rule |
+| `Macro` | `app/models/macro.rb` | Reusable operator shortcut |
+| `Integrations::App` | `app/models/integrations/app.rb` | Integration catalog entry |
+| `Integrations::Hook` | `app/models/integrations/hook.rb` | Installed integration instance |
+| `Portal` | `app/models/portal.rb` | Help center / portal root |
+| `Category` | `app/models/category.rb` | Portal category |
+| `Folder` | `app/models/folder.rb` | Portal folder |
+| `Article` | `app/models/article.rb` | Knowledge article |

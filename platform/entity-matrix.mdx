@@ -1,99 +1,112 @@
 ---
-title: Entity Matrix
-description: Native-first entity map for Onelink shared platform and domain-zone architecture.
-sidebarTitle: Entity Matrix
+title: Ключевые сущности
+description: Основные сущности One Link Cloud и их связи между коммуникациями, CRM, расписанием, AI и контентом.
+sidebarTitle: Сущности
 ---
 
-# Entity Matrix
+# Ключевые сущности
 
-## Status
+Все операционные объекты в One Link Cloud живут внутри общей account-модели.
 
-- document type: mixed current state and planning matrix
-- the `Exists now` column is authoritative for current implementation
-- if the matrix conflicts with code, trust the code
+Это позволяет связывать между собой:
 
-This page is the practical reference for deciding what to reuse in `onelink`, what belongs in shared platform code, and what should remain domain-specific.
+- клиентов и компании
+- диалоги и сообщения
+- сделки и задачи
+- записи и оплаты
+- AI-контекст и базы знаний
 
-## Core Decision Rule
+One Link Cloud работает, поскольку все основные операционные объекты контролируются внутри одной общей модели workspace. Одна и та же запись клиента, разговора, контекста CRM, встречи и изменения AI могут работать вместе без дублирования между продуктами.
 
-When adding a new feature:
+## Карта отношений сущностей
 
-1. reuse an existing native entity first
-2. extend it with notes, labels, custom attributes, settings, or Captain configuration if possible
-3. add a domain service, policy, workflow, or UI extension if needed
-4. add a new shared entity only if the lifecycle is stable across domains
-5. add a domain-only entity only if the shared model is no longer semantically correct
+```mermaid
+flowchart TD
+    A[Счет] --> B[Пользователь/Пользователь учетной записи]
+    A --> C[Inbox]
+    A --> D[Контакт]
+    A --> E[Компания]
+    A --> F[Иметь дело]
+    A --> G[Задача]
+    A --> H[Встреча]
+    A --> I[Captain Ассистент]
+    A --> J[Portal]
 
-## Entity Matrix
+    C --> K[Диалог]
+    D --> K
+    K --> L[Сообщение]
+    E --> D
+    E --> F
+    F --> G
+    H --> D
+    H --> E
+    H --> K
+    I --> K
+    J --> M[Статья]
+```
 
-| Entity | Exists now | Layer | Generic | Healthcare | Construction | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| `Account` | Yes | Shared platform | Workspace / tenant | Workspace for clinic or medical org | Workspace for builder / contractor org | Use as the real workspace boundary; do not invent a second internal workspace model |
-| `User` / `AccountUser` | Yes | Shared platform | Operators and admins | Operators, coordinators, admins | Operators, estimators, managers, admins | Per-account access identity already exists |
-| `Inbox` | Yes | Shared platform | Communication channels | Front desk, support, intake channels | Sales, estimate, support channels | Keep routing and assignment here |
-| `Conversation` | Yes | Shared platform | Communication thread | Patient/client communication thread | Buyer/client communication thread | Do not replace with domain-specific messaging models |
-| `Company` | Yes | Shared CRM primitive | Customer organization | Clinic, insurer, employer, partner org | Developer, contractor, supplier, buyer org | Default organization-level entity |
-| `Contact` | Yes | Shared CRM primitive | Person | Patient, family contact, coordinator | Buyer, manager, stakeholder | Default person-level entity |
-| `Note` | Yes | Shared platform | Internal notes | Medical/operator notes | Estimate/project notes | Use before inventing a separate note model |
-| `Label` | Yes | Shared platform | Segmentation and tags | Intake/status tags | Qualification/project tags | Use for lightweight classification, not primary workflow state |
-| `CustomAttributeDefinition` | Yes, for `Contact` and `Conversation` | Shared variability layer | Tenant/domain fields | Medical fields | Construction fields | Good first step; currently not a universal schema system for every entity |
-| `Team` | Yes | Shared platform | Ownership groups | Front desk, support, sales groups | Sales, field, estimator groups | Reuse for routing and visibility |
-| `Macro` | Yes | Shared platform | Reusable actions | Protocol or reply shortcuts | Estimate/sales shortcuts | Native repeatability layer |
-| `AutomationRule` | Yes | Shared platform | Workflow automation | Intake/escalation automation | Lead/project automation | Native event-driven automation layer |
-| `Integrations::App` | Yes | Shared integration catalog | App definition | Same | Same | Catalog and capability descriptor, not installed instance |
-| `Integrations::Hook` | Yes | Shared integration instance | Connected app | Connected medical/ops system | Connected construction/ops system | Installed integration at account or inbox level |
-| `Captain::Assistant` | Yes | Shared AI layer | General assistant | Domain-aware medical assistant | Domain-aware construction assistant | Shared AI framework, domain-aware configuration |
-| `Captain::Document` | Yes | Shared AI knowledge layer | Generic docs | Medical knowledge docs | Construction knowledge docs | Use for domain knowledge before building special AI stores |
-| `Captain::CustomTool` | Yes | Shared AI action layer | Generic tools | Medical-safe action tools | Construction-safe action tools | Account-scoped action surface for Captain |
-| `CopilotThread` | Yes | Shared AI collaboration layer | Operator copilot | Medical operator copilot | Construction operator copilot | Reuse for internal AI help flows |
-| `Deal` | Not yet | Future shared CRM | Needed | Needed | Needed | Should be introduced as shared entity, not per-domain clone |
-| `Task` | Not yet | Future shared CRM | Needed | Needed | Needed | Separate from `Deal` |
-| `Activity` | Partial via existing timeline/events | Future shared CRM | Needed | Needed | Needed | Normalize later as shared CRM timeline layer |
+## Ссылка на сущность
 
-## What Is Already Shared
+| Сущность | Что это собой представляет | Подключено к |
+| --- | --- | --- |
+| `Account` | Workspace / арендатор | Все остальное в продукте |
+| `User` + `AccountUser` | Человек-оператор внутри workspace | Команды, inbox-очереди, диалоги, сделки, задачи, встречи |
+| `Team` | Оперативная группа | Пользователи, диалоги, сделки, задачи |
+| `Inbox` | Канал или поворот | Контакты, беседы, задания, идеи |
+| `Contact` | Запись клиента на уровне человека | Диалоги, сделки, встречи, заметки |
+| `Company` | Запись клиентов на уровне организации | Контакты, Товары, встречи |
+| `Conversation` | Нить связи | Inbox, контакты, сообщения, заметки, метки, Captain |
+| `Message` | Единое коммуникационное мероприятие | Разговор |
+| `Deal` | Коммерческая или конвейерная запись | Воронка, сцена, компания, контакты, задачи, беседа |
+| `Task` | Следующий рабочий элемент | Статус, правопреемник, сделка, разговор |
+| `Appointment` | Запланированное сервисное мероприятие | Ресурс, услуги, контакт, компания, разговор, платежи |
+| `Captain::Assistant` | Настроен помощник AI | Документы, inbox-очереди, сценарии, ответы |
+| `Captain::Document` | AI источник знаний | Ассистент |
+| `Integrations::Hook` | Подключенная внешняя система | Аккаунт или inbox |
+| `Portal` / `Article` | Знания portal и содержание | Аккаунт, категории, папки, статьи |
 
-These should already be treated as common platform primitives:
+## Как читать модель
 
-- `Account`
-- `User`
-- `AccountUser`
-- `Inbox`
-- `Conversation`
-- `Company`
-- `Contact`
-- `Note`
-- `Label`
-- `CustomAttributeDefinition`
-- `Team`
-- `Macro`
-- `AutomationRule`
-- `Integrations::App`
-- `Integrations::Hook`
-- `Captain`
+### Общение — это центр
 
-## What Should Be Domain-Specific
+Диалоги и сообщения — это живой оперативный поток. Они подключились к тому же контакту и контексту workspace, которые использовали CRM, планирование, автоматизацию и AI.
 
-Domain-specific behavior should usually mean:
+### CRM внедрить структурированный коммерческий контекст
 
-- field packs
-- validation rules
-- workflow rules
-- UI sections and screens
-- reporting views
-- Captain documents, prompts, scenarios, and tools
+Сделки и задачи относятся к одной и той же клиентской базе:
 
-Not:
+- передача через воронки и этапы
+- задачи отслеживают выполнение и контролируют выполнение
+- настраиваемые поля расширяют модель там, где это необходимо.
 
-- a second workspace model
-- a second person model
-- a second organization model
-- a second messaging model
+### Планирование включения контекста выполнение службы
 
-## Near-Term Build Order
+Встречи связывают операции с реальными услугами:
 
-1. attach domain profile or config to `Account`
-2. treat `Company` and `Contact` as mandatory shared CRM primitives
-3. use notes, labels, and current custom attributes for early domain variance
-4. use teams, macros, automation rules, integrations, and Captain as native extension points
-5. add shared CRM entities such as `Deal`, `Task`, and later `Activity`
-6. add domain-only entities only when the shared primitives stop matching the real business lifecycle
+- кто предоставляет услугу
+- какая услуга заказана
+- какому клиенту он принадлежит
+- что заплатили
+
+### Captain использует общее состояние
+
+Captain является самым важным, поскольку он может использовать и те же операционные объекты вместо работы с изолированным текстом подсказки.
+
+## Типичные случаи использования
+
+### Единая временная шкала для клиентов
+
+- показывает цепочку коммуникации
+- контакт и компания указывают личность
+- сделки, задачи и встречи включают в себя рабочее состояние
+
+### Передача продаж с доставкой
+
+- лид начинается в разговоре
+- разрабатывает разработки и задачи команды
+- тот же клиент позже включается в поток обслуживания
+
+### Настраиваемые данные клиента
+
+- стандартные поля остаются первоклассными
+- переменные требования, специфичные для клиента, обрабатываются с помощью настраиваемых полей и полей определений.

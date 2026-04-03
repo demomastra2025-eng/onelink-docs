@@ -1,0 +1,64 @@
+---
+title: Internal Testing And Tooling
+description: Internal guide to the main One Link engineering tools, test layers, and local development commands.
+---
+
+# Internal Testing And Tooling
+
+## Main Tooling
+
+The repo uses:
+
+- Rails and Bundler
+- pnpm
+- Vite
+- Vitest
+- Histoire
+- ESLint
+- Rubocop
+- Husky
+- Foreman and Overmind
+
+## Frontend Tooling
+
+From `package.json` and `vite.config.mts`, the current frontend workflow includes:
+
+- `pnpm test` for Vitest
+- `pnpm story:dev` for Histoire
+- `pnpm eslint` and `pnpm eslint:fix`
+- SDK build through `BUILD_MODE=library vite build`
+
+## Backend Tooling
+
+The backend test and lint stack includes:
+
+- RSpec in `spec/`
+- Rubocop
+- migration-driven schema maintenance
+
+## Local Runtime Commands
+
+The repo includes dev commands such as:
+
+- `pnpm dev`
+- `pnpm dev:lite`
+- `pnpm start:dev`
+- `pnpm start:test`
+
+## Testing Strategy By Layer
+
+| Layer | Main tool |
+| --- | --- |
+| Backend models, services, requests | RSpec |
+| Frontend logic and components | Vitest |
+| Component development and visual exploration | Histoire |
+| Static quality checks | ESLint and Rubocop |
+
+## Internal Rule
+
+Use the narrowest verification that matches the changed surface:
+
+- model and service specs for backend logic
+- request specs for contract changes
+- Vitest for UI logic
+- Histoire when shared component behavior needs inspection

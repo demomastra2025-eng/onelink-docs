@@ -1,140 +1,126 @@
 ---
-title: CRM Architecture
-description: Current CRM-adjacent implementation and target shared CRM direction for Onelink.
-sidebarTitle: CRM Architecture
+title: CRM и гибкая структура данных
+description: Как One Link Cloud организует клиентские записи, воронки, задачи и настраиваемые поля без продуктовых форков по доменам.
+sidebarTitle: CRM и данные
 ---
 
-# CRM Architecture
+# CRM и гибкая структура данных
 
-## Status
+В One Link Cloud CRM встроена в основной продукт и работает поверх общей модели данных.
 
-- document type: current state plus target direction
-- source of truth for current implementation: code
-- source of truth for future shape: planning direction
+Базовые сущности:
 
-## Current Implemented State
+- контакт
+- компания
+- сделка
+- воронка и этап
+- задача
+- кастомные поля
 
-The current codebase does not yet implement a full shared CRM engine.
+Платформа не делится на отдельные доменные CRM. Различия закрываются конфигурацией и структурой данных.
 
-What exists today:
+One Link Cloud имеет базовую модель CRM, встроенную в основной продукт. Он предназначен для работы с различными клиентскими процессами без разделения платформы на среду выполнения домена.
 
-- `Contact` as the person-level record
-- `Company` as the organization-level record
-- `Note` for internal contact notes
-- `Label` for lightweight classification
-- `CustomAttributeDefinition` plus JSONB values for `Contact` and `Conversation`
-- conversation history, search, reporting, and help center around the support platform
-
-What does not yet exist as first-class shared CRM runtime entities:
-
-- `Deal`
-- `Task`
-- `Pipeline`
-- `Stage`
-- normalized `Activity`
-
-## Current CRM-Adjacent Model
+## CRM Структура
 
 ```mermaid
 flowchart LR
-    A[Account] --> B[Contact]
-    A --> C[Company]
-    B --> D[Conversation]
-    B --> E[Note]
-    B --> F[Labels]
-    B --> G[Custom Attributes]
-    D --> H[Messages]
-    C --> B
+    A[Контакт] --> C[Диалог]
+    B[Компания] --> A
+    B --> D[Иметь дело]
+    D --> E[Воронка]
+    D --> F[Этап]
+    D --> G[Задача]
+    C --> D
+    C --> G
 ```
 
-## Core Principle
+## Что реализовано
 
-- build one shared CRM engine, not separate CRM products for each vertical
-- keep current support-platform primitives reusable while CRM grows
-- treat target CRM entities as roadmap until implemented in code
+### Записи клиентов
 
-## Target Shared CRM Model
+- `Contact` для записей на уровне человека.
+- `Company` для записей на уровне организации.
+- `Note` и `Label` для рабочего контекста.
 
-Onelink should implement one shared CRM engine on top of the current person, organization, and communication layers.
+### Отслеживание продаж и процессов
 
-## Shared CRM Model
+- `Crm::Pipeline` и `Crm::Stage`
+- `Crm::Deal`
+- `Crm::TaskStatus`
+- `Crm::Task`
 
-```mermaid
-flowchart LR
-    A[CRM Core] --> B[Deal]
-    A --> C[Task]
-    A --> D[Pipeline]
-    A --> E[Stage]
-    A --> F[Activity]
-    A --> G[Labels]
-    A --> H[Permissions]
-    A --> I[Custom Attributes]
-```
+### Гибкие данные
 
-## Domain Extension Model
+- `CustomAttributeDefinition` для контактов и разговора
+- `Crm::FieldDefinition` для сделок на полях, задач и встреч.
 
-```mermaid
-flowchart TD
-    A[CRM Core] --> B[Generic Profile]
-    A --> C[Healthcare Profile]
-    A --> D[Construction Profile]
+## Логика проектирования данных
 
-    C --> E[Medical fields]
-    C --> F[Medical workflows]
-    C --> G[Medical screens]
+Платформа использует четкое разделение между стабильным бизнес-состоянием и настраиваемыми метаданными:
 
-    D --> H[Project fields]
-    D --> I[Construction workflows]
-    D --> J[Construction screens]
-```
+- Основные поля жизненного процесса остаются в полях и аналогичны первоклассной модели.
+- изменчивость, зависящая от клиента или процесса, учитывается в определениях полей и значений JSONB.
 
-## Entity Guidance
+Это позволяет нам адаптировать продукт, не преобразовывая данные модели в копию.
 
-### Shared Core Entities
+## Почему это важно
 
-Current shared CRM-adjacent entities:
+### Контакты и компании остаются общими
 
-- `Contact`
-- `Company`
-- `Note`
-- `Label`
-- `CustomAttributeDefinition`
+Один и тот же идентификатор клиента может использоваться:
 
-Planned shared CRM entities:
+- Связь inbox
+- сделка и задание
+- встречи
+- воспринимать
+- контекст Captain
 
-- `Deal`
-- `Task`
-- `Pipeline`
-- `Stage`
-- `Activity`
+### Сделки и задачи видимые
 
-`Deal` and `Task` should remain separate business entities because they have different lifecycle, reporting, permissions, and UX when CRM work is implemented.
+Сделки и задачи, но не произошло:
 
-### Custom Attributes
+- сделка отслеживает коммерческий прогресс
+- задача отслеживает работу по выполнению
 
-Use custom attributes for:
+Это обеспечивает понятность рабочего процесса для операторов и надежность отчетности.
 
-- domain-specific fields
-- tenant-specific fields
-- experimental or configurable fields
+### Пользовательские поля находятся под контролем
 
-Do not use custom attributes to replace:
+Продукт опор гибкие поля, но не заменяет основную бизнес-модель:
 
-- core relationships
-- ownership
-- primary status/state
-- pipeline and stage logic
+- контакты и диалоги используют пользовательские определения атрибутов
+- сделки, задачи и встречи по определению управляемых месторождений.
+- встроенные поля остаются зарезервированными и защищенными
 
-## Design Rule
+## Варианты использования
 
-- stable shared business state => first-class model fields and associations
-- variable domain/tenant metadata => custom attributes
+### Квалификация ведущего
 
-## Recommended Build Order
+- в разговоре появляется новый контакт
+- производит разработку в правильном воронке
+- изменения этапов отражают коммерческий прогресс
 
-1. keep reusing `Contact`, `Company`, `Conversation`, `Note`, `Label`, and `CustomAttributeDefinition`
-2. add shared CRM entities only when the lifecycle is stable across multiple domains
-3. keep `Deal` and `Task` separate when they are introduced
-4. add domain-specific screens, workflows, and validations only after the shared entity model is clear
+### Структурировано после следующего наблюдения
 
-For delivery sequencing, use [Implementation Roadmap](/platform/implementation-roadmap).
+- задачи прохождения для владельцев или команды
+- Статусы задач показывают незавершенную работу, состояние выполнения и состояние архива.
+- может противостоять обвинению в сделке или разговоре
+
+### Модель данных, специфичная для клиента
+
+- одному клиенту нужны дополнительные поля для соответствия
+- нужные поля коммерческого подсчета или ввода
+- оба по-прежнему используют одни и те же продукты с одинаковыми свойствами
+
+## Модель персонализации
+
+One Link Cloud не создает индивидуальный CRM для каждой отрасли. Поведение, ориентированное на клиента, должно осуществляться следующим образом:
+
+- определение полей
+- обязательные поля
+- правила автоматизации
+- контекст Captain
+- воспринимать
+
+Это позволяет сохранить общий источник CRM, каждый из которых workspace формирует свою собственную операционную модель.

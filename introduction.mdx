@@ -1,79 +1,92 @@
 ---
-title: Welcome to OneLink Docs
-description: Central documentation hub for the OneLink product, platform architecture, domain profiles, and APIs.
-sidebarTitle: Introduction
+title: Документация One Link Cloud
+description: Публичная документация One Link Cloud: коммуникации, CRM, расписание, Captain AI, интеграции и API.
+sidebarTitle: Введение
 ---
 
+# One Link Cloud
 
-## What You'll Find Here
+One Link Cloud — это единое облачное рабочее пространство для клиентских коммуникаций и операционной работы.
 
-<CardGroup cols={2}>
-  <Card
-    title="Platform Architecture"
-    icon="sitemap"
-    href="/platform/current-architecture"
-  >
-    Understand how OneLink is evolving from its upstream base into a shared platform with isolated domain zones
-  </Card>
-  <Card
-    title="Domain Profiles"
-    icon="blocks"
-    href="/domains/overview"
-  >
-    Explore how generic, healthcare, and construction profiles fit into the shared platform
-  </Card>
-  <Card
-    title="API Reference"
-    icon="square-terminal"
-    href="/api-reference/introduction"
-  >
-    Explore the APIs that power accounts, agents, conversations, contacts, and integrations
-  </Card>
-  <Card
-    title="Platform Overview"
-    icon="folder-tree"
-    href="/platform/overview"
-  >
-    See the current shape of the platform, its layers, and the direction of the OneLink fork
-  </Card>
-</CardGroup>
+В одном продукте объединены:
 
-## Getting Started Paths
+- каналы и inbox-очереди
+- CRM и гибкие поля
+- расписание, записи и оплаты
+- Captain AI
+- автоматизация и интеграции
 
-Choose your path based on what you want to accomplish:
+One Link Cloud объединяет коммуникации, CRM, расписание, оплаты, AI и интеграции внутри одного общего workspace.
 
-### I want to understand the OneLink direction
-Start with the [Platform Overview](/platform/overview) and [Current Architecture](/platform/current-architecture) documents. They capture:
-- the current shape of the shared platform
-- the inherited account-scoped communication model
-- the planned split between shared platform logic and domain zones like healthcare and construction
-- the CRM and domain direction around shared entities and domain-specific behavior
+## Карта продукта
 
-### I want to build integrations or extend APIs
-Use the [API Reference](/api-reference/introduction) for:
-- application APIs
-- platform APIs
-- client APIs
-- integration-facing implementation patterns
+```mermaid
+flowchart LR
+    A[Workspace] --> B[Каналы и Inbox-очереди]
+    A --> C[CRM]
+    A --> D[Планирование]
+    A --> E[Captain AI]
+    A --> F[Интеграции и автоматизация]
+    B --> G[Диалоги]
+    C --> H[Сделки и задачи]
+    D --> I[Назначения и оплата]
+    E --> G
+    E --> H
+    E --> I
+    F --> G
+    F --> H
+    F --> I
+```
 
-## What OneLink Is
+## Что вы можете сделать в One Link Cloud
 
-OneLink is a product fork built on top of an existing omnichannel support platform. The goal is not only to rebrand the upstream product, but to evolve it into a shared platform that can support:
+- получать запросы клиентов из нескольких каналов в одном workspace
+- организовывать общение по inbox-очередям, командам, исполнителям и приоритетам
+- управлять контактами, компаниями, сделками, задачами и пользовательскими данными
+- планировать встречи, ресурсы, услуги и платежи
+- использовать Captain AI для подсказок, copilot, сводок и управляемых сценариев
+- подключать внешние системы через интеграции, webhooks, автоматизации и API
 
-- shared support and CRM capabilities
-- white-label branding and product-specific workflows
-- isolated domain zones such as healthcare and construction
-- controlled divergence from upstream while preserving the ability to receive upstream updates
+## Основной принцип
 
-## Documentation Principles
+One Link Cloud использует одно общее функциональное ядро, а поведение конкретного клиента определяется через:
 
-This docs folder should increasingly reflect OneLink itself:
+- доступ и настройки workspace
+- определения полей и кастомные поля
+- автоматизации и macros
+- интеграции и webhooks
+- Captain assistants, tools и knowledge
 
-- keep inherited operational docs where they still apply
-- add OneLink-specific architecture and product direction first
-- document where the fork intentionally diverges from upstream
-- prefer OneLink terminology and workflow over generic upstream wording for active development docs
+## Типичные случаи использования
 
----
+### Служба поддержки клиентов
 
-Use the platform, domain, and API sections as the primary entry points in this interface.
+- маршрутизировать сообщения с сайта, мессенджеров и email в один workspace
+- распределять работу между агентами и командами
+- закрывать диалоги с полным контекстом клиента
+
+### Управление продажами и лидами
+
+- превращать диалоги в структурированную CRM-работу
+- вести сделки по воронке и этапам
+- управлять задачами, сроками, владельцами и последующими действиями
+
+### Услуги доставки
+
+- оформлять записи и встречи
+- связывать их с клиентами и историей диалогов
+- учитывать предоплаты, расчёты и операционные платежи
+
+### AI-операции
+
+- использовать assistants для первой линии
+- использовать copilot для операторов
+- использовать documents, knowledge, scenarios и tools для управляемого выполнения
+
+## Начните здесь
+
+- [Обзор платформы](/platform/overview)
+- [Ключевые сущности](/platform/entity-matrix)
+- [Рабочее пространство и доступ](/platform/workspace-and-access)
+- [Коммуникационные процессы](/platform/communication-workflows)
+- [Справочник API One Link Cloud](/api-reference/introduction)

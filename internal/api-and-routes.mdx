@@ -1,0 +1,79 @@
+---
+title: Internal API And Routes
+description: Internal documentation for route topology and major API surfaces in One Link Cloud.
+---
+
+# Internal API And Routes
+
+## Route Topology
+
+The main route graph is defined in `config/routes.rb` and is built around several major surfaces:
+
+- dashboard frontend shell
+- account-scoped API
+- widget/client API
+- public portal routes
+- platform and auth routes
+- callback and external webhook routes
+
+## Account-Scoped API
+
+The dominant internal API surface is:
+
+- `api/v1/accounts/:account_id/...`
+
+This includes modules for:
+
+- agents
+- captain
+- automation rules
+- macros
+- scheduling
+- CRM
+- conversations
+- contacts
+- companies
+- inboxes
+- integrations
+- portals and articles
+
+## Client-Facing API
+
+The widget/client surface lives under:
+
+- `api/v1/widget/...`
+
+It handles:
+
+- client conversations
+- client messages
+- widget config
+- contact updates
+- direct uploads
+
+## Public Knowledge Routes
+
+Portal content is exposed through public `hc/:slug/...` routes for help center access.
+
+## Callback And Integration Routes
+
+The app includes dedicated routes for external systems such as:
+
+- webhooks
+- twilio
+- instagram
+- whatsapp
+- microsoft
+- linear
+- notion
+- shopify
+
+## Internal Rule For Feature Discovery
+
+To trace a runtime feature:
+
+1. locate the route in `config/routes.rb`
+2. inspect controller namespace
+3. inspect policy
+4. inspect model and service layer
+5. inspect dashboard route and API client

@@ -1,0 +1,130 @@
+---
+title: Internal Data Model And Database
+description: Internal database conventions, table groups, JSONB usage, entity scoping, and schema design rules.
+---
+
+# Internal Data Model And Database
+
+## Database Shape
+
+The application uses a relational schema with first-class tables for stable business entities and JSONB only for controlled variability.
+
+`db/schema.rb` is the current schema reference and `db/migrate/` shows the evolution of major subsystems such as Captain, scheduling, CRM, and assignment policies.
+
+## Main Design Rules
+
+1. Stable business lifecycle belongs in real tables and columns.
+2. Tenant-specific or flexible fields belong in controlled JSONB attribute containers.
+3. `account_id` is the default tenant boundary across runtime entities.
+4. Indexes are added for active list dimensions, uniqueness, and JSONB search where needed.
+
+## Table Families
+
+### Workspace And Access
+
+- `accounts`
+- `users`
+- `account_users`
+- `teams`
+- `team_members`
+- `inboxes`
+- `inbox_members`
+
+### Communication
+
+- `contacts`
+- `contact_inboxes`
+- `conversations`
+- `messages`
+- `notes`
+- `labels`
+
+### CRM
+
+- `companies`
+- `crm_pipelines`
+- `crm_stages`
+- `crm_deals`
+- `crm_tasks`
+- `crm_task_statuses`
+- `crm_field_definitions`
+- `crm_comments`
+- `crm_events`
+
+### Scheduling
+
+- `scheduling_resources`
+- `scheduling_services`
+- `scheduling_service_prices`
+- `scheduling_appointments`
+- `scheduling_payments`
+- `scheduling_expenses`
+- `scheduling_work_rules`
+- `scheduling_break_rules`
+- `scheduling_holidays`
+- `scheduling_workday_overrides`
+- `scheduling_time_offs`
+
+### AI
+
+- `captain_assistants`
+- `captain_documents`
+- `captain_assistant_responses`
+- `captain_scenarios`
+- `captain_custom_tools`
+- `copilot_threads`
+- `copilot_messages`
+
+### Knowledge And Reporting
+
+- `portals`
+- `categories`
+- `folders`
+- `articles`
+- reporting and SLA-related tables
+
+## JSONB Conventions
+
+The codebase uses JSONB intentionally in several places:
+
+| Field pattern | Typical purpose |
+| --- | --- |
+| `custom_attributes` | Flexible business metadata attached to an entity |
+| `additional_attributes` | System or integration metadata |
+| `settings` | Account or subsystem settings |
+| `internal_attributes` | Internal account-level metadata |
+| `config` / `metadata` / `rules` / `options` | Structured subsystem configuration |
+
+## Flexible Field Systems
+
+There are two field-definition models in the current runtime:
+
+### Legacy Custom Attributes
+
+- `CustomAttributeDefinition`
+- used for `Contact` and `Conversation`
+
+### Managed Runtime Field Definitions
+
+- `Crm::FieldDefinition`
+- used for `deal`, `task`, and `appointment`
+
+This split matters when extending the data model or designing filters, automations, and UI rendering.
+
+## Schema Evolution Signals
+
+Migration history shows the current development direction:
+
+- Captain and copilot
+- companies
+- scheduling
+- CRM foundation and runtime
+- assignment and capacity policies
+- knowledge portal refinements
+
+## Internal Rules For Schema Changes
+
+1. Prefer a first-class table when the lifecycle is stable and relational.
+2. Prefer JSONB only when the shape is tenant-specific or extensible.
+3. Add indexes for active list surfaces and high-volume filters early.
+4. Keep account-scoped uniqueness explicit in DB constraints where practical.

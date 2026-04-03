@@ -1,0 +1,77 @@
+---
+title: Internal Engineering Principles
+description: Internal implementation rules and architectural principles for extending One Link Cloud safely.
+---
+
+# Internal Engineering Principles
+
+## Core Principles
+
+### One Shared Product Core
+
+The product should be extended as one shared platform. Customer differences should be expressed through configuration, permissions, custom fields, automations, integrations, and AI behavior.
+
+### Account-Scoped First
+
+Every new feature should start by answering:
+
+- which account owns the data
+- how account isolation is enforced
+- which related records must belong to the same account
+
+### Native Entities Before New Abstractions
+
+Before adding new tables or models, check whether the lifecycle already fits:
+
+- contact
+- company
+- conversation
+- inbox
+- deal
+- task
+- appointment
+- portal
+- captain entities
+
+### First-Class Tables For Stable Lifecycle
+
+Use proper relational tables and associations when the entity has:
+
+- lifecycle
+- ownership
+- permissions
+- reporting requirements
+- non-trivial relations
+
+### JSONB For Controlled Variability
+
+Use JSONB only for:
+
+- tenant-specific fields
+- controlled metadata
+- subsystem configuration
+
+Do not use JSONB to hide stable business state.
+
+### Event-Driven Side Effects
+
+If a state change should notify several subsystems, prefer dispatcher/listener/job fan-out over embedding everything directly into one controller action.
+
+### Configuration Over Customer Forking
+
+When a customer requests new behavior, first consider:
+
+- field definitions
+- labels
+- teams and inboxes
+- automation rules
+- integrations
+- Captain assistants, scenarios, and tools
+
+## Frontend Principle
+
+The frontend is incrementally modernized. Prefer extending the shared design and route model instead of creating isolated parallel UI stacks.
+
+## Documentation Principle
+
+Public docs should describe the product as customers experience it. Internal docs should explain code reality, runtime boundaries, and extension rules without leaking customer-facing confusion into the product narrative.

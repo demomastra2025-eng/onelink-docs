@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.4",
   "info": {
-    "title": "Onelink",
-    "description": "This is the API documentation for the Onelink server.",
+    "title": "API One Link Cloud",
+    "description": "Документация API сервера One Link Cloud.",
     "version": "1.1.0",
     "termsOfService": "https://one-link.kz",
     "contact": {
@@ -30,8 +30,8 @@
           "Account"
         ],
         "operationId": "get-account-details",
-        "summary": "Get account details",
-        "description": "Get the details of the current account",
+        "summary": "Получить детали аккаунта",
+        "description": "Получить детали объекта",
         "security": [
           {
             "userApiKey": []
@@ -80,8 +80,8 @@
           "Account"
         ],
         "operationId": "update-account",
-        "summary": "Update account",
-        "description": "Update account details, settings, and custom attributes",
+        "summary": "Обновить аккаунт",
+        "description": "Обновить объект",
         "security": [
           {
             "userApiKey": []
@@ -162,8 +162,8 @@
           "Scheduling"
         ],
         "operationId": "get-scheduling-calendar",
-        "summary": "Get scheduling calendar payload",
-        "description": "Returns the native scheduling payload used by day, week, month, and list calendar views.",
+        "summary": "Получить payload календаря расписания",
+        "description": "Возвращает данные",
         "security": [
           {
             "userApiKey": []
@@ -769,7 +769,7 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-resources",
-        "summary": "List scheduling resources",
+        "summary": "Список ресурсов расписания",
         "security": [
           {
             "userApiKey": []
@@ -906,7 +906,7 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-resource",
-        "summary": "Create a scheduling resource",
+        "summary": "Создать ресурс расписания",
         "security": [
           {
             "userApiKey": []
@@ -1135,7 +1135,7 @@
           "Scheduling"
         ],
         "operationId": "get-scheduling-resource",
-        "summary": "Get a scheduling resource",
+        "summary": "Получить ресурс расписания",
         "security": [
           {
             "userApiKey": []
@@ -1294,7 +1294,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-resource",
-        "summary": "Update a scheduling resource",
+        "summary": "Обновить ресурс расписания",
         "security": [
           {
             "userApiKey": []
@@ -1548,7 +1548,7 @@
           "Scheduling"
         ],
         "operationId": "delete-scheduling-resource",
-        "summary": "Delete a scheduling resource",
+        "summary": "Удалить ресурс расписания",
         "security": [
           {
             "userApiKey": []
@@ -1666,7 +1666,7 @@
           "Scheduling"
         ],
         "operationId": "get-scheduling-work-rules",
-        "summary": "Get weekly work rules for a resource",
+        "summary": "Получить недельные правила работы для ресурса",
         "security": [
           {
             "userApiKey": []
@@ -1772,7 +1772,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-work-rules",
-        "summary": "Replace weekly work rules for a resource",
+        "summary": "Заменить недельные правила работы для ресурса",
         "security": [
           {
             "userApiKey": []
@@ -1973,7 +1973,7 @@
           "Scheduling"
         ],
         "operationId": "get-scheduling-break-rules",
-        "summary": "Get weekly break rules for a resource",
+        "summary": "Получить недельные правила перерывов для ресурса",
         "security": [
           {
             "userApiKey": []
@@ -2083,7 +2083,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-break-rules",
-        "summary": "Replace weekly break rules for a resource",
+        "summary": "Заменить недельные правила перерывов для ресурса",
         "security": [
           {
             "userApiKey": []
@@ -2283,7 +2283,7 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-contacts",
-        "summary": "Search scheduling contacts",
+        "summary": "Поиск scheduling-контактов",
         "security": [
           {
             "userApiKey": []
@@ -2421,7 +2421,7 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-contact",
-        "summary": "Create or enrich a scheduling contact",
+        "summary": "Создать или обогатить scheduling-контакт",
         "security": [
           {
             "userApiKey": []
@@ -2633,7 +2633,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-contact",
-        "summary": "Update a scheduling contact",
+        "summary": "Обновить scheduling-контакт",
         "security": [
           {
             "userApiKey": []
@@ -2879,7 +2879,7 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-services",
-        "summary": "List scheduling services and per-resource prices",
+        "summary": "Список услуг расписания и цен по ресурсам",
         "security": [
           {
             "userApiKey": []
@@ -3036,7 +3036,7 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-service",
-        "summary": "Create a scheduling service",
+        "summary": "Создать услугу расписания",
         "security": [
           {
             "userApiKey": []
@@ -3301,7 +3301,7 @@
           "Scheduling"
         ],
         "operationId": "get-scheduling-service",
-        "summary": "Get a scheduling service",
+        "summary": "Получить услугу расписания",
         "security": [
           {
             "userApiKey": []
@@ -3480,7 +3480,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-service",
-        "summary": "Update a scheduling service",
+        "summary": "Обновить услугу расписания",
         "security": [
           {
             "userApiKey": []
@@ -3768,7 +3768,7 @@
           "Scheduling"
         ],
         "operationId": "delete-scheduling-service",
-        "summary": "Delete a scheduling service",
+        "summary": "Удалить услугу расписания",
         "security": [
           {
             "userApiKey": []
@@ -3878,7 +3878,7 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-appointments",
-        "summary": "List appointments",
+        "summary": "Список записей",
         "security": [
           {
             "userApiKey": []
@@ -4123,8 +4123,8 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-appointment",
-        "summary": "Create a scheduling appointment",
-        "description": "Supports true idempotency via `idempotency_key`. Replaying the same key returns the existing appointment with HTTP 200.",
+        "summary": "Создать запись расписания",
+        "description": "Поддерживается указанный режим работы",
         "security": [
           {
             "userApiKey": []
@@ -4662,7 +4662,7 @@
           "Scheduling"
         ],
         "operationId": "get-scheduling-appointment",
-        "summary": "Get a scheduling appointment",
+        "summary": "Получить запись расписания",
         "security": [
           {
             "userApiKey": []
@@ -4900,7 +4900,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-appointment",
-        "summary": "Update a scheduling appointment",
+        "summary": "Обновить запись расписания",
         "security": [
           {
             "userApiKey": []
@@ -5333,7 +5333,7 @@
           "Scheduling"
         ],
         "operationId": "cancel-scheduling-appointment",
-        "summary": "Cancel a scheduling appointment",
+        "summary": "Отменить запись расписания",
         "security": [
           {
             "userApiKey": []
@@ -5586,7 +5586,7 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-appointment-payment",
-        "summary": "Record a payment on an appointment",
+        "summary": "Зафиксировать оплату по записи",
         "security": [
           {
             "userApiKey": []
@@ -5900,7 +5900,7 @@
           "Scheduling"
         ],
         "operationId": "cancel-scheduling-appointment-payments",
-        "summary": "Cancel all appointment payments",
+        "summary": "Отменить все оплаты записи",
         "security": [
           {
             "userApiKey": []
@@ -6188,8 +6188,8 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-payments",
-        "summary": "List payment journal entries",
-        "description": "Requires `scheduling_finance` and admin access.",
+        "summary": "Список проводок журнала оплат",
+        "description": "Требуются соответствующие права и условия",
         "security": [
           {
             "userApiKey": []
@@ -6339,8 +6339,8 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-expenses",
-        "summary": "List resource expenses and payouts",
-        "description": "Requires `scheduling_finance` and admin access.",
+        "summary": "Список расходов и выплат по ресурсам",
+        "description": "Требуются соответствующие права и условия",
         "security": [
           {
             "userApiKey": []
@@ -6497,8 +6497,8 @@
           "Scheduling"
         ],
         "operationId": "pay-scheduling-expense",
-        "summary": "Mark a single resource expense as paid",
-        "description": "Requires `scheduling_finance` and admin access.",
+        "summary": "Отметить расход ресурса как оплаченный",
+        "description": "Требуются соответствующие права и условия",
         "security": [
           {
             "userApiKey": []
@@ -6647,8 +6647,8 @@
           "Scheduling"
         ],
         "operationId": "pay-all-scheduling-expenses",
-        "summary": "Pay all filtered unpaid expenses",
-        "description": "Requires `scheduling_finance` and admin access.",
+        "summary": "Оплатить все отфильтрованные неоплаченные расходы",
+        "description": "Требуются соответствующие права и условия",
         "security": [
           {
             "userApiKey": []
@@ -6788,7 +6788,7 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-holidays",
-        "summary": "List holidays",
+        "summary": "Список праздничных дней",
         "security": [
           {
             "userApiKey": []
@@ -6903,7 +6903,7 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-holiday",
-        "summary": "Create a holiday",
+        "summary": "Создать праздничный день",
         "security": [
           {
             "userApiKey": []
@@ -7088,7 +7088,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-holiday",
-        "summary": "Update a holiday",
+        "summary": "Обновить праздничный день",
         "security": [
           {
             "userApiKey": []
@@ -7298,7 +7298,7 @@
           "Scheduling"
         ],
         "operationId": "delete-scheduling-holiday",
-        "summary": "Delete a holiday",
+        "summary": "Удалить праздничный день",
         "security": [
           {
             "userApiKey": []
@@ -7408,7 +7408,7 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-workday-overrides",
-        "summary": "List workday overrides",
+        "summary": "Список переопределений рабочего дня",
         "security": [
           {
             "userApiKey": []
@@ -7551,7 +7551,7 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-workday-override",
-        "summary": "Create a workday override",
+        "summary": "Создать переопределение рабочего дня",
         "security": [
           {
             "userApiKey": []
@@ -7759,7 +7759,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-workday-override",
-        "summary": "Update a workday override",
+        "summary": "Обновить переопределение рабочего дня",
         "security": [
           {
             "userApiKey": []
@@ -7990,7 +7990,7 @@
           "Scheduling"
         ],
         "operationId": "delete-scheduling-workday-override",
-        "summary": "Delete a workday override",
+        "summary": "Удалить переопределение рабочего дня",
         "security": [
           {
             "userApiKey": []
@@ -8100,7 +8100,7 @@
           "Scheduling"
         ],
         "operationId": "list-scheduling-time-offs",
-        "summary": "List time off entries",
+        "summary": "Список записей об отсутствии",
         "security": [
           {
             "userApiKey": []
@@ -8241,7 +8241,7 @@
           "Scheduling"
         ],
         "operationId": "create-scheduling-time-off",
-        "summary": "Create a time off entry",
+        "summary": "Создать запись об отсутствии",
         "security": [
           {
             "userApiKey": []
@@ -8444,7 +8444,7 @@
           "Scheduling"
         ],
         "operationId": "update-scheduling-time-off",
-        "summary": "Update a time off entry",
+        "summary": "Обновить запись об отсутствии",
         "security": [
           {
             "userApiKey": []
@@ -8671,7 +8671,7 @@
           "Scheduling"
         ],
         "operationId": "delete-scheduling-time-off",
-        "summary": "Delete a time off entry",
+        "summary": "Удалить запись об отсутствии",
         "security": [
           {
             "userApiKey": []
@@ -8781,7 +8781,7 @@
           "Audit Logs"
         ],
         "operationId": "get-account-audit-logs",
-        "summary": "List Audit Logs in Account",
+        "summary": "Список audit logs аккаунта",
         "description": "Get Details of Audit Log entries for an Account. This endpoint is only available in Enterprise editions and requires the audit_logs feature to be enabled.",
         "security": [
           {
@@ -8869,8 +8869,8 @@
           "Account AgentBots"
         ],
         "operationId": "list-all-account-agent-bots",
-        "summary": "List all AgentBots",
-        "description": "List all agent bots available for the current account",
+        "summary": "Список всех AgentBots",
+        "description": "Получить список записей",
         "security": [
           {
             "userApiKey": []
@@ -8908,8 +8908,8 @@
           "Account AgentBots"
         ],
         "operationId": "create-an-account-agent-bot",
-        "summary": "Create an Agent Bot",
-        "description": "Create an agent bot in the account",
+        "summary": "Создать Agent Bot",
+        "description": "Создать объект",
         "security": [
           {
             "userApiKey": []
@@ -8963,8 +8963,8 @@
           "Account AgentBots"
         ],
         "operationId": "get-details-of-a-single-account-agent-bot",
-        "summary": "Get an agent bot details",
-        "description": "Get the details of an agent bot in the account",
+        "summary": "Получить детали agent bot",
+        "description": "Получить детали объекта",
         "security": [
           {
             "userApiKey": []
@@ -9008,8 +9008,8 @@
           "Account AgentBots"
         ],
         "operationId": "update-an-account-agent-bot",
-        "summary": "Update an agent bot",
-        "description": "Update an agent bot's attributes",
+        "summary": "Обновить agent bot",
+        "description": "Обновить атрибуты agent bot",
         "security": [
           {
             "userApiKey": []
@@ -9053,8 +9053,8 @@
           "Account AgentBots"
         ],
         "operationId": "delete-an-account-agent-bot",
-        "summary": "Delete an AgentBot",
-        "description": "Delete an AgentBot from the account",
+        "summary": "Удалить AgentBot",
+        "description": "Удалить объект",
         "security": [
           {
             "userApiKey": []
@@ -9098,7 +9098,7 @@
           "Agents"
         ],
         "operationId": "get-account-agents",
-        "summary": "List Agents in Account",
+        "summary": "Список агентов в аккаунте",
         "description": "Get Details of Agents in an Account",
         "security": [
           {
@@ -9137,8 +9137,8 @@
           "Agents"
         ],
         "operationId": "add-new-agent-to-account",
-        "summary": "Add a New Agent",
-        "description": "Add a new Agent to Account",
+        "summary": "Добавить нового агента",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -9189,8 +9189,8 @@
           "Agents"
         ],
         "operationId": "update-agent-in-account",
-        "summary": "Update Agent in Account",
-        "description": "Update an Agent in Account",
+        "summary": "Обновить агента в аккаунте",
+        "description": "Обновить объект",
         "security": [
           {
             "userApiKey": []
@@ -9255,8 +9255,8 @@
           "Agents"
         ],
         "operationId": "delete-agent-from-account",
-        "summary": "Remove an Agent from Account",
-        "description": "Remove an Agent from Account",
+        "summary": "Удалить агента из аккаунта",
+        "description": "Удалить агента из аккаунта",
         "security": [
           {
             "userApiKey": []
@@ -9311,7 +9311,7 @@
           "Canned Responses"
         ],
         "operationId": "get-account-canned-response",
-        "summary": "List all Canned Responses in an Account",
+        "summary": "Список всех шаблонов ответов в аккаунте",
         "description": "Get Details of Canned Responses in an Account",
         "security": [
           {
@@ -9350,8 +9350,8 @@
           "Canned Responses"
         ],
         "operationId": "add-new-canned-response-to-account",
-        "summary": "Add a New Canned Response",
-        "description": "Add a new Canned Response to Account",
+        "summary": "Добавить новый шаблон ответа",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -9402,8 +9402,8 @@
           "Canned Responses"
         ],
         "operationId": "update-canned-response-in-account",
-        "summary": "Update Canned Response in Account",
-        "description": "Update a Canned Response in Account",
+        "summary": "Обновить шаблон ответа в аккаунте",
+        "description": "Обновить объект",
         "security": [
           {
             "userApiKey": []
@@ -9468,8 +9468,8 @@
           "Canned Responses"
         ],
         "operationId": "delete-canned-response-from-account",
-        "summary": "Remove a Canned Response from Account",
-        "description": "Remove a Canned Response from Account",
+        "summary": "Удалить шаблон ответа из аккаунта",
+        "description": "Удалить шаблон ответа из аккаунта",
         "security": [
           {
             "userApiKey": []
@@ -9524,7 +9524,7 @@
           "Custom Attributes"
         ],
         "operationId": "get-account-custom-attribute",
-        "summary": "List all custom attributes in an account",
+        "summary": "Список всех кастомных атрибутов в аккаунте",
         "parameters": [
           {
             "name": "attribute_model",
@@ -9578,8 +9578,8 @@
           "Custom Attributes"
         ],
         "operationId": "add-new-custom-attribute-to-account",
-        "summary": "Add a new custom attribute",
-        "description": "Add a new custom attribute to account",
+        "summary": "Добавить новый кастомный атрибут",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -9639,13 +9639,13 @@
           "Custom Attributes"
         ],
         "operationId": "get-details-of-a-single-custom-attribute",
-        "summary": "Get a custom attribute details",
+        "summary": "Получить детали кастомного атрибута",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Get the details of a custom attribute in the account",
+        "description": "Получить детали объекта",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -9698,8 +9698,8 @@
           "Custom Attributes"
         ],
         "operationId": "update-custom-attribute-in-account",
-        "summary": "Update custom attribute in Account",
-        "description": "Update a custom attribute in account",
+        "summary": "Обновить кастомный атрибут в аккаунте",
+        "description": "Обновить объект",
         "security": [
           {
             "userApiKey": []
@@ -9764,8 +9764,8 @@
           "Custom Attributes"
         ],
         "operationId": "delete-custom-attribute-from-account",
-        "summary": "Remove a custom attribute from account",
-        "description": "Remove a custom attribute from account",
+        "summary": "Удалить кастомный атрибут из аккаунта",
+        "description": "Удалить кастомный атрибут из аккаунта",
         "security": [
           {
             "userApiKey": []
@@ -9819,7 +9819,7 @@
         ],
         "operationId": "contactList",
         "description": "Listing all the resolved contacts with pagination (Page size = 15). Resolved contacts are the ones with a value for identifier, email or phone number",
-        "summary": "List Contacts",
+        "summary": "Список контактов",
         "security": [
           {
             "userApiKey": []
@@ -9864,8 +9864,8 @@
           "Contacts"
         ],
         "operationId": "contactCreate",
-        "description": "Create a new Contact",
-        "summary": "Create Contact",
+        "description": "Создать объект",
+        "summary": "Создать контакт",
         "security": [
           {
             "userApiKey": []
@@ -9930,7 +9930,7 @@
           "Contacts"
         ],
         "operationId": "contactDetails",
-        "summary": "Show Contact",
+        "summary": "Показать контакт",
         "security": [
           {
             "userApiKey": []
@@ -9975,13 +9975,13 @@
           "Contacts"
         ],
         "operationId": "contactUpdate",
-        "summary": "Update Contact",
+        "summary": "Обновить контакт",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Update a contact belonging to the account using ID",
+        "description": "Обновить объект",
         "requestBody": {
           "required": true,
           "content": {
@@ -10030,13 +10030,13 @@
           "Contacts"
         ],
         "operationId": "contactDelete",
-        "summary": "Delete Contact",
+        "summary": "Удалить контакт",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Delete a contact belonging to the account using ID",
+        "description": "Удалить объект",
         "responses": {
           "200": {
             "description": "Success"
@@ -10084,7 +10084,7 @@
           "Contacts"
         ],
         "operationId": "contactConversations",
-        "summary": "Contact Conversations",
+        "summary": "Диалоги контакта",
         "description": "Get conversations associated with that contact",
         "parameters": [
           {
@@ -10156,7 +10156,7 @@
           "Contact Labels"
         ],
         "operationId": "list-all-labels-of-a-contact",
-        "summary": "List Labels",
+        "summary": "Список меток",
         "description": "Lists all the labels of a contact",
         "security": [
           {
@@ -10201,8 +10201,8 @@
           "Contact Labels"
         ],
         "operationId": "contact-add-labels",
-        "summary": "Add Labels",
-        "description": "Add labels to a contact. Note that this API would overwrite the existing list of labels associated to the conversation.",
+        "summary": "Добавить метки",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -10274,8 +10274,8 @@
           "Contacts"
         ],
         "operationId": "contactSearch",
-        "description": "Search the resolved contacts using a search key, currently supports email search (Page size = 15). Resolved contacts are the ones with a value for identifier, email or phone number",
-        "summary": "Search Contacts",
+        "description": "Выполнить поиск",
+        "summary": "Поиск контактов",
         "security": [
           {
             "userApiKey": []
@@ -10291,7 +10291,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Search using contact `name`, `identifier`, `email` or `phone number`"
+            "description": "Выполнить поиск"
           },
           {
             "$ref": "#/components/parameters/contact_sort_param"
@@ -10331,7 +10331,7 @@
         ],
         "operationId": "contactFilter",
         "description": "Filter contacts with custom filter options and pagination",
-        "summary": "Contact Filter",
+        "summary": "Фильтр контактов",
         "security": [
           {
             "userApiKey": []
@@ -10446,8 +10446,8 @@
           "Contacts"
         ],
         "operationId": "contactInboxCreation",
-        "description": "Create a contact inbox record for an inbox",
-        "summary": "Create contact inbox",
+        "description": "Создать объект",
+        "summary": "Создать contact inbox",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -10532,7 +10532,7 @@
         ],
         "operationId": "contactableInboxesGet",
         "description": "Get List of contactable Inboxes",
-        "summary": "Get Contactable Inboxes",
+        "summary": "Получить доступные inbox-очереди для контакта",
         "security": [
           {
             "userApiKey": []
@@ -10597,7 +10597,7 @@
           "Contacts"
         ],
         "operationId": "contactMerge",
-        "summary": "Merge Contacts",
+        "summary": "Объединить контакты",
         "security": [
           {
             "userApiKey": []
@@ -10685,7 +10685,7 @@
           "Automation Rule"
         ],
         "operationId": "get-account-automation-rule",
-        "summary": "List all automation rules in an account",
+        "summary": "Список всех правил автоматизации в аккаунте",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -10728,8 +10728,8 @@
           "Automation Rule"
         ],
         "operationId": "add-new-automation-rule-to-account",
-        "summary": "Add a new automation rule",
-        "description": "Add a new automation rule to account",
+        "summary": "Добавить новое правило автоматизации",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -10789,8 +10789,8 @@
           "Automation Rule"
         ],
         "operationId": "get-details-of-a-single-automation-rule",
-        "summary": "Get a automation rule details",
-        "description": "Get the details of a automation rule in the account",
+        "summary": "Получить детали правила автоматизации",
+        "description": "Получить детали объекта",
         "security": [
           {
             "userApiKey": []
@@ -10882,8 +10882,8 @@
           "Automation Rule"
         ],
         "operationId": "update-automation-rule-in-account",
-        "summary": "Update automation rule in Account",
-        "description": "Update a automation rule in account",
+        "summary": "Обновить правило автоматизации в аккаунте",
+        "description": "Обновить объект",
         "security": [
           {
             "userApiKey": []
@@ -10948,8 +10948,8 @@
           "Automation Rule"
         ],
         "operationId": "delete-automation-rule-from-account",
-        "summary": "Remove a automation rule from account",
-        "description": "Remove a automation rule from account",
+        "summary": "Удалить правило автоматизации из аккаунта",
+        "description": "Удалить правило автоматизации из аккаунта",
         "security": [
           {
             "userApiKey": []
@@ -11004,8 +11004,8 @@
           "Help Center"
         ],
         "operationId": "add-new-portal-to-account",
-        "summary": "Add a new portal",
-        "description": "Add a new portal to account",
+        "summary": "Добавить новый портал",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -11049,7 +11049,7 @@
           "Help Center"
         ],
         "operationId": "get-portal",
-        "summary": "List all portals in an account",
+        "summary": "Список всех порталов в аккаунте",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -11148,8 +11148,8 @@
           "Help Center"
         ],
         "operationId": "update-portal-to-account",
-        "summary": "Update a portal",
-        "description": "Update a portal to account",
+        "summary": "Обновить портал",
+        "description": "Обновить объект",
         "security": [
           {
             "userApiKey": []
@@ -11280,8 +11280,8 @@
           "Help Center"
         ],
         "operationId": "add-new-category-to-account",
-        "summary": "Add a new category",
-        "description": "Add a new category to portal",
+        "summary": "Добавить новую категорию",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -11335,8 +11335,8 @@
           "Help Center"
         ],
         "operationId": "add-new-article-to-account",
-        "summary": "Add a new article",
-        "description": "Add a new article to portal",
+        "summary": "Добавить новую статью",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -11388,7 +11388,7 @@
         ],
         "operationId": "conversationListMeta",
         "description": "Get open, unassigned and all Conversation counts",
-        "summary": "Get Conversation Counts",
+        "summary": "Получить счётчики диалогов",
         "security": [
           {
             "userApiKey": []
@@ -11498,8 +11498,8 @@
           "Conversations"
         ],
         "operationId": "conversationList",
-        "description": "List all the conversations with pagination",
-        "summary": "Conversations List",
+        "description": "Получить список записей",
+        "summary": "Список диалогов",
         "security": [
           {
             "userApiKey": []
@@ -11607,7 +11607,7 @@
           "Conversations"
         ],
         "operationId": "newConversation",
-        "summary": "Create New Conversation",
+        "summary": "Создать новый диалог",
         "description": "Creating a conversation in Onelink requires a source id. \n\n Learn more about source_id: https://one-link.kz/hc/user-guide/articles/1677839703-how-to-create-an-api-channel-inbox#send-messages-to-the-api-channel",
         "security": [
           {
@@ -11677,7 +11677,7 @@
         ],
         "operationId": "conversationFilter",
         "description": "Filter conversations with custom filter options and pagination",
-        "summary": "Conversations Filter",
+        "summary": "Фильтр диалогов",
         "security": [
           {
             "userApiKey": []
@@ -11797,7 +11797,7 @@
           "Conversations"
         ],
         "operationId": "get-details-of-a-conversation",
-        "summary": "Conversation Details",
+        "summary": "Детали диалога",
         "security": [
           {
             "userApiKey": []
@@ -11842,8 +11842,8 @@
           "Conversations"
         ],
         "operationId": "update-conversation",
-        "summary": "Update Conversation",
-        "description": "Update Conversation Attributes",
+        "summary": "Обновить диалог",
+        "description": "Обновить объект",
         "security": [
           {
             "userApiKey": []
@@ -11922,8 +11922,8 @@
           "Conversations"
         ],
         "operationId": "toggle-status-of-a-conversation",
-        "summary": "Toggle Status",
-        "description": "Toggle the status of a conversation. Pass `status` to explicitly set the\nconversation state. Use `snoozed` along with `snoozed_until` to snooze a\nconversation until a specific time. If `snoozed_until` is omitted, the\nconversation is snoozed until the next reply from the contact. Regardless\nof the value provided, snoozed conversations always reopen on the next\nreply from the contact.",
+        "summary": "Переключить статус",
+        "description": "Переключить состояние",
         "security": [
           {
             "userApiKey": []
@@ -12036,7 +12036,7 @@
           "Conversations"
         ],
         "operationId": "toggle-priority-of-a-conversation",
-        "summary": "Toggle Priority",
+        "summary": "Переключить приоритет",
         "description": "Toggles the priority of conversation",
         "security": [
           {
@@ -12114,7 +12114,7 @@
           "Conversations"
         ],
         "operationId": "update-custom-attributes-of-a-conversation",
-        "summary": "Update Custom Attributes",
+        "summary": "Обновить кастомные атрибуты",
         "description": "Updates the custom attributes of a conversation",
         "security": [
           {
@@ -12198,8 +12198,8 @@
           "Conversation Assignments"
         ],
         "operationId": "assign-a-conversation",
-        "summary": "Assign Conversation",
-        "description": "Assign a conversation to an agent or a team",
+        "summary": "Назначить диалог",
+        "description": "Назначить объект",
         "security": [
           {
             "userApiKey": []
@@ -12278,7 +12278,7 @@
           "Conversations"
         ],
         "operationId": "list-all-labels-of-a-conversation",
-        "summary": "List Labels",
+        "summary": "Список меток",
         "security": [
           {
             "userApiKey": []
@@ -12323,13 +12323,13 @@
           "Conversations"
         ],
         "operationId": "conversation-add-labels",
-        "summary": "Add Labels",
+        "summary": "Добавить метки",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Add labels to a conversation. Note that this API would overwrite the existing list of labels associated to the conversation.",
+        "description": "Добавить объект",
         "requestBody": {
           "required": true,
           "content": {
@@ -12404,7 +12404,7 @@
           "Conversations"
         ],
         "operationId": "get-conversation-reporting-events",
-        "summary": "Conversation Reporting Events",
+        "summary": "События отчётности по диалогу",
         "security": [
           {
             "userApiKey": []
@@ -12455,8 +12455,8 @@
           "Inboxes"
         ],
         "operationId": "listAllInboxes",
-        "summary": "List all inboxes",
-        "description": "List all inboxes available in the current account",
+        "summary": "Список всех inbox-очередей",
+        "description": "Получить список записей",
         "security": [
           {
             "userApiKey": []
@@ -12516,7 +12516,7 @@
           "Inboxes"
         ],
         "operationId": "GetInbox",
-        "summary": "Get an inbox",
+        "summary": "Получить inbox",
         "security": [
           {
             "userApiKey": []
@@ -12577,8 +12577,8 @@
           "Inboxes"
         ],
         "operationId": "inboxCreation",
-        "summary": "Create an inbox",
-        "description": "You can create more than one website inbox in each account",
+        "summary": "Создать inbox",
+        "description": "Можно использовать этот сценарий",
         "security": [
           {
             "userApiKey": []
@@ -12639,13 +12639,13 @@
           "Inboxes"
         ],
         "operationId": "updateInbox",
-        "summary": "Update Inbox",
+        "summary": "Обновить inbox",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Update an existing inbox",
+        "description": "Обновить объект",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -12710,7 +12710,7 @@
           "Inboxes"
         ],
         "operationId": "getInboxAgentBot",
-        "summary": "Show Inbox Agent Bot",
+        "summary": "Показать agent bot inbox-очереди",
         "description": "See if an agent bot is associated to the Inbox",
         "security": [
           {
@@ -12771,7 +12771,7 @@
           "Inboxes"
         ],
         "operationId": "updateAgentBot",
-        "summary": "Add or remove agent bot",
+        "summary": "Привязать или отвязать agent bot",
         "security": [
           {
             "userApiKey": []
@@ -12853,7 +12853,7 @@
           "Inboxes"
         ],
         "operationId": "get-inbox-members",
-        "summary": "List Agents in Inbox",
+        "summary": "Список агентов в inbox-очереди",
         "description": "Get Details of Agents in an Inbox",
         "security": [
           {
@@ -12919,8 +12919,8 @@
           "Inboxes"
         ],
         "operationId": "add-new-agent-to-inbox",
-        "summary": "Add a New Agent",
-        "description": "Add a new Agent to Inbox",
+        "summary": "Добавить нового агента",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -13014,7 +13014,7 @@
           "Inboxes"
         ],
         "operationId": "update-agents-in-inbox",
-        "summary": "Update Agents in Inbox",
+        "summary": "Обновить агентов в inbox-очереди",
         "description": "All agents except the one passed in params will be removed",
         "security": [
           {
@@ -13109,8 +13109,8 @@
           "Inboxes"
         ],
         "operationId": "delete-agent-in-inbox",
-        "summary": "Remove an Agent from Inbox",
-        "description": "Remove an Agent from Inbox",
+        "summary": "Удалить агента из inbox-очереди",
+        "description": "Удалить агента из inbox-очереди",
         "security": [
           {
             "userApiKey": []
@@ -13194,13 +13194,13 @@
           "Messages"
         ],
         "operationId": "list-all-messages",
-        "summary": "Get messages",
+        "summary": "Получить сообщения",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "List all messages of a conversation",
+        "description": "Получить список записей",
         "responses": {
           "200": {
             "description": "Success",
@@ -13276,8 +13276,8 @@
           "Messages"
         ],
         "operationId": "create-a-new-message-in-a-conversation",
-        "summary": "Create New Message",
-        "description": "Create a new message in the conversation.\n\n## WhatsApp Template Messages\n\nFor WhatsApp channels, you can send structured template messages using the `template_params` field. \nTemplates must be pre-approved in WhatsApp Business Manager.\n\n### Example Templates\n\n**Text with Image Header:**\n```json\n{\n  \"content\": \"Hi your order 121212 is confirmed. Please wait for further updates\",\n  \"template_params\": {\n    \"name\": \"order_confirmation\",\n    \"category\": \"MARKETING\",\n    \"language\": \"en\",\n    \"processed_params\": {\n      \"body\": {\n        \"1\": \"121212\"\n      },\n      \"header\": {\n        \"media_url\": \"https://picsum.photos/200/300\",\n        \"media_type\": \"image\"\n      }\n    }\n  }\n}\n```\n\n**Text with Copy Code Button:**\n```json\n{\n  \"content\": \"Special offer! Get 30% off your next purchase. Use the code below\",\n  \"template_params\": {\n    \"name\": \"discount_coupon\",\n    \"category\": \"MARKETING\",\n    \"language\": \"en\",\n    \"processed_params\": {\n      \"body\": {\n        \"discount_percentage\": \"30\"\n      },\n      \"buttons\": [{\n        \"type\": \"copy_code\",\n        \"parameter\": \"SAVE20\"\n      }]\n    }\n  }\n}\n```\n",
+        "summary": "Создать новое сообщение",
+        "description": "Создать объект",
         "security": [
           {
             "userApiKey": []
@@ -13354,13 +13354,13 @@
           "Messages"
         ],
         "operationId": "delete-a-message",
-        "summary": "Delete a message",
+        "summary": "Удалить сообщение",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Delete a message and it's attachments from the conversation.",
+        "description": "Удалить объект",
         "responses": {
           "200": {
             "description": "Success"
@@ -13399,13 +13399,13 @@
           "Integrations"
         ],
         "operationId": "get-details-of-all-integrations",
-        "summary": "List all the Integrations",
+        "summary": "Список всех интеграций",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Get the details of all Integrations available for the account",
+        "description": "Получить детали объекта",
         "responses": {
           "200": {
             "description": "Success",
@@ -13455,8 +13455,8 @@
           "Integrations"
         ],
         "operationId": "create-an-integration-hook",
-        "summary": "Create an integration hook",
-        "description": "Create an integration hook",
+        "summary": "Создать integration hook",
+        "description": "Создать integration hook",
         "security": [
           {
             "userApiKey": []
@@ -13507,8 +13507,8 @@
           "Integrations"
         ],
         "operationId": "update-an-integrations-hook",
-        "summary": "Update an Integration Hook",
-        "description": "Update an Integration Hook",
+        "summary": "Обновить Integration Hook",
+        "description": "Обновить Integration Hook",
         "security": [
           {
             "userApiKey": []
@@ -13560,8 +13560,8 @@
           "Integrations"
         ],
         "operationId": "delete-an-integration-hook",
-        "summary": "Delete an Integration Hook",
-        "description": "Delete an Integration Hook",
+        "summary": "Удалить Integration Hook",
+        "description": "Удалить Integration Hook",
         "security": [
           {
             "userApiKey": []
@@ -13608,7 +13608,7 @@
           "Profile"
         ],
         "operationId": "fetchProfile",
-        "summary": "Fetch user profile",
+        "summary": "Получить профиль пользователя",
         "description": "Get the user profile details",
         "security": [
           {
@@ -13650,13 +13650,13 @@
           "Teams"
         ],
         "operationId": "list-all-teams",
-        "summary": "List all teams",
+        "summary": "Список всех команд",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "List all teams available in the current account",
+        "description": "Получить список записей",
         "responses": {
           "200": {
             "description": "Success",
@@ -13689,13 +13689,13 @@
           "Teams"
         ],
         "operationId": "create-a-team",
-        "summary": "Create a team",
+        "summary": "Создать команду",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Create a team in the account",
+        "description": "Создать объект",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -13749,13 +13749,13 @@
           "Teams"
         ],
         "operationId": "get-details-of-a-single-team",
-        "summary": "Get a team details",
+        "summary": "Получить детали команды",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Get the details of a team in the account",
+        "description": "Получить детали объекта",
         "responses": {
           "200": {
             "description": "Success",
@@ -13794,13 +13794,13 @@
           "Teams"
         ],
         "operationId": "update-a-team",
-        "summary": "Update a team",
+        "summary": "Обновить команду",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Update a team's attributes",
+        "description": "Обновить объект",
         "requestBody": {
           "required": true,
           "content": {
@@ -13839,13 +13839,13 @@
           "Teams"
         ],
         "operationId": "delete-a-team",
-        "summary": "Delete a team",
+        "summary": "Удалить команду",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Delete a team from the account",
+        "description": "Удалить объект",
         "responses": {
           "200": {
             "description": "Success"
@@ -13887,7 +13887,7 @@
           "Teams"
         ],
         "operationId": "get-team-members",
-        "summary": "List Agents in Team",
+        "summary": "Список агентов в команде",
         "description": "Get Details of Agents in an Team",
         "security": [
           {
@@ -13944,8 +13944,8 @@
           "Teams"
         ],
         "operationId": "add-new-agent-to-team",
-        "summary": "Add a New Agent",
-        "description": "Add a new Agent to Team",
+        "summary": "Добавить нового агента",
+        "description": "Добавить объект",
         "security": [
           {
             "userApiKey": []
@@ -14028,7 +14028,7 @@
           "Teams"
         ],
         "operationId": "update-agents-in-team",
-        "summary": "Update Agents in Team",
+        "summary": "Обновить агентов в команде",
         "description": "All agents except the one passed in params will be removed",
         "security": [
           {
@@ -14112,8 +14112,8 @@
           "Teams"
         ],
         "operationId": "delete-agent-in-team",
-        "summary": "Remove an Agent from Team",
-        "description": "Remove an Agent from Team",
+        "summary": "Удалить агента из команды",
+        "description": "Удалить агента из команды",
         "security": [
           {
             "userApiKey": []
@@ -14203,8 +14203,8 @@
           "Custom Filters"
         ],
         "operationId": "list-all-filters",
-        "summary": "List all custom filters",
-        "description": "List all custom filters in a category of a user",
+        "summary": "Список всех пользовательских фильтров",
+        "description": "Получить список записей",
         "security": [
           {
             "userApiKey": []
@@ -14242,8 +14242,8 @@
           "Custom Filters"
         ],
         "operationId": "create-a-custom-filter",
-        "summary": "Create a custom filter",
-        "description": "Create a custom filter in the account",
+        "summary": "Создать пользовательский фильтр",
+        "description": "Создать объект",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -14302,8 +14302,8 @@
           "Custom Filters"
         ],
         "operationId": "get-details-of-a-single-custom-filter",
-        "summary": "Get a custom filter details",
-        "description": "Get the details of a custom filter in the account",
+        "summary": "Получить детали пользовательского фильтра",
+        "description": "Получить детали объекта",
         "security": [
           {
             "userApiKey": []
@@ -14347,13 +14347,13 @@
           "Custom Filters"
         ],
         "operationId": "update-a-custom-filter",
-        "summary": "Update a custom filter",
+        "summary": "Обновить пользовательский фильтр",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Update a custom filter's attributes",
+        "description": "Обновить объект",
         "requestBody": {
           "required": true,
           "content": {
@@ -14392,13 +14392,13 @@
           "Custom Filters"
         ],
         "operationId": "delete-a-custom-filter",
-        "summary": "Delete a custom filter",
+        "summary": "Удалить пользовательский фильтр",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Delete a custom filter from the account",
+        "description": "Удалить объект",
         "responses": {
           "200": {
             "description": "Success"
@@ -14437,13 +14437,13 @@
           "Webhooks"
         ],
         "operationId": "list-all-webhooks",
-        "summary": "List all webhooks",
+        "summary": "Список всех webhook-ов",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "List all webhooks in the account",
+        "description": "Получить список записей",
         "responses": {
           "200": {
             "description": "Success",
@@ -14476,13 +14476,13 @@
           "Webhooks"
         ],
         "operationId": "create-a-webhook",
-        "summary": "Add a webhook",
+        "summary": "Добавить webhook",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Add a webhook subscription to the account",
+        "description": "Добавить объект",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -14536,13 +14536,13 @@
           "Webhooks"
         ],
         "operationId": "update-a-webhook",
-        "summary": "Update a webhook object",
+        "summary": "Обновить объект webhook",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Update a webhook object in the account",
+        "description": "Обновить объект",
         "parameters": [
           {
             "$ref": "#/components/parameters/account_id"
@@ -14586,13 +14586,13 @@
           "Webhooks"
         ],
         "operationId": "delete-a-webhook",
-        "summary": "Delete a webhook",
+        "summary": "Удалить webhook",
         "security": [
           {
             "userApiKey": []
           }
         ],
-        "description": "Delete a webhook from the account",
+        "description": "Удалить объект",
         "responses": {
           "200": {
             "description": "Success"
@@ -14631,7 +14631,7 @@
           "Reports"
         ],
         "operationId": "get-account-reporting-events",
-        "summary": "Account Reporting Events",
+        "summary": "События отчётности по аккаунту",
         "security": [
           {
             "userApiKey": []
@@ -14748,7 +14748,7 @@
           "Reports"
         ],
         "operationId": "list-all-conversation-statistics",
-        "summary": "Get Account reports",
+        "summary": "Получить отчёты аккаунта",
         "security": [
           {
             "userApiKey": []
@@ -14839,7 +14839,7 @@
           "Reports"
         ],
         "operationId": "list-all-conversation-statistics-summary",
-        "summary": "Get Account reports summary",
+        "summary": "Получить сводку отчётов аккаунта",
         "security": [
           {
             "userApiKey": []
@@ -14903,7 +14903,7 @@
           "Reports"
         ],
         "operationId": "get-account-conversation-metrics",
-        "summary": "Account Conversation Metrics",
+        "summary": "Метрики диалогов по аккаунту",
         "security": [
           {
             "userApiKey": []
@@ -14987,7 +14987,7 @@
           "Reports"
         ],
         "operationId": "get-agent-conversation-metrics",
-        "summary": "Agent Conversation Metrics",
+        "summary": "Метрики диалогов по агенту",
         "security": [
           {
             "userApiKey": []
@@ -15059,7 +15059,7 @@
           "Reports"
         ],
         "operationId": "get-channel-summary-report",
-        "summary": "Get conversation statistics grouped by channel type",
+        "summary": "Получить статистику диалогов по типам каналов",
         "security": [
           {
             "userApiKey": []
@@ -15135,7 +15135,7 @@
           "Reports"
         ],
         "operationId": "get-inbox-summary-report",
-        "summary": "Get conversation statistics grouped by inbox",
+        "summary": "Получить статистику диалогов по inbox-очередям",
         "security": [
           {
             "userApiKey": []
@@ -15201,7 +15201,7 @@
           "Reports"
         ],
         "operationId": "get-agent-summary-report",
-        "summary": "Get conversation statistics grouped by agent",
+        "summary": "Получить статистику диалогов по агентам",
         "security": [
           {
             "userApiKey": []
@@ -15267,7 +15267,7 @@
           "Reports"
         ],
         "operationId": "get-team-summary-report",
-        "summary": "Get conversation statistics grouped by team",
+        "summary": "Получить статистику диалогов по командам",
         "security": [
           {
             "userApiKey": []
@@ -15325,7 +15325,7 @@
           "Reports"
         ],
         "operationId": "get-first-response-time-distribution",
-        "summary": "Get first response time distribution by channel",
+        "summary": "Получить распределение времени первого ответа по каналам",
         "security": [
           {
             "userApiKey": []
@@ -15405,7 +15405,7 @@
           "Reports"
         ],
         "operationId": "get-inbox-label-matrix",
-        "summary": "Get inbox-label matrix report",
+        "summary": "Получить матрицу inbox-очередей и меток",
         "security": [
           {
             "userApiKey": []
@@ -15463,7 +15463,7 @@
           "Reports"
         ],
         "operationId": "get-outgoing-messages-count",
-        "summary": "Get outgoing messages count grouped by entity",
+        "summary": "Получить количество исходящих сообщений по сущностям",
         "security": [
           {
             "userApiKey": []
@@ -20598,102 +20598,102 @@
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token can be obtained by visiting the profile page or via rails console. Provides access to  endpoints based on the user permissions levels. This token can be saved by an external system when user is created via API, to perform activities on behalf of the user."
+        "description": "Токен пользователя для доступа к API в рамках его прав. Обычно передаётся внешней системе после создания пользователя через API."
       },
       "agentBotApiKey": {
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token should be provided by system admin or obtained via rails console. This token can be used to build bot integrations and can only access limited apis."
+        "description": "Токен агент-бота для ограниченного набора API и bot-интеграций."
       },
       "platformAppApiKey": {
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token can be obtained by the system admin after creating a platformApp. This token should be used to provision agent bots, accounts, users and their roles."
+        "description": "Платформенный токен для provisioning аккаунтов, пользователей и agent bots."
       }
     }
   },
   "tags": [
     {
-      "name": "Account AgentBots",
-      "description": "Account-specific Agent Bots"
+      "name": "AgentBots аккаунта",
+      "description": "Боты-агенты, привязанные к аккаунту"
     },
     {
-      "name": "Agents",
-      "description": "Agent management APIs"
+      "name": "Агенты",
+      "description": "API для управления агентами"
     },
     {
-      "name": "Canned Responses",
-      "description": "Pre-defined responses for common queries"
+      "name": "Шаблоны ответов",
+      "description": "Преднастроенные ответы для типовых запросов"
     },
     {
-      "name": "Contacts",
-      "description": "Contact management APIs"
+      "name": "Контакты",
+      "description": "API для управления контактами"
     },
     {
-      "name": "Contact Labels",
-      "description": "Manage contact labels"
+      "name": "Метки контактов",
+      "description": "Управление метками контактов"
     },
     {
-      "name": "Conversation Assignments",
-      "description": "Manage conversation assignments"
+      "name": "Назначения диалогов",
+      "description": "Управление назначениями диалогов"
     },
     {
-      "name": "Conversation Labels",
-      "description": "Manage conversation labels"
+      "name": "Метки диалогов",
+      "description": "Управление метками диалогов"
     },
     {
-      "name": "Conversations",
-      "description": "Conversation management APIs"
+      "name": "Диалоги",
+      "description": "API для управления диалогами"
     },
     {
-      "name": "Custom Attributes",
-      "description": "Custom fields for contacts and conversations"
+      "name": "Кастомные атрибуты",
+      "description": "Кастомные поля для контактов и диалогов"
     },
     {
-      "name": "Custom Filters",
-      "description": "Saved filters for conversations"
+      "name": "Пользовательские фильтры",
+      "description": "Сохранённые фильтры для диалогов"
     },
     {
-      "name": "Inboxes",
-      "description": "Communication channels setup"
+      "name": "Inbox-очереди",
+      "description": "Настройка каналов коммуникации"
     },
     {
-      "name": "Integrations",
-      "description": "Third-party integrations"
+      "name": "Интеграции",
+      "description": "Сторонние интеграции"
     },
     {
-      "name": "Messages",
-      "description": "Message management APIs"
+      "name": "Сообщения",
+      "description": "API для управления сообщениями"
     },
     {
-      "name": "Profile",
-      "description": "User profile APIs"
+      "name": "Профиль",
+      "description": "API профиля пользователя"
     },
     {
-      "name": "Reports",
-      "description": "Analytics and reporting APIs"
+      "name": "Отчёты",
+      "description": "API аналитики и отчётности"
     },
     {
-      "name": "Scheduling",
-      "description": "Scheduling, appointment, and kassa APIs"
+      "name": "Расписание",
+      "description": "API расписания, записей и кассы"
     },
     {
-      "name": "Teams",
-      "description": "Team management APIs"
+      "name": "Команды",
+      "description": "API для управления командами"
     },
     {
       "name": "Webhooks",
-      "description": "Event notification webhooks"
+      "description": "Webhooks для уведомлений о событиях"
     },
     {
-      "name": "Automation Rule",
-      "description": "Workflow automation rules"
+      "name": "Правила автоматизации",
+      "description": "Правила автоматизации рабочих процессов"
     },
     {
-      "name": "Help Center",
-      "description": "Knowledge base management"
+      "name": "База знаний",
+      "description": "Управление knowledge base"
     }
   ],
   "x-tagGroups": [

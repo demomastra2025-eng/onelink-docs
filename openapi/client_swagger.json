@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.4",
   "info": {
-    "title": "Onelink",
-    "description": "This is the API documentation for the Onelink server.",
+    "title": "API One Link Cloud",
+    "description": "Документация API сервера One Link Cloud.",
     "version": "1.1.0",
     "termsOfService": "https://one-link.kz",
     "contact": {
@@ -30,8 +30,8 @@
           "Contacts API"
         ],
         "operationId": "create-a-contact",
-        "summary": "Create a contact",
-        "description": "Create a contact",
+        "summary": "Создать контакт",
+        "description": "Создать контакт",
         "security": [],
         "requestBody": {
           "required": true,
@@ -81,8 +81,8 @@
           "Contacts API"
         ],
         "operationId": "get-details-of-a-contact",
-        "summary": "Get a contact",
-        "description": "Get the details of a contact",
+        "summary": "Получить контакт",
+        "description": "Получить детали контакта",
         "security": [],
         "responses": {
           "200": {
@@ -122,8 +122,8 @@
           "Contacts API"
         ],
         "operationId": "update-a-contact",
-        "summary": "Update a contact",
-        "description": "Update a contact's attributes",
+        "summary": "Обновить контакт",
+        "description": "Обновить атрибуты контакта",
         "security": [],
         "requestBody": {
           "required": true,
@@ -173,8 +173,8 @@
           "Conversations API"
         ],
         "operationId": "create-a-conversation",
-        "summary": "Create a conversation",
-        "description": "Create a conversation",
+        "summary": "Создать диалог",
+        "description": "Создать диалог",
         "security": [],
         "requestBody": {
           "required": true,
@@ -214,8 +214,8 @@
           "Conversations API"
         ],
         "operationId": "list-all-contact-conversations",
-        "summary": "List all conversations",
-        "description": "List all conversations for the contact",
+        "summary": "Список всех диалогов",
+        "description": "Получить список всех диалогов контакта",
         "security": [],
         "responses": {
           "200": {
@@ -262,8 +262,8 @@
           "Conversations API"
         ],
         "operationId": "get-single-conversation",
-        "summary": "Get a single conversation",
-        "description": "Retrieves the details of a specific conversation",
+        "summary": "Получить один диалог",
+        "description": "Получить детали конкретного диалога",
         "security": [],
         "responses": {
           "200": {
@@ -316,8 +316,8 @@
           "Conversations API"
         ],
         "operationId": "resolve-conversation",
-        "summary": "Resolve a conversation",
-        "description": "Marks a conversation as resolved",
+        "summary": "Закрыть диалог",
+        "description": "Пометить диалог как закрытый",
         "security": [],
         "responses": {
           "200": {
@@ -370,8 +370,8 @@
           "Conversations API"
         ],
         "operationId": "toggle-typing-status",
-        "summary": "Toggle typing status",
-        "description": "Toggles the typing status in a conversation",
+        "summary": "Переключить статус набора",
+        "description": "Переключить статус набора в диалоге",
         "security": [],
         "parameters": [
           {
@@ -449,8 +449,8 @@
           "Conversations API"
         ],
         "operationId": "update-last-seen",
-        "summary": "Update last seen",
-        "description": "Updates the last seen time of the contact in a conversation",
+        "summary": "Обновить last seen",
+        "description": "Обновить время последнего просмотра контакта в диалоге",
         "security": [],
         "responses": {
           "200": {
@@ -496,8 +496,8 @@
           "Messages API"
         ],
         "operationId": "create-a-message",
-        "summary": "Create a message",
-        "description": "Create a message",
+        "summary": "Создать сообщение",
+        "description": "Создать сообщение",
         "security": [],
         "requestBody": {
           "required": true,
@@ -537,8 +537,8 @@
           "Messages API"
         ],
         "operationId": "list-all-converation-messages",
-        "summary": "List all messages",
-        "description": "List all messages in the conversation",
+        "summary": "Список всех сообщений",
+        "description": "Получить список всех сообщений в диалоге",
         "security": [],
         "responses": {
           "200": {
@@ -588,8 +588,8 @@
           "Messages API"
         ],
         "operationId": "update-a-message",
-        "summary": "Update a message",
-        "description": "Update a message",
+        "summary": "Обновить сообщение",
+        "description": "Обновить сообщение",
         "security": [],
         "requestBody": {
           "required": true,
@@ -5712,34 +5712,34 @@
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token can be obtained by visiting the profile page or via rails console. Provides access to  endpoints based on the user permissions levels. This token can be saved by an external system when user is created via API, to perform activities on behalf of the user."
+        "description": "Токен пользователя для доступа к API в рамках его прав. Обычно передаётся внешней системе после создания пользователя через API."
       },
       "agentBotApiKey": {
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token should be provided by system admin or obtained via rails console. This token can be used to build bot integrations and can only access limited apis."
+        "description": "Токен агент-бота для ограниченного набора API и bot-интеграций."
       },
       "platformAppApiKey": {
         "type": "apiKey",
         "in": "header",
         "name": "api_access_token",
-        "description": "This token can be obtained by the system admin after creating a platformApp. This token should be used to provision agent bots, accounts, users and their roles."
+        "description": "Платформенный токен для provisioning аккаунтов, пользователей и agent bots."
       }
     }
   },
   "tags": [
     {
       "name": "Contacts API",
-      "description": "Public contact APIs"
+      "description": "Публичные API контактов"
     },
     {
       "name": "Conversations API",
-      "description": "Public conversation APIs"
+      "description": "Публичные API диалогов"
     },
     {
       "name": "Messages API",
-      "description": "Public message APIs"
+      "description": "Публичные API сообщений"
     }
   ],
   "x-tagGroups": [
