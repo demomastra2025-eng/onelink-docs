@@ -1,0 +1,602 @@
+---
+title: Captain RubyLLM Runtime Migration
+description: Completed architecture and migration record for replacing ai-agents with a native RubyLLM-based Captain runtime.
+---
+
+# Captain RubyLLM Runtime Migration
+
+## Purpose
+
+This page describes the implemented Captain runtime after removing the `ai-agents` dependency and standardizing the AI stack on `ruby_llm`.
+
+The design must be:
+
+- native to the current One Link Cloud codebase
+- reliable under production load
+- aligned with current Captain, CRM, scheduling, and permissions runtime rules
+- transparent enough that prompts, tools, and context can be inspected and changed deliberately
+- simpler and faster than the current hybrid stack
+
+This page is now both the implementation record and the design reference for the current Captain AI stack.
+
+## Completion Snapshot
+
+The migration is complete at the code level:
+
+- `ai-agents` has been removed from Captain runtime code and from the bundle
+- Captain assistant v2 runs through a native `Captain::Runtime` built on `ruby_llm`
+- the bundled LLM stack is now `ruby_llm 1.14.1` and `ruby_llm-schema 0.3.0`
+- prompts live under `enterprise/lib/captain/prompts`
+- `Captain::PromptRegistry` owns shared file lookup and Liquid rendering for assistant, LLM, task, and snippet-backed prompts
+- the legacy `lib/integrations/openai/openai_prompts` fallback is no longer part of the runtime path
+- shared request execution is funneled through `Llm::ChatClient` and `Llm::ChatRequestRunner`
+- Captain custom tool Liquid templates now use the same strict Captain rendering path as the rest of the AI stack
+- assistant runs now build a scoped `RubyLLM::Context` for account or system provider credentials
+- agent handoffs rebuild a fresh `RubyLLM::Chat`, preventing config bleed between agents
+- restored conversation history now preserves assistant `tool_calls`, tool results, multimodal payloads, and mixed string or symbol keys
+- Copilot persistence now accepts richer runtime metadata required for replay and debugging
+
+Verification completed during the migration:
+
+- targeted Captain and Copilot runtime specs passed under Ruby `3.4.4`
+- the migration verification suite finished with `119 examples, 0 failures`
+
+Latest hardening after the migration:
+
+- assistant context building now preserves tool-call history instead of flattening it away
+- current-agent restoration works with persisted history regardless of symbol-keyed or string-keyed payloads
+- runtime message extraction treats empty multimodal payloads correctly during restore and persistence
+- dedicated specs now cover scoped context injection, fresh-chat handoffs, richer Copilot metadata, and restored agent selection
+
+The remaining work after migration is operational rather than architectural:
+
+- run broader regression coverage when preparing the final merge or release
+- keep monitoring latency, token usage, and tool traces after rollout
+- continue tightening prompts and runtime behavior as product work evolves
+
+## Why This Change Exists
+
+Captain currently mixes two AI runtime models:
+
+- `ruby_llm` for chat execution, tools, schemas, tasks, embeddings, moderation, and several Copilot paths
+- `ai-agents` for multi-agent orchestration, handoffs, run context, and tool wrapping in the customer-facing v2 assistant
+
+That split creates several problems:
+
+- two execution models for one product surface
+- two different tool contracts
+- prompt logic spread across Liquid templates, Ruby string builders, and task prompt files
+- unnecessary coupling between `chatwoot` and the version constraints of `ai-agents`
+- harder upgrades of `ruby_llm`
+- duplicated context and instrumentation logic
+
+The goal is to replace the orchestration pieces of `ai-agents` with a project-native Captain runtime built directly on `ruby_llm`.
+
+## Non-Goals
+
+This migration should not:
+
+- invent a new product model outside existing `Captain::Assistant`, `Captain::Scenario`, `Captain::Document`, `Captain::CustomTool`, and Copilot entities
+- split Captain into a separate service
+- rewrite working domain tools unless the runtime contract requires it
+- break the account-scoped permission and feature model
+- introduce a new prompt DSL unless Liquid is no longer sufficient
+
+## Design Principles
+
+1. Keep Captain attached to current runtime entities.
+   The assistant, scenario, copilot thread, custom tool, and response entities remain the public runtime model.
+
+2. Use one AI foundation.
+   `ruby_llm` becomes the only LLM runtime dependency. Captain-specific orchestration is implemented in-project.
+
+3. Make prompts first-class and inspectable.
+   Prompts should live in files, not large Ruby string builders, and should be rendered through one consistent path.
+
+4. Preserve current behavior before extending it.
+   Handoffs, multimodal input, tool traces, audit logs, and context access rules must survive the migration.
+
+5. Optimize for clear ownership.
+   Domain rules stay in Captain, CRM, scheduling, and policy code. The runtime layer should orchestrate, not absorb business logic.
+
+6. Prefer explicit context over hidden magic.
+   The runtime should pass state, history, and tool context in stable structures that are easy to debug and persist.
+
+## Historical Runtime Split
+
+### Customer-Facing Assistant v2
+
+Today the v2 assistant uses `ai-agents` for:
+
+- `Agents::Agent` construction
+- `Agents::Runner`
+- handoff tools and agent registry
+- shared run context
+- tool wrappers and callbacks
+- instrumentation bridge
+
+Relevant code:
+
+- [agent_runner_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/assistant/agent_runner_service.rb)
+- [agentable.rb](/root/crafty/onelink/chatwoot/enterprise/app/models/concerns/agentable.rb)
+- [base_public_tool.rb](/root/crafty/onelink/chatwoot/enterprise/lib/captain/tools/base_public_tool.rb)
+
+### Copilot
+
+Copilot does not use the same runtime. It currently uses direct `ruby_llm` chat assembly and a different tool stack.
+
+Relevant code:
+
+- [chat_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/copilot/chat_service.rb)
+- [tool_catalog.rb](/root/crafty/onelink/chatwoot/enterprise/lib/captain/copilot/tool_catalog.rb)
+- [base_tool.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/tools/base_tool.rb)
+
+### Task Helpers
+
+Captain tasks already use `ruby_llm`, but with a separate prompt path and separate chat setup logic.
+
+Relevant code:
+
+- [base_task_service.rb](/root/crafty/onelink/chatwoot/lib/captain/base_task_service.rb)
+- [rewrite_service.rb](/root/crafty/onelink/chatwoot/lib/captain/rewrite_service.rb)
+- [summary_service.rb](/root/crafty/onelink/chatwoot/lib/captain/summary_service.rb)
+
+### Prompt Sources Today
+
+Prompt logic is currently split across three families:
+
+- Captain v2 Liquid prompts under `enterprise/lib/captain/prompts`
+- Ruby string builders in [system_prompts_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/llm/system_prompts_service.rb)
+- task prompt files under `lib/integrations/openai/openai_prompts`
+
+This is the main transparency problem in the current stack.
+
+## Target Runtime Architecture
+
+The resulting state is a Captain-native orchestration layer implemented directly on `ruby_llm`.
+
+### 1. Unified Captain Runtime
+
+Add a dedicated runtime namespace:
+
+`enterprise/lib/captain/runtime/`
+
+Expected core objects:
+
+- `Captain::Runtime::Agent`
+- `Captain::Runtime::RunContext`
+- `Captain::Runtime::ToolContext`
+- `Captain::Runtime::ToolAdapter`
+- `Captain::Runtime::HandoffTool`
+- `Captain::Runtime::Runner`
+- `Captain::Runtime::Result`
+
+Optional runtime extensions when needed:
+
+- `Captain::Runtime::AgentTool`
+- `Captain::Runtime::TracingCallbacks`
+- `Captain::Runtime::HistorySerializer`
+
+These classes replace the orchestration role that `ai-agents` currently plays, while keeping `ruby_llm` responsible for chat, tool calling, schema handling, streaming, and provider interaction.
+
+### 2. One Prompt System
+
+Captain should use one prompt registry and one renderer.
+
+Target prompt tree:
+
+`enterprise/lib/captain/prompts/agents/`
+
+- `assistant.liquid`
+- `scenario.liquid`
+
+`enterprise/lib/captain/prompts/copilot/`
+
+- `orchestrator.liquid`
+- optional specialist prompts if Copilot becomes multi-agent
+
+`enterprise/lib/captain/prompts/tasks/`
+
+- `rewrite_fix_spelling_grammar.liquid`
+- `rewrite_improve.liquid`
+- `rewrite_tone.liquid`
+- `summary.liquid`
+- `reply_suggestion.liquid`
+- `label_suggestion.liquid`
+- `conversation_completion.liquid`
+- `csat_utility_analysis.liquid`
+
+`enterprise/lib/captain/prompts/snippets/`
+
+- shared context snippets already used by Captain
+
+Rules:
+
+- all runtime prompts are file-backed
+- all prompt rendering goes through `Captain::PromptRenderer`
+- no large prompt bodies embedded in service classes
+- account and assistant configuration can supply modifiers, but not replace the base prompt system
+
+This gives the team one transparent place to influence agent behavior.
+
+### 3. One Context Contract
+
+All Captain surfaces should use the same context shape.
+
+Required top-level keys:
+
+- `session_id`
+- `conversation_history`
+- `current_agent`
+- `state`
+- `usage`
+- `runtime_metadata`
+
+`state` should hold stable business context only:
+
+- `account_id`
+- `assistant_id`
+- `assistant_config`
+- `source`
+- `conversation`
+- `contact`
+- `deal`
+- `task`
+- `appointment`
+- `campaign`
+- `contact_inbox`
+- `prompt_context`
+
+Rules:
+
+- `conversation_history` stores only the data needed to rebuild the LLM chat
+- `state` stores durable business context
+- prompt-only rendered values remain inside `prompt_context`
+- tool runtime metadata should not mutate domain state unless explicitly intended
+
+### 4. One Tool Runtime
+
+Captain tools should keep their current domain behaviors, but execute through one runtime adapter model.
+
+Target behavior:
+
+- agent-facing tools and Copilot tools share the same context conventions
+- policy checks still go through `Captain::ToolPolicy`
+- audit logging still goes through `Captain::ToolExecutionAuditService`
+- custom HTTP tools keep current metadata header behavior
+- idempotent mutation tools preserve duplicate-write protection
+
+The runtime should not fork into two parallel base classes unless the underlying execution contract truly differs.
+
+### 5. One Instrumentation Path
+
+Tracing, usage, and audit hooks must be runtime-native and not dependent on `ai-agents`.
+
+Rules:
+
+- one callback contract for run start, LLM call complete, tool start, tool complete, handoff, run complete
+- one place where Langfuse/OpenTelemetry attributes are attached
+- one policy for credit usage metadata and handoff accounting
+
+### 6. One History Serialization Path
+
+The runtime must preserve:
+
+- multimodal user input
+- assistant text responses
+- assistant tool calls
+- tool result messages
+- current active agent after handoff
+
+This behavior is critical for:
+
+- customer-facing v2 continuity
+- repeated tool chains
+- future Copilot agent-as-tool flows
+- replay, debugging, and golden tests
+
+## How Each Product Surface Should Work
+
+### Customer-Facing Assistant
+
+The customer-facing assistant remains multi-agent:
+
+- main assistant orchestrates
+- scenarios are specialized sub-agents
+- handoffs stay invisible to the user
+- built-in tools and custom HTTP tools remain available under the existing policy model
+
+Implementation note:
+
+The public contract of [response_builder_job.rb](/root/crafty/onelink/chatwoot/enterprise/app/jobs/captain/conversation/response_builder_job.rb) was kept stable while the internals moved from `Agents::Runner` to `Captain::Runtime::Runner`.
+
+### Scenarios
+
+`Captain::Scenario` remains a first-class runtime entity:
+
+- it still renders its own prompt
+- it still materializes tool references from `tool://...`
+- it still hands off back to the main assistant when out of scope
+
+The migration should keep the current scenario model, not replace it with generic RubyLLM agent classes.
+
+### Copilot
+
+Copilot should move onto the same runtime foundation in two stages:
+
+1. single-agent RubyLLM-based runtime with the shared context, prompt, and tool systems
+2. optional specialist agents through a Captain-native `AgentTool` pattern if multi-agent Copilot proves useful
+
+This keeps the first migration smaller while allowing later specialization.
+
+### Task Services
+
+Task services should stay single-agent and lightweight, but they should:
+
+- use the same prompt registry
+- use the same common chat setup helpers
+- use the same instrumentation style
+- avoid their own parallel prompt conventions
+
+They do not need full handoff orchestration.
+
+## Native Class Design
+
+### `Captain::Runtime::Agent`
+
+Responsibility:
+
+- hold static runtime configuration
+- expose name, model, instructions, tools, schema, headers, params, and handoff targets
+- be built from `Captain::Assistant` and `Captain::Scenario`
+
+Rules:
+
+- immutable after construction
+- no business persistence logic
+- instructions may be lazy but should resolve through project prompt rendering
+
+### `Captain::Runtime::RunContext`
+
+Responsibility:
+
+- own the mutable state of one execution
+- accumulate usage
+- expose callbacks and runtime metadata
+- store pending handoff state safely
+
+Rules:
+
+- thread-safe by isolation, not by global mutation
+- serializable for persistence and replay
+
+### `Captain::Runtime::ToolContext`
+
+Responsibility:
+
+- give tools access to `context`, `state`, and `usage`
+- avoid hidden instance state
+- provide helpers for current conversation/contact/deal/task/appointment lookup
+
+### `Captain::Runtime::ToolAdapter`
+
+Responsibility:
+
+- bridge Captain tools to the tool interface expected by `ruby_llm`
+- inject `ToolContext`
+- emit runtime callbacks and tracing
+
+### `Captain::Runtime::HandoffTool`
+
+Responsibility:
+
+- represent a target-agent transfer as an explicit callable tool
+- set pending handoff state in the current run context
+- halt the current completion loop after a handoff decision
+
+Rules:
+
+- handoff must be explicit and inspectable
+- user-facing text must remain natural and not leak internal routing
+
+### `Captain::Runtime::Runner`
+
+Responsibility:
+
+- create or rebuild a `ruby_llm` chat
+- apply runtime instructions, tools, schema, headers, params
+- restore history into chat
+- execute completion loops
+- detect and process handoffs
+- save updated history back into context
+
+Rules:
+
+- no business rules beyond orchestration
+- no domain writes except what tools perform explicitly
+- one code path for run loop behavior
+
+### `Captain::Runtime::Result`
+
+Responsibility:
+
+- normalize output, context, usage, and errors
+- preserve compatibility with current Captain callers
+
+## Prompt Transparency Rules
+
+To make prompts transparent and adjustable by the team:
+
+- every system prompt must have a named file
+- every prompt file must map to exactly one runtime responsibility
+- prompt modifiers from DB config should be appended in known sections, not spliced ad hoc
+- prompt context rendering must be deterministic
+- prompt tests should assert on rendered output when context access rules change
+
+Recommended prompt layers:
+
+1. base identity and role
+2. product and business rules
+3. current runtime context
+4. tool and scenario instructions
+5. assistant-level response guidelines and guardrails
+6. account-configured additive instructions
+
+## Reliability Rules
+
+The replacement runtime must preserve these behaviors:
+
+- safe handoff fallback on runtime failure
+- tool policy enforcement before execution
+- audit logs for tool execution when enabled
+- multimodal input support
+- context access restrictions
+- idempotency protection for create-style actions
+- account-scoped data access only
+- explicit max-turn limits in orchestration loops
+
+## Performance Rules
+
+The migration is not only architectural. It should reduce runtime cost and complexity.
+
+Expected speed and simplicity improvements:
+
+- one orchestration layer instead of a hybrid adapter stack
+- fewer object translations between tool systems
+- one history serialization path
+- one prompt rendering path
+- fewer duplicate chat builders and callbacks
+- easier targeted optimization of context trimming and tool loading
+
+Specific runtime expectations:
+
+- lazy tool instantiation where possible
+- trim history deterministically before completion
+- avoid rebuilding prompt context more than once per run
+- avoid duplicate system instruction composition
+- keep Copilot and tasks on the simplest runtime that satisfies their behavior
+
+## Historical Delivery Plan
+
+The phases below are retained as the migration record. They have already been executed and are useful as an audit trail for how the runtime was simplified.
+
+### Phase 0: Baseline And Safety Net
+
+- freeze current Captain behavior with tests and golden fixtures
+- record token usage and latency baselines for the main AI flows
+- identify any hidden dependencies on `ai-agents` behavior
+
+### Phase 1: Prompt Unification
+
+- introduce one Captain prompt tree
+- move string-built prompts from `SystemPromptsService` into files
+- move task prompts into the same tree
+- keep existing runtime behavior while swapping prompt sources
+
+Acceptance:
+
+- no behavior regressions from prompt source movement
+- prompt rendering is file-backed for all Captain surfaces
+
+### Phase 2: Introduce Captain Runtime Core
+
+- add `Captain::Runtime::*` classes
+- reproduce current assistant v2 orchestration behavior behind feature-safe internals
+- keep existing public service interfaces stable
+
+Acceptance:
+
+- v2 assistant tests pass on the new runtime
+- handoff, tool traces, and multimodal paths behave the same
+
+### Phase 3: Move Customer-Facing v2 Off `ai-agents`
+
+- switch [agent_runner_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/assistant/agent_runner_service.rb) to `Captain::Runtime::Runner`
+- remove `Agents::*` from the customer path
+
+Acceptance:
+
+- no customer-facing runtime path depends on `ai-agents`
+
+### Phase 4: Migrate Copilot
+
+- first align Copilot with the shared prompt and tool runtime
+- then decide whether to keep it single-agent or add Captain-native specialist tools
+
+Acceptance:
+
+- Copilot uses the same context, tool, and instrumentation conventions as the customer runtime
+
+### Phase 5: Migrate Task Services
+
+- move all task prompts and chat setup onto shared helpers
+- keep task flows intentionally simpler than agentic flows
+
+Acceptance:
+
+- one common RubyLLM setup path exists for tasks
+
+### Phase 6: Remove `ai-agents`
+
+- delete dependency and initializer
+- remove all `require 'agents'`
+- remove obsolete tests and adapters
+
+Acceptance:
+
+- the codebase has one AI runtime foundation: `ruby_llm`
+
+### Phase 7: Upgrade `ruby_llm`
+
+Only after `ai-agents` is removed:
+
+- update `ruby_llm` and `ruby_llm-schema`
+- adapt the project-native runtime to the new version
+- optionally adopt newer Rails integration patterns where they add value
+
+Acceptance:
+
+- upgraded `ruby_llm` works without dependency lock conflicts
+
+## Recommended File Ownership
+
+The migration should primarily touch:
+
+- `enterprise/lib/captain/runtime/*`
+- `enterprise/lib/captain/prompts/*`
+- `enterprise/app/services/captain/assistant/*`
+- `enterprise/app/services/captain/copilot/*`
+- `enterprise/lib/captain/tool_*`
+- `lib/captain/*`
+
+It should avoid unrelated refactors in:
+
+- generic CRM runtime
+- scheduling runtime outside tool behavior
+- non-Captain frontend areas
+
+## Acceptance Criteria For The Final State
+
+The migration is complete only when all of the following are true:
+
+- `ai-agents` is no longer a runtime dependency
+- Captain uses one RubyLLM-based runtime model
+- prompt sources are unified and file-backed
+- customer assistant, scenarios, Copilot, and tasks follow one transparent prompt policy
+- tool execution is policy-aware, auditable, and account-scoped
+- handoff behavior remains reliable and invisible to users
+- latency and token use are at least as good as the old hybrid stack, and preferably better
+- the design remains recognizable inside the existing One Link Cloud architecture rather than behaving like a foreign subsystem
+
+## Summary
+
+The correct implementation is not a generic "agent framework rewrite". It is a Captain-native runtime simplification:
+
+- keep the product model
+- keep the domain tools
+- keep the account-scoped policies
+- unify prompts
+- remove the external orchestration layer
+- standardize on `ruby_llm`
+
+That gives the project a more transparent, more maintainable, and more upgrade-friendly AI stack without pushing Captain outside the design language of the rest of the codebase.

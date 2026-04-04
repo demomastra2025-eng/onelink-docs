@@ -5,6 +5,26 @@ description: Internal runtime documentation for assistants, documents, scenarios
 
 # Internal Captain Runtime
 
+## Runtime Foundation
+
+Captain now runs on a project-native runtime built directly on `ruby_llm`.
+
+The AI stack is standardized around:
+
+- `ruby_llm` for chat execution, tool calling, schemas, provider access, and multimodal messages
+- `Captain::Runtime` for assistant orchestration, handoff flow, run context, and tracing callbacks
+- `Captain::PromptRegistry` for file-backed prompt lookup and shared Liquid rendering
+- `Llm::ChatClient` and `Llm::ChatRequestRunner` for the common request path used by Captain assistant, Copilot, and task helpers
+
+Key runtime guarantees:
+
+- assistant runs can create a scoped `RubyLLM::Context` so account-level provider credentials and API base overrides do not leak into global configuration
+- each handoff rebuilds a fresh `RubyLLM::Chat`, so agent-specific `schema`, `temperature`, `headers`, and `params` are reapplied cleanly without cross-agent bleed
+- persisted history can restore assistant tool calls and tool results, including multimodal content and both symbol-keyed and string-keyed payloads
+- Copilot thread messages can retain richer runtime metadata such as `agent_name`, `tool_calls`, `usage`, `captain_trace`, and `thinking`
+
+`ai-agents` is no longer part of the runtime dependency graph for Captain.
+
 ## Core Entities
 
 | Entity | Role |
@@ -27,6 +47,21 @@ flowchart TD
     A --> F[Responses]
     A --> G[Copilot threads]
 ```
+
+## Runtime Components
+
+The native Captain runtime lives under `enterprise/lib/captain/runtime/`.
+
+Key objects:
+
+- `Captain::Runtime::Agent`
+- `Captain::Runtime::RunContext`
+- `Captain::Runtime::ToolContext`
+- `Captain::Runtime::Runner`
+- `Captain::Runtime::Result`
+- `Captain::Runtime::TracingCallbacks`
+
+This keeps orchestration inside the product codebase while leaving provider and chat behavior to `ruby_llm`.
 
 ## Context Model
 
@@ -58,6 +93,21 @@ The runtime supports:
 - custom account-scoped tools
 - copilot-oriented lookup tools
 - external action tools
+
+Custom HTTP tools still use account-defined Liquid templates, but they now render through the shared Captain Liquid path instead of a separate template implementation.
+
+## Prompts
+
+Captain prompt files live under `enterprise/lib/captain/prompts/`.
+
+Current prompt families:
+
+- root prompts for assistant and scenario agents
+- `llm/` prompts for assistant, copilot, onboarding, and helper services
+- `tasks/` prompts for rewrite, summary, labels, reply suggestions, follow-up, translation, and conversation completion
+- `snippets/` for shared context fragments
+
+The old `lib/integrations/openai/openai_prompts` fallback is no longer part of the Captain runtime path.
 
 Assistant configuration can now restrict tool access in two scopes:
 
@@ -91,6 +141,18 @@ Captain uses dedicated services and jobs for:
 - response building
 - tool execution
 - embeddings and knowledge processing
+
+The execution path is now intentionally narrow:
+
+- services build normalized messages and tool lists
+- `Llm::ChatRequestRunner` builds or resumes the `ruby_llm` chat
+- `Captain::Runtime::Runner` handles assistant orchestration when handoff and tool state are required
+
+For assistant v2 specifically:
+
+- `Captain::Assistant::AgentRunnerService` builds the Captain business state and scoped `RubyLLM::Context`
+- `Captain::Runtime::AgentRunner` selects the current agent from restored history
+- `Captain::Runtime::Runner` rebuilds the per-agent chat, restores history, executes tools, and persists the updated conversation state
 
 ## Design Rules
 
