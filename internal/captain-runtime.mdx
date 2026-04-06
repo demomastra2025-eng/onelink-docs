@@ -95,6 +95,7 @@ The runtime supports:
 - external action tools
 
 Custom HTTP tools still use account-defined Liquid templates, but they now render through the shared Captain Liquid path instead of a separate template implementation.
+Built-in tool metadata now has a single runtime source of truth in `enterprise/lib/captain/tool_registry.rb`; the old `config/agents/tools.yml` file has been removed.
 
 ## Prompts
 
@@ -115,6 +116,8 @@ Assistant configuration can now restrict tool access in two scopes:
 - `assistant`: operator-side copilot tool access, including built-in copilot lookup tools and enabled custom HTTP tools
 
 If `tool_access` is not configured, the direct assistant runtime keeps its legacy default tool subset while scenario validation still uses the broader available agent tool catalog.
+
+Prompt-facing context now comes only from explicit `context_access` selection. Legacy implicit `additional_attributes` fallback is no longer part of the Captain prompt contract.
 
 Built-in tools are now described through a shared metadata registry instead of separate agent and copilot catalogs. Each built-in tool definition carries:
 

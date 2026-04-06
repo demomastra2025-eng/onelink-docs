@@ -1,0 +1,137 @@
+---
+title: Captain AI Stack Optimization Plan
+description: Roadmap for consolidating prompt control, runtime execution, observability, and model routing across Captain and Copilot.
+---
+
+# Captain AI Stack Optimization Plan
+
+## Why This Exists
+
+Captain and Copilot already run on a project-native runtime built on `ruby_llm`, but prompt control and runtime transparency are still distributed across multiple layers.
+
+This plan defines the next steps needed to make the AI stack:
+
+- easier to understand
+- cheaper to operate
+- safer to modify
+- easier to debug
+
+## Current Problems
+
+- prompts are file-backed, but the effective compiled prompt is not visible in product settings
+- account-level instructions are only partially represented in runtime behavior
+- AI runs do not expose a uniform prompt and trace surface for operators
+- model and tool routing still depend on multiple service paths
+- context and history cost can grow faster than answer quality
+
+## Implemented Foundation
+
+The current slice adds:
+
+- account-level `additional instructions` for the live AI agent in the Captain V2 runtime
+- dedicated `copilot instructions` for the internal teammate copilot
+- a prompt preview endpoint for AI-agent settings
+- a settings-side prompt inspector for:
+  - live AI-agent root prompt
+  - Copilot prompt
+  - enabled scenario prompts
+
+This makes the active prompt surface visible before deeper runtime consolidation.
+
+## Target Architecture
+
+### 1. Prompt Control Plane
+
+Every system prompt should have:
+
+- a stable `prompt_id`
+- one runtime responsibility
+- one owning service path
+- known editable layers
+- a compiled prompt hash for traceability
+
+### 2. Unified AI Run Contract
+
+All Captain and Copilot runs should converge on one normalized contract:
+
+- input messages
+- prompt layers
+- tool set
+- model profile
+- schema
+- trace metadata
+- usage and latency
+- final output
+
+### 3. Context Budgeting
+
+Prompt context should be explicitly budgeted:
+
+- short-term live history
+- summarized older history
+- deterministic business context
+- on-demand tool lookup instead of prompt bloat
+
+### 4. Tool Runtime Hardening
+
+All tools should share:
+
+- one execution envelope
+- consistent result and error shapes
+- idempotency for mutation flows
+- audit and trace hooks
+- optional dry-run behavior for debugging
+
+### 5. Model Routing
+
+Model choice should be profile-based, not ad hoc:
+
+- orchestrator
+- copilot
+- lightweight tasks
+- extraction and classification
+- high-risk reasoning
+
+## Delivery Phases
+
+### Phase 1. Prompt Transparency
+
+- prompt preview endpoints
+- prompt inspector UI
+- account-level additive instructions
+- prompt hash visibility
+
+### Phase 2. Run Observability
+
+- persist run traces with prompt hash, model, tools, usage, and latency
+- expose tool calls and handoff chains in internal diagnostics
+- add replay-friendly run payload storage
+
+### Phase 3. Execution Consolidation
+
+- converge assistant, copilot, and task runs on one execution builder
+- reduce raw `.with_instructions(...)` call sites
+- move prompt assembly behind one control surface
+
+### Phase 4. Context And Cost Optimization
+
+- add token budgets per run mode
+- summarize stale history
+- trim duplicated context
+- prefer tool lookup over large embedded prompt sections
+
+### Phase 5. Model Profiles And Evals
+
+- introduce explicit model profiles
+- run regression evals against prompt and model changes
+- add golden conversation and tool-calling suites
+
+## Definition Of Done
+
+The AI stack is considered operationally optimized when:
+
+- every important prompt can be inspected in product or internal tooling
+- every AI run can be traced end-to-end
+- prompt edits can be evaluated before release
+- model costs are segmented by use case
+- tool safety rules are enforced consistently across Captain and Copilot
