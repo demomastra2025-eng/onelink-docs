@@ -1,0 +1,212 @@
+---
+title: Sidekiq DeadSet Triage
+description: Current dead job snapshot and safe replay-discard policy for the One Link production runtime.
+---
+
+# Sidekiq DeadSet Triage
+
+## Current Snapshot
+
+Snapshot date:
+
+- `2026-04-11`
+
+Current production state:
+
+- `DeadSet`: `782`
+- `RetrySet`: `0`
+- active queue backlog at snapshot time: `0`
+- new dead jobs in the last `8` hours: `0`
+
+This is important:
+
+- the current DeadSet is mostly a historical backlog
+- it does not currently look like an active new failure wave
+- the correct response is controlled triage, not blind replay
+
+## Top Dead Job Classes
+
+| Job class | Count | Primary failures | Oldest | Newest | Safe default |
+| --- | ---: | --- | --- | --- | --- |
+| `ActionMailer::MailDeliveryJob` | 270 | `Net::SMTPFatalError`, `Net::OpenTimeout` | 2026-03-19 | 2026-04-07 | discard old jobs |
+| `Channels::WhatsappWeb::ProcessWebhookEventJob` | 122 | `ActiveRecord::RecordInvalid`, small amount of DB pool timeout | 2026-04-07 | 2026-04-10 | discard historical jobs |
+| `Channels::WhatsappWeb::HistorySyncJob` | 96 | `ActiveRecord::RecordInvalid` | 2026-04-07 | 2026-04-10 | conditional replay only |
+| `Messages::AudioTranscriptionJob` | 92 | `RubyLLM::BadRequestError`, `RubyLLM::RateLimitError` | 2026-04-07 | 2026-04-10 | split by error class |
+| `Captain::InboxPendingConversationsResolutionJob` | 71 | `NameError` | 2026-04-06 | 2026-04-07 | discard historical jobs |
+| `Portal::ArticleIndexingJob` | 68 | `Errno::ECONNREFUSED`, `NoMethodError` | 2026-03-18 | 2026-04-03 | fix-first, then selective replay |
+| `Integrations::Macrocrm::SyncJob` | 24 | `LockAcquisitionError`, small amount of API errors | 2026-03-20 | 2026-04-10 | selective replay only |
+| `Inboxes::FetchImapEmailInboxesJob` | 10 | `ActiveRecord::ConnectionNotEstablished` during DB recovery | 2026-03-23 | 2026-03-23 | discard |
+| `Captain::Llm::UpdateEmbeddingJob` | 7 | embedding dimension mismatch, missing config | 2026-03-18 | 2026-03-18 | fix-first, then selective replay |
+| `Integrations::Medelement::SyncJob` | 6 | data validation, remote API 404 | 2026-03-22 | 2026-04-01 | selective replay only |
+
+## What The Snapshot Means
+
+### 1. WhatsApp dead jobs are mostly pre-fix artifacts
+
+The `ProcessWebhookEventJob` and `HistorySyncJob` failures are dominated by:
+
+- `ActiveRecord::RecordInvalid`
+- message: `Phone number уже используется`
+
+These jobs stopped accumulating after the production fixes shipped on `2026-04-10`.
+The newest failures for these classes are still before the post-fix clean window.
+
+Operational meaning:
+
+- old dead jobs are stale provider payloads and stale sync requests
+- replaying them blindly can reintroduce duplicate-contact churn
+- the safer default is to discard old dead jobs and let fresh provider events and fresh sync requests rebuild state
+
+### 2. Mail dead jobs are mostly not app-code bugs
+
+`ActionMailer::MailDeliveryJob` is dominated by:
+
+- `Net::SMTPFatalError`: outbound send quota exceeded
+- `Net::OpenTimeout`: SMTP connectivity/availability issue
+
+Operational meaning:
+
+- these are primarily mail-provider capacity incidents, not database or queue corruption
+- replaying old notification and mail jobs days later usually creates noise, not value
+
+### 3. Audio dead jobs split into two different policies
+
+`Messages::AudioTranscriptionJob` has two distinct groups:
+
+- `RubyLLM::BadRequestError` for unsupported file format
+- `RubyLLM::RateLimitError` for quota exhaustion
+
+Operational meaning:
+
+- unsupported format jobs should be discarded permanently
+- rate-limit jobs are theoretically replayable, but only if the attachment still exists and transcription is still useful
+
+### 4. Captain auto-resolution dead jobs look historical
+
+`Captain::InboxPendingConversationsResolutionJob` failed with:
+
+- `undefined local variable or method 'system_api_key'`
+
+Current code now defines `system_api_key` in [base_task_service.rb](/root/crafty/onelink/chatwoot/lib/captain/base_task_service.rb#L148), and `ConversationCompletionService` calls it in [conversation_completion_service.rb](/root/crafty/onelink/chatwoot/enterprise/lib/captain/conversation_completion_service.rb#L52).
+
+Inference:
+
+- these dead jobs are historical and should not be replayed blindly
+- the runtime path has likely already moved past this exact failure mode
+
+### 5. Article indexing still needs a code/config review before replay
+
+`Portal::ArticleIndexingJob` failed with:
+
+- `Errno::ECONNREFUSED`
+- `Failed to open TCP connection to :80`
+
+This points to a broken outbound endpoint resolution path during article search term generation in [article.rb](/root/crafty/onelink/chatwoot/enterprise/app/models/enterprise/concerns/article.rb#L47).
+
+Operational meaning:
+
+- do not replay these jobs until the endpoint/config path is verified
+- these are not safe "click replay all" candidates
+
+### 6. MacroCRM and Medelement need selective replay, not bulk replay
+
+`Integrations::Macrocrm::SyncJob` is mostly:
+
+- `LockAcquisitionError`
+
+`Integrations::Medelement::SyncJob` is mostly:
+
+- validation failures
+- remote API 404 errors
+
+Operational meaning:
+
+- bulk replay can recreate lock contention or invalid downstream writes
+- replay must be selective and tied to still-valid hooks and still-relevant entities
+
+## Safe Policy By Class
+
+### Discard Now
+
+Use discard as the default action for these historical dead jobs:
+
+- `ActionMailer::MailDeliveryJob`
+- `Captain::InboxPendingConversationsResolutionJob`
+- `Inboxes::FetchImapEmailInboxesJob`
+- `TriggerScheduledItemsJob`
+- `ActionCableBroadcastJob`
+
+Reason:
+
+- these are either time-sensitive notifications, DB-recovery artifacts, or historical code-path failures
+- replay value is low and replay risk/noise is high
+
+### Discard Historical WhatsApp Dead Jobs
+
+For these classes, discard old dead jobs instead of replaying:
+
+- `Channels::WhatsappWeb::ProcessWebhookEventJob`
+- most historical `Channels::WhatsappWeb::HistorySyncJob`
+
+Reason:
+
+- they failed on stale duplicate-contact conditions
+- the newer live code path already stopped feeding more dead jobs
+- replay risks reprocessing stale provider payloads
+
+### Replay Only After Validation
+
+These classes may be replayed selectively after case-by-case validation:
+
+- `Messages::AudioTranscriptionJob` only for rate-limit failures and only if attachment still exists and transcription still matters
+- `Portal::ArticleIndexingJob` only after endpoint/config path is verified
+- `Integrations::Macrocrm::SyncJob` only for jobs tied to still-enabled hooks and deduplicated business events
+- `Integrations::Medelement::SyncJob` only when the underlying data issue has been confirmed resolved
+- `Captain::Llm::UpdateEmbeddingJob` only after embedding model and vector dimensions are confirmed aligned
+
+### Do Not Bulk Replay
+
+Never use bulk replay against the whole DeadSet.
+
+The top reasons are:
+
+- stale payloads
+- expired business relevance
+- duplicate side effects
+- lock contention
+- external API rate or quota failures
+
+## Recommended Cleanup Order
+
+1. Snapshot the current DeadSet summary before any mutation.
+2. Discard clearly stale, low-value historical jobs:
+   - mail
+   - DB recovery artifacts
+   - historical Captain auto-resolution failures
+3. Discard historical WhatsApp duplicate-contact dead jobs.
+4. Keep replay candidates only for classes where the cause is now verified fixed.
+5. Replay only small validated subsets, never the entire class at once.
+
+## Reporting Commands
+
+### Top classes with age and error groups
+
+```bash
+docker compose --env-file .env.production -f docker-compose.production.yml exec -T chatwoot_rails \
+  bundle exec rails runner "require 'json'; require 'sidekiq/api'; ds = Sidekiq::DeadSet.new; grouped = ds.group_by { |job| job.item['wrapped'] || job.klass }; summary = grouped.transform_values do |jobs| failed = jobs.map { |job| stamp = job.item['failed_at'] || job.item['enqueued_at'] || job.score; Time.at(stamp).utc rescue nil }.compact.sort; { count: jobs.size, queues: jobs.group_by(&:queue).transform_values(&:size), top_errors: jobs.group_by { |job| job.item['error_class'] || 'Unknown' }.transform_values(&:size).sort_by { |_, v| -v }.first(5).to_h, oldest_failed_at: failed.first&.iso8601, newest_failed_at: failed.last&.iso8601 } end; ranked = summary.sort_by { |_, meta| -meta[:count] }.first(15).to_h; puts JSON.pretty_generate(ranked)"
+```
+
+### Confirm whether new dead jobs are still being created
+
+```bash
+docker compose --env-file .env.production -f docker-compose.production.yml exec -T chatwoot_rails \
+  bundle exec rails runner "require 'json'; require 'sidekiq/api'; cutoff = 8.hours.ago.to_f; ds = Sidekiq::DeadSet.new.select { |job| (job.item['failed_at'] || job.score).to_f >= cutoff }; grouped = ds.group_by { |job| job.item['wrapped'] || job.klass }.transform_values(&:size).sort_by { |_, v| -v }.to_h; puts JSON.pretty_generate({count: ds.size, by_class: grouped})"
+```
+
+## Follow-Up Work
+
+This DeadSet policy should lead to three concrete follow-ups:
+
+- add a repeatable reporting task or script so DeadSet audits do not require ad hoc runner snippets
+- add a selective replay/discard operator workflow, not a manual one-off shell exercise
+- fix the remaining code/config paths behind `Portal::ArticleIndexingJob`, embedding dimension drift, and integration-specific replay safety

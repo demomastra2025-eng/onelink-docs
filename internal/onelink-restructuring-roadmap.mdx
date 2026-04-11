@@ -1,0 +1,322 @@
+---
+title: Onelink Restructuring Roadmap
+description: Detailed phased plan for making the Onelink runtime faster, more reliable, and easier to scale.
+---
+
+# Onelink Restructuring Roadmap
+
+## Why This Plan Exists
+
+The current One Link Cloud runtime is not a small CRUD app and should not be optimized like one.
+It is a large Rails monolith with:
+
+- multiple frontend entrypoints
+- multiple queue profiles
+- real-time messaging flows
+- heavy integration traffic
+- AI and media workloads
+- an enterprise extension layer that materially affects runtime behavior
+
+The right target is not "split everything into microservices."
+The right target is:
+
+- a strong modular monolith
+- clean queue isolation by SLA
+- predictable runtime tuning
+- one clear frontend state model
+- observability-first operations
+- autoscaling based on real saturation signals
+
+## Current State Summary
+
+### Backend
+
+- Rails 7 monolith with enterprise overlay loaded into the same runtime
+- two web containers behind nginx for rolling restarts
+- one main Sidekiq plus specialized WhatsApp and transcription workers
+- shared Postgres and shared Redis
+- partial tracing and partial APM wiring, but not a full application observability model
+
+### Frontend
+
+- Vue 3 dashboard inside the Rails app
+- hybrid state architecture with both `Vuex` and `Pinia`
+- large dashboard surface area and uneven state ownership
+- bundle limits exist for widget and SDK, but not for the main dashboard runtime
+
+### Reliability
+
+- queue isolation exists in some high-noise areas but not end-to-end
+- dead jobs and retry behavior need a stronger policy
+- scaling knobs existed in code before, but some were not made explicit in production config
+- autoscaling is still operationally manual because the production runtime is Compose-based
+
+## Principles
+
+Every step in this roadmap should preserve these rules:
+
+- do not split deploy units before internal boundaries are clear
+- do not scale blind; measure first
+- do not let low-value async work steal capacity from user-visible flows
+- do not allow frontend state to have two competing "sources of truth"
+- do not add more integration logic without idempotency and retry discipline
+
+## What Was Worth Doing Immediately
+
+The first wave of low-risk operational improvements should focus on clarity and control:
+
+- make Puma worker scaling explicit with `WEB_CONCURRENCY`
+- enable structured Rails request logging with `LOGRAGE_ENABLED`
+- make specialized worker concurrency explicit in production env
+- make Redis pool and rack-attack runtime knobs explicit in production env
+- keep DB timeout policy visible through env instead of relying on implicit defaults
+
+These changes improve operability now without changing the product model.
+
+## Phase 1: Observability Baseline
+
+### Goal
+
+Make the runtime measurable before any deeper restructuring.
+
+### Work
+
+- define SLOs for:
+  - API latency
+  - queue latency
+  - background job failure rate
+  - webhook processing delay
+  - ActionCable health
+- add consistent correlation from nginx request id to Rails logs to Sidekiq jobs
+- enable and validate structured logs across web and worker services
+- enable `pg_stat_statements`
+- establish a "top slow SQL" workflow
+- add dashboards for:
+  - p50/p95/p99 endpoint latency
+  - queue size and queue latency
+  - retry and dead job counts by class
+  - Redis errors and timeouts
+  - Evolution API failure rate and reconnect rate
+
+### Exit Criteria
+
+- slow endpoints are rankable by impact
+- slow SQL is visible without ad hoc shell work
+- dead jobs are grouped by wrapped class
+- every production incident can be traced end-to-end
+
+## Phase 2: Queue Isolation And Idempotency
+
+### Goal
+
+Protect user-visible flows from noisy or long-running background work.
+
+### Work
+
+- classify every job into one of these classes:
+  - realtime
+  - user-visible async
+  - integrations
+  - bulk
+  - maintenance
+  - AI/media
+- keep `critical` and `high` focused on truly interactive work only
+- move integration-heavy and bulk jobs out of the main Sidekiq pool
+- add explicit retry policy per class:
+  - short bounded retries for realtime
+  - limited exponential retries for integrations
+  - discard or quarantine for malformed payloads
+- standardize idempotency for:
+  - inbound webhooks
+  - history sync
+  - outbound echo reconciliation
+  - audio transcription requeues
+- define dead-letter handling:
+  - auto-discard classes
+  - operator review classes
+  - safe replay classes
+
+### Exit Criteria
+
+- low-value jobs cannot starve interactive jobs
+- noisy integrations do not flood main worker capacity
+- dead jobs are actionable instead of being a silent graveyard
+
+## Phase 3: Web Runtime Hardening
+
+### Goal
+
+Make the web runtime predictable under burst load.
+
+### Work
+
+- standardize Puma math:
+  - `WEB_CONCURRENCY`
+  - `RAILS_MAX_THREADS`
+  - `DB_POOL`
+  - memory budget per process
+- validate DB connection ceilings against total replica count
+- separate ActionCable-sensitive traffic from ordinary HTTP capacity planning
+- introduce graceful draining rules for web restarts and rolling deploys
+- formalize gateway reload behavior after web container IP changes
+- reduce long-tail request times by auditing:
+  - inbox fetches
+  - conversation list endpoints
+  - typing and presence endpoints
+  - heavy settings endpoints
+
+### Exit Criteria
+
+- p95 latency stays stable during deploys
+- web scaling is capacity-driven, not guess-driven
+- connection exhaustion is no longer a hidden scaling risk
+
+## Phase 4: Backend Modular Monolith
+
+### Goal
+
+Keep one deployable application, but make internal domains explicit and separable.
+
+### Target Contexts
+
+- communication core
+- CRM
+- scheduling
+- Captain and AI runtime
+- automation and integrations
+- WhatsApp and Evolution boundary
+- portal and knowledge
+
+### Work
+
+- document ownership and boundaries for each context
+- reduce cross-context callbacks and side effects
+- move external provider logic behind adapters
+- convert multi-step flows to command or orchestration services
+- keep write paths explicit and idempotent
+- move "mixed concern" services out of generic folders into domain-owned namespaces
+
+### Exit Criteria
+
+- core domains are visible in code layout and service contracts
+- integration logic does not leak into unrelated core entities
+- future extraction becomes optional, not urgent
+
+## Phase 5: Frontend Simplification
+
+### Goal
+
+Give the dashboard one coherent state and loading model.
+
+### Work
+
+- freeze new `Vuex` module creation
+- define `Pinia` as the destination state layer
+- keep a thin compatibility layer for legacy `Vuex` reads while migrating
+- migrate the highest-churn domains first:
+  - inboxes
+  - conversations
+  - notifications
+  - contact details and sidebars
+- add dashboard bundle budgets in CI
+- audit route-level chunking and heavy imports
+- remove duplicated fetching patterns and mixed ownership between route, store, and component
+
+### Exit Criteria
+
+- new features land only in the target state model
+- dashboard performance budgets are enforced automatically
+- component reasoning does not require switching between multiple state paradigms
+
+## Phase 6: Data And Cache Discipline
+
+### Goal
+
+Make shared state safe under horizontal scale.
+
+### Work
+
+- decide which runtime caches must be shared and which may stay process-local
+- audit all `Rails.cache` usage for replica safety
+- introduce PgBouncer if connection pressure requires it
+- review Redis role separation:
+  - Sidekiq
+  - ActionCable
+  - throttling
+  - distributed locks
+  - app cache
+- keep timeouts, queue throughput, and cache TTL policy documented and observable
+
+### Exit Criteria
+
+- horizontally scaled web nodes behave consistently
+- cache semantics are documented instead of accidental
+- Redis contention is measurable by workload type
+
+## Phase 7: Autoscaling And Platform Maturity
+
+### Goal
+
+Move from manual scaling to controlled self-scaling.
+
+### Work
+
+- choose an orchestration target that supports:
+  - replica scaling
+  - health-based rollout
+  - queue-aware worker scaling
+  - graceful termination
+  - metrics-driven policy
+- define autoscaling triggers for:
+  - web CPU and p95 latency
+  - queue depth and queue latency
+  - webhook backlog
+  - AI/media queue duration
+- keep evolution and external integration capacity isolated from core web capacity
+
+### Exit Criteria
+
+- the platform can add or remove capacity without manual traffic juggling
+- queue backlogs can trigger worker expansion without affecting web latency
+
+## 30 / 60 / 90 Day View
+
+### First 30 Days
+
+- finish observability baseline
+- classify all jobs by SLA
+- define dead job policy
+- standardize production runtime knobs
+- identify top 10 slow endpoints and top 10 failing job classes
+
+### Days 31-60
+
+- split Sidekiq pools by workload class
+- start frontend state migration plan
+- document backend bounded contexts
+- reduce long-tail latency in the highest-impact HTTP paths
+
+### Days 61-90
+
+- formalize shared-cache policy
+- introduce queue-aware scaling model
+- choose the post-Compose orchestration direction
+- complete first frontend migration wave
+
+## Non-Goals
+
+These are explicitly not the first move:
+
+- immediate microservice extraction
+- rewriting the frontend from scratch
+- changing every queue at once
+- replacing Rails as the product core
+
+## Success Metrics
+
+- lower p95 and p99 API latency
+- lower dead job inflow per day
+- lower retry volume for integration-heavy queues
+- predictable deploys without upstream churn
+- smaller dashboard bundles and fewer duplicated requests
+- ability to add capacity with explicit rules instead of operator guesswork
