@@ -1,0 +1,405 @@
+---
+title: Multichannel Outbound Campaigns Plan
+description: Internal architecture plan for expanding campaigns from SMS and WhatsApp into a capability-driven multichannel outbound system.
+---
+
+# Multichannel Outbound Campaigns Plan
+
+## Goal
+
+Make outbound campaigns work across more inbox channels without turning the system into a growing list of channel-specific exceptions.
+
+The target is not "force every channel into the same form". The target is:
+
+- one native outbound campaign flow
+- one shared delivery pipeline
+- channel-aware validation and policy enforcement
+- reliable delivery tracking and recovery
+- rollout by capability tier instead of channel hardcoding
+
+## Current State
+
+The current implementation is split between:
+
+- channel-specific campaign routing and validation in `app/models/campaign.rb`
+- separate one-off executors for `Twilio SMS`, `Sms`, and `Whatsapp`
+- a special ongoing website campaign flow
+- frontend pages hardcoded around `Live chat`, `SMS`, and `WhatsApp`
+
+Relevant runtime files:
+
+- `app/models/campaign.rb`
+- `app/jobs/campaigns/trigger_oneoff_campaign_job.rb`
+- `app/jobs/trigger_scheduled_items_job.rb`
+- `app/models/campaign_delivery.rb`
+- `app/services/twilio/oneoff_sms_campaign_service.rb`
+- `app/services/sms/oneoff_sms_campaign_service.rb`
+- `app/services/whatsapp/oneoff_campaign_service.rb`
+- `app/builders/campaigns/oneoff_conversation_builder.rb`
+- `app/jobs/send_reply_job.rb`
+- `app/services/contacts/contactable_inboxes_service.rb`
+- `app/javascript/dashboard/routes/dashboard/campaigns/campaigns.routes.js`
+- `app/javascript/dashboard/store/modules/campaigns.js`
+
+## Core Problem
+
+Regular outbound sending already supports many channels through `SendReplyJob` and channel send services.
+
+Campaigns do not reuse that architecture cleanly. They currently encode support through:
+
+- `Campaign` model `case` statements
+- inbox type allowlists
+- separate per-channel campaign services
+- separate frontend branches for each campaign family
+
+This breaks down as soon as we want to support more channels, because channels differ on:
+
+- how the target is addressed
+- whether first contact is allowed
+- whether an existing conversation or contact identity is required
+- whether an open reply window is required
+- whether templates are mandatory outside a window
+- whether subject, HTML, media, buttons, or reply context are supported
+
+## Design Principles
+
+1. Treat `Website trigger campaigns` and `Outbound audience campaigns` as separate products.
+2. Build channel support from capabilities, not from `channel_type` switch statements in many places.
+3. Reuse the normal message send pipeline wherever possible.
+4. Do not rely on `ContactInbox` as the long-term universal outbound target registry.
+5. Calculate deliverability before launch, not during failure handling only.
+6. Make campaign execution idempotent and resumable.
+7. Roll out channels in phases based on technical and policy risk.
+
+## Product Split
+
+### Website Trigger Campaigns
+
+Keep the current website-triggered experience separate.
+
+This flow is closer to:
+
+- visitor qualification
+- web widget prompt logic
+- URL and time-on-page rules
+- ongoing trigger behavior
+
+It should remain distinct from audience broadcast and scheduled outbound delivery.
+
+### Outbound Audience Campaigns
+
+Create a unified outbound campaign product for:
+
+- scheduled one-off sends
+- future recurring outbound sends
+- channel-aware audience preview
+- delivery analytics
+
+## Target Architecture
+
+### 1. Channel Capability Registry
+
+Introduce a backend capability service, for example:
+
+- `Campaigns::ChannelCapabilities.for(inbox)`
+
+It should return a normalized payload such as:
+
+- `supports_outbound_campaigns`
+- `supports_first_contact`
+- `requires_existing_target`
+- `requires_open_reply_window`
+- `supports_template_fallback`
+- `supports_plain_text`
+- `supports_subject`
+- `supports_html`
+- `supports_media`
+- `supports_buttons`
+- `supports_scheduling`
+- `supports_delivery_status`
+- `audience_resolution_mode`
+
+The frontend should consume this instead of inferring behavior from `channel_type`.
+
+### 2. Contact Channel Targets
+
+Introduce a durable outbound target registry for campaign eligibility, for example:
+
+- `contact_channel_targets`
+
+Suggested fields:
+
+- `account_id`
+- `contact_id`
+- `inbox_id`
+- `target_identifier`
+- `target_type`
+- `metadata`
+- `can_initiate`
+- `last_incoming_at`
+- `reply_window_expires_at`
+- `last_verified_at`
+
+This must become the canonical source for channel-specific reachability.
+
+Why this is needed:
+
+- some channels need `phone_number`
+- some need `email`
+- some need provider-specific `source_id`
+- some need channel context such as `chat_id`, `peer_id`, or `conversation_id`
+- some only allow replies if a valid prior thread exists
+
+### 3. Shared Outbound Campaign Runner
+
+Replace the current per-channel one-off executors with a pipeline like:
+
+1. `Campaign audience resolver`
+2. `Eligibility and policy resolver`
+3. `Target resolver`
+4. `Conversation builder`
+5. `Message builder`
+6. `SendReplyJob`
+7. `Delivery status tracker`
+
+This keeps channel-specific send logic in the existing send services while centralizing campaign orchestration.
+
+### 4. Campaign Run Lifecycle
+
+Upgrade campaign state handling from the current `active/completed` model to a real run lifecycle:
+
+- `draft`
+- `scheduled`
+- `running`
+- `partially_completed`
+- `completed`
+- `failed`
+- `cancelled`
+
+The current pattern of marking a campaign completed before all deliveries finish is not reliable enough for multichannel scale.
+
+## Delivery Flow
+
+Recommended outbound execution flow:
+
+1. User selects an inbox and audience.
+2. Backend computes a preview:
+   - total audience
+   - deliverable count
+   - missing targets
+   - blocked by policy
+   - outside reply window
+   - requires template
+   - unsupported content for selected channel
+3. User confirms after preview.
+4. Scheduler or immediate trigger creates a `campaign run`.
+5. The run creates one delivery record per eligible contact.
+6. Each delivery builds or reuses a conversation.
+7. Each delivery creates an outbound message with `campaign_id`.
+8. The standard send pipeline pushes to the provider.
+9. Provider callbacks update delivery and message status.
+10. Run status is finalized only after all deliveries resolve.
+
+## Channel Tiers
+
+### Tier 1
+
+Start with channels that already have clear outbound addressing or existing partial support:
+
+- `Channel::Sms`
+- `Channel::TwilioSms`
+- `Channel::Whatsapp`
+- `Channel::WhatsappWeb`
+- `Channel::TelegramPersonal`
+- `Channel::VkCommunity`
+- `Channel::Email`
+- API-based channels where outbound initiation is explicitly allowed
+
+### Tier 2
+
+Add channels that are technically sendable but need stronger policy gating:
+
+- `Channel::Line`
+- `Channel::FacebookPage`
+- `Channel::Instagram`
+
+These require stricter handling of reply windows, tagging modes, or prior contact context.
+
+### Tier 3
+
+Treat these as high-risk or context-heavy channels:
+
+- `Channel::Telegram`
+- `Channel::Tiktok`
+- `Channel::TwitterProfile`
+
+They should only be enabled after target context and policy constraints are explicit in the new registry.
+
+## Channel Notes
+
+### WhatsApp
+
+Must preserve:
+
+- reply window awareness
+- template fallback outside the reply window
+- campaign delivery correlation
+
+The current send behavior in `app/services/whatsapp/send_on_whatsapp_service.rb` is a good base and should become the source of truth.
+
+### Email
+
+Email should be supported through the same campaign product, but with channel-specific content fields:
+
+- subject
+- HTML body
+- plain text body
+
+This should be modeled as channel capabilities, not as a separate product.
+
+### Social Channels
+
+Facebook, Instagram, TikTok, Telegram bot, and Twitter cannot be treated like phone or email channels.
+
+These depend on preserved remote identity and, in some cases, live reply context. They should use stored target records and explicit eligibility checks before launch.
+
+### Website
+
+Do not merge website-trigger campaigns into the outbound campaign runner. Keep the current `ongoing` web-trigger logic isolated as its own surface.
+
+## Frontend Plan
+
+Replace the current tab and route model with a capability-driven wizard:
+
+1. Campaign type
+2. Inbox selection
+3. Audience selection
+4. Content composition
+5. Preview and policy validation
+6. Schedule and launch
+
+Frontend rules:
+
+- no hardcoded SMS/WhatsApp-only forms as the long-term model
+- render fields from backend capability metadata
+- block launch when preview reports non-recoverable issues
+- show channel-specific warnings early
+
+The existing separate routes in `app/javascript/dashboard/routes/dashboard/campaigns/campaigns.routes.js` should eventually collapse into a unified outbound campaign route plus the separate website-trigger route.
+
+## Backend Workstreams
+
+### Workstream 1
+
+Add capability service and expose it to the dashboard.
+
+### Workstream 2
+
+Introduce `contact_channel_targets` and populate it from existing inbound and sync flows.
+
+### Workstream 3
+
+Build audience preview and eligibility computation.
+
+### Workstream 4
+
+Refactor campaign execution into a shared runner that uses:
+
+- delivery records
+- messages with `campaign_id`
+- `SendReplyJob`
+
+### Workstream 5
+
+Add provider callback correlation and run finalization logic.
+
+### Workstream 6
+
+Migrate existing SMS and WhatsApp campaign services onto the shared runner, then remove per-channel campaign orchestration where possible.
+
+## Suggested Data Model Changes
+
+### Campaign
+
+Likely additions:
+
+- richer lifecycle status
+- `campaign_family` or equivalent to distinguish `website_trigger` from `outbound_audience`
+- content payload structured for channel-aware composition
+
+### Campaign Run
+
+Recommended new entity:
+
+- one campaign may have one or more runs
+- stores execution snapshot and aggregate counters
+- enables restart, cancel, and partial recovery behavior
+
+### Campaign Delivery
+
+Extend delivery tracking with:
+
+- failure reason code
+- capability snapshot
+- eligibility snapshot
+- retry count
+- run reference
+
+## Migration Strategy
+
+1. Add capability registry without changing existing campaign UX.
+2. Add preview API and contact target registry.
+3. Reimplement SMS and WhatsApp on the new runner behind a feature flag.
+4. Move frontend from hardcoded routes to unified outbound campaign creation.
+5. Add channels tier by tier.
+6. Keep website-trigger campaigns on the legacy branch until the split is explicit in product and code.
+
+## Verification Strategy
+
+At minimum, validate:
+
+- campaign preview correctness
+- target resolution by channel
+- policy blocking by channel
+- idempotent reruns
+- provider callback mapping to deliveries
+- partial failure recovery
+- analytics totals and error breakdowns
+
+Testing should include:
+
+- service specs for capability and eligibility resolution
+- runner specs with mixed delivery outcomes
+- request specs for preview and create/update APIs
+- channel-specific contract specs where templates or windows matter
+
+## What Not To Do
+
+- do not expand the current `case inbox.inbox_type` pattern for every new channel
+- do not force all channels into one generic text-only payload
+- do not rely only on `Contact.phone_number` or `Contact.email` for social channel targeting
+- do not mark campaigns completed before deliveries resolve
+- do not merge website-trigger logic into the outbound runner
+
+## Recommended Implementation Order
+
+1. Backend capability registry
+2. Contact channel target registry
+3. Preview API
+4. Shared outbound runner
+5. SMS and WhatsApp migration
+6. Unified frontend wizard
+7. Tier 1 channel rollout
+8. Tier 2 and Tier 3 rollout
+
+## Decision Summary
+
+The correct path for One Link is a native multichannel outbound campaign architecture built on:
+
+- capability-based channel support
+- explicit contact targeting records
+- reuse of the existing message send pipeline
+- separate handling for website-trigger campaigns
+- phased rollout by risk and delivery semantics
+
+This approach is more reliable than extending the current campaign-specific channel exceptions and better matches how the communication core already works.

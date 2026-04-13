@@ -1,0 +1,82 @@
+---
+title: Captain MCP Server Quickstart
+description: Internal manual verification checklist for Captain MCP server setup, surface preview, and OAuth behavior.
+---
+
+# Captain MCP Server Quickstart
+
+Use this page for manual verification of the Captain MCP integration after changes in the `ruby_llm-mcp` layer or in the product-managed MCP surface.
+
+## Supported Surface
+
+The current Captain MCP implementation supports:
+
+- MCP server CRUD in Captain
+- `streamable`, `sse`, and `stdio` transports
+- browser OAuth flow for HTTP MCP servers
+- surface preview for `tools`, `resources`, `resource_templates`, `prompts`, and `tasks`
+- OAuth disconnect and reconnect
+
+## Example Configurations
+
+### Streamable HTTP
+
+```json
+{
+  "url": "https://example.com/mcp"
+}
+```
+
+### SSE HTTP
+
+```json
+{
+  "url": "https://example.com/sse",
+  "headers": {
+    "Authorization": "Bearer <token>"
+  }
+}
+```
+
+### stdio
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+```
+
+### HTTP With OAuth
+
+```json
+{
+  "url": "https://example.com/mcp",
+  "oauth": {
+    "scope": "read write"
+  }
+}
+```
+
+## Manual Verification Flow
+
+1. Create a `streamable` MCP server by URL and click `Test Connection`.
+2. Open `Manage server` and confirm that `tools`, `resources`, `resource_templates`, `prompts`, and `tasks` load.
+3. For a `resource template` and a `prompt`, send JSON arguments and verify the response payload.
+4. For an OAuth-backed server, click `Connect OAuth`, complete the browser flow, and verify the success state after redirect.
+5. Reopen `Manage server` and confirm that the status shows `OAuth connected`.
+6. Click `Disconnect OAuth` and confirm that the status resets cleanly.
+7. For `stdio`, verify at least one locally available MCP command with a real response surface.
+
+## Success Criteria
+
+Treat the verification as successful when all of the following are true:
+
+- the server can be created and saved without leaking secrets in list responses
+- the admin `show` response still returns the full config when needed
+- the surface snapshot opens reliably
+- previews are readable both in raw JSON and in normalized `messages` or `content` output
+- OAuth can connect, reconnect, and disconnect without manual database cleanup

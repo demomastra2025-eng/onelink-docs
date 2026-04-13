@@ -1,0 +1,951 @@
+---
+title: Internal AI Stack Native Runtime Plan
+description: Target architecture and implementation plan for making the One Link AI stack native, reliable, observable, and RubyLLM-aligned without overbuilding unused capabilities.
+---
+
+# Internal AI Stack Native Runtime Plan
+
+## Goal
+
+This document defines the target AI stack for `onelink` and maps which parts of the local RubyLLM ecosystem should be adopted directly, adapted into product-native layers, or explicitly ignored for now.
+
+The target is not "support every feature that exists in RubyLLM".
+
+The target is:
+
+- one logical AI runtime for assistant, copilot, tasks, onboarding, embeddings, transcription, and moderation
+- one native contract for prompts, messages, tools, structured output, traces, and safety
+- one observability model that supports debugging, operations, cost control, and evals
+- a pragmatic scope that closes real `onelink` use cases without importing unnecessary library breadth
+
+## Scope
+
+This plan covers:
+
+- core `ruby_llm` runtime usage
+- `ruby_llm-schema` usage
+- built-in and custom tools
+- future MCP integration boundaries
+- tracing and observability
+- monitoring and alerting
+- base and custom moderation
+- evals and regression testing
+
+This plan does not aim to:
+
+- port `RubyLLM::Agent` directly into `onelink`
+- mount third-party Rails engines for AI dashboards
+- add image generation or wide provider breadth unless product needs it
+- reach full parity with every neighboring repository in `/Users/akhanbakhitov/Documents/zeroprompt/ruby`
+
+## Local Verification Assumptions
+
+For local development and verification in `onelink`, the baseline infra assumption should stay explicit:
+
+- Postgres runs in Docker
+- Redis runs in Docker
+- the Rails app itself runs directly on the developer machine, not inside Docker, in the standard local dev loop
+- AI runtime changes should be verified against the same Docker-backed local services used by the app test and dev environments
+
+This matters because AI-stack work often looks like pure Ruby code but still depends on Rails boot, Sidekiq-adjacent runtime wiring, cached state, and database-backed Captain entities.
+
+## Progress Status
+
+The following slices are already implemented in the current `onelink` codebase iteration:
+
+- capability-aware runtime gating for thinking, structured output, tool calling, and multimodal input
+- stricter structured-output lifecycle with schema validation, repair retry, and controlled fallbacks
+- a shared `Llm::MessageFormat` layer used by shared `Llm` flows and Captain runtime for history restore and multimodal serialization
+- explicit moderation failure-mode handling with `fail_open` and `fail_closed` semantics instead of silent skip behavior
+- an initial `Llm::EventBus` foundation for normalized moderation events and future AI observability wiring
+- Captain runtime event-bus callbacks for run, chat, tool, and handoff events
+- schema invalid/repair event publication and safety-blocked events for moderation failures
+- persisted `llm_events` ingestion with subscriber installation, derived cost estimation, and a basic metrics snapshot service
+- an admin-only Captain observability read-path that exposes account-scoped AI snapshots and filtered recent `llm_events`
+- a first `Llm::SafetyPolicy` layer that wraps provider moderation and adds deterministic account-configurable safety blocklists
+- tool-level safety enforcement for assistant runtime tools, copilot tools, and custom-tool preview execution on `tool_arguments` and `tool_results`
+- a product-native release gate over persisted `llm_events`, exposed through the observability API and configurable through `captain_runtime.release_gate`
+- sanitized `llm_events` payload persistence so observability data is truncated and secret-bearing fields are redacted before storage
+- autonomous agent high-risk tool gating through `captain_runtime.agent_high_risk_tools` and `agent_high_risk_tool_ids`
+- Prometheus-compatible AI metrics export from the Captain observability API for Grafana/alerting integration
+- product-native AI alert evaluation derived from release-gate checks, exposed through observability JSON and Prometheus metrics
+- normalized tool result envelope for audit, safety, and event telemetry without changing tool output behavior
+- native trace payload policy with account-level `trace_input_capture` and `trace_output_capture` toggles, sanitizer-backed content export, and redaction hooks for OTel/Langfuse traces
+- unified tool failure contract across built-in tools, copilot services, runtime wrapper, custom HTTP execution, audit logs, and event telemetry so operational failures are no longer masked as successful string outputs
+- a first dataset-driven eval/regression layer for the highest-risk internal classifier flow (`captain.conversation_completion`), with reusable fixture loading, suite reporting, and a native rake entrypoint for gated runs
+- deterministic offline eval packs for moderation degradation modes and tool safety blocking, runnable through native rake tasks without live provider calls
+- a native combined release-check runner that merges operational `llm_events` release gating with deterministic eval packs and live high-risk eval suites into one machine-readable pre-release report
+- wrapper-level observability for the main RubyLLM surfaces:
+  - `Llm::ChatClient`
+  - `Llm::ChatRequestRunner`
+  - `Llm::ApiClient.embed`
+  - `Llm::ApiClient.transcribe`
+  - `Llm::ApiClient.moderate`
+- normalized observability payloads through `Llm::ObservabilityPayload`, including provider/model resolution, token extraction, vector shape, transcription size, moderation outcome, and error enrichment
+- persisted event ingestion for chat, embedding, transcription, moderation, schema, safety, run, handoff, and tool events
+- Prometheus metrics for chat requests plus non-chat AI surfaces:
+  - embeddings
+  - transcriptions
+  - moderation checks
+  - all persisted AI tokens
+  - all persisted AI estimated cost
+- moderation enabled by default for assistant and copilot runtime settings, with explicit `fail_open` degradation as the default safety mode
+- production-safe MCP stdio policy:
+  - stdio transport is disabled by default in production
+  - `CAPTAIN_MCP_STDIO_ENABLED` can explicitly enable it
+  - `CAPTAIN_MCP_STDIO_COMMAND_ALLOWLIST` can restrict allowed stdio commands
+- selective MCP implementation for product-managed external tools, including account-scoped server records, HTTP transports, OAuth token storage, server-config redaction, and tool metadata projection
+- stricter `ruby_llm-schema` normalization so schema definitions are JSON-normalized before validation and symbol/string key mismatches do not reject valid model output
+
+The remaining sections below still describe the target end-state and the next implementation slices.
+
+## Reference Repositories
+
+The following local repositories were reviewed as reference material:
+
+- `/Users/akhanbakhitov/Documents/zeroprompt/ruby/ruby_llm`
+- `/Users/akhanbakhitov/Documents/zeroprompt/ruby/ruby_llm-schema`
+- `/Users/akhanbakhitov/Documents/zeroprompt/ruby/ruby_llm-instrumentation`
+- `/Users/akhanbakhitov/Documents/zeroprompt/ruby/ruby_llm-monitoring`
+- `/Users/akhanbakhitov/Documents/zeroprompt/ruby/opentelemetry-instrumentation-ruby_llm`
+- `/Users/akhanbakhitov/Documents/zeroprompt/ruby/ruby_llm-mcp`
+
+They should be treated as:
+
+- API and runtime-shape references
+- inspiration for product-native architecture
+- implementation source material for selective adoption
+
+They should not be treated as:
+
+- a mandate to mirror all features in `onelink`
+- a reason to replace product-specific Captain runtime orchestration
+
+## Current Onelink Foundation To Keep
+
+The strongest current pieces should be kept and strengthened:
+
+- `lib/llm/config.rb`
+  - provider isolation through `RubyLLM.context`
+  - account and installation model selection
+- `lib/llm/chat_client.rb`
+  - common chat builder and content-aware ask path
+- `lib/llm/chat_request_runner.rb`
+  - common request path for non-agent features
+- `enterprise/app/services/llm/base_ai_service.rb`
+  - thin service base aligned with the new RubyLLM path
+- `enterprise/lib/captain/runtime/*`
+  - product-native orchestration on top of RubyLLM, not parallel to it
+- `enterprise/lib/captain/tool_registry.rb`
+  - shared built-in tool metadata source
+- `lib/integrations/llm_instrumentation*`
+  - initial OTel/Langfuse-compatible observability foundation
+- `lib/opentelemetry_config.rb`
+  - production trace export foundation
+
+The weakest current pieces are:
+
+- split execution paths between newer `lib/llm/*` and older integration helpers
+- soft schema handling instead of strict structured output contracts
+- incomplete multimodal/message history fidelity
+- moderation that is effectively OpenAI-only and fail-open
+- tool permission behavior that is too permissive in `agent` scope
+- observability that is useful but not yet normalized enough for operations and evals
+
+## What To Take From Each Reference Repo
+
+## 1. `ruby_llm`
+
+### Adopt Directly
+
+- Core runtime model
+  - chat lifecycle
+  - provider abstraction
+  - scoped context
+  - structured output attachment
+  - multimodal content model
+  - embeddings and transcription surface
+  - tool-call loop semantics
+- Model registry concepts
+  - capabilities
+  - modalities
+  - pricing
+  - provider-aware defaults
+
+### Adapt Into Onelink
+
+- Capability-driven runtime gating
+  - `structured_output`
+  - `tool_calling`
+  - `streaming`
+  - `multimodal_input`
+  - `embedding`
+  - `transcription`
+  - `moderation`
+- Thinking configuration and persistence
+  - only where product really uses it
+  - not as public output contract
+- Multimodal attachment fidelity
+  - preserve content parts, tool calls, and restored history more faithfully
+
+### Do Not Adopt
+
+- `RubyLLM::Agent` as the main orchestration layer
+- Rails chat UI generators
+- ActiveRecord `acts_as_chat` integration
+- image generation
+- provider breadth beyond current business need
+
+## 2. `ruby_llm-schema`
+
+### Adopt Directly
+
+- `RubyLLM::Schema` as the only structured output contract
+- strict/additionalProperties behavior
+- validation before schema emission
+- richer DSL features already supported by the gem:
+  - `integer`
+  - `optional`
+  - `one_of`
+  - `define`
+  - `reference`
+  - nested schema composition
+
+### Adapt Into Onelink
+
+- product-level schema lifecycle:
+  - requested schema
+  - validated response
+  - retry or repair on invalid response
+  - controlled fallback path
+- schema naming and versioning:
+  - every important schema should have a stable identifier
+  - high-value schemas should be regression-tested
+
+### Do Not Adopt
+
+- helper or DSL patterns that only make internal app code more magical without operational value
+
+## 3. `ruby_llm-instrumentation`
+
+### Adopt Directly
+
+- the event-bus idea
+- request-scoped metadata context
+- stable event naming around chat, tool execution, embeddings, moderation, and transcription
+
+### Adapt Into Onelink
+
+- create an internal `Llm::EventBus` that publishes normalized events:
+  - `llm.chat.complete`
+  - `llm.tool.execute`
+  - `llm.embedding.complete`
+  - `llm.transcription.complete`
+  - `llm.moderation.complete`
+  - `llm.schema.invalid`
+  - `llm.agent.handoff`
+  - `llm.safety.blocked`
+- attach shared metadata:
+  - `account_id`
+  - `assistant_id`
+  - `conversation_id`
+  - `copilot_thread_id`
+  - `feature`
+  - `provider`
+  - `model`
+  - `tool_name`
+  - `trace_id`
+  - `prompt_id`
+  - `schema_name`
+
+### Do Not Adopt
+
+- monkey-patching that duplicates or conflicts with existing `onelink` runtime callbacks
+
+## 4. `ruby_llm-monitoring`
+
+### Adopt Directly
+
+- the idea of persisted summarized AI events
+- cost calculation from model pricing
+- alert-rule model
+- channel-based notifications
+
+### Adapt Into Onelink
+
+- keep this as internal persistence and metrics infrastructure
+- do not mount a separate engine UI
+- persist only operationally valuable data, not full raw prompts by default
+
+### Do Not Adopt
+
+- the monitoring engine UI as-is
+- another product-facing dashboard surface inside `onelink`
+
+## 5. `opentelemetry-instrumentation-ruby_llm`
+
+### Adopt Directly
+
+- semantic discipline around `gen_ai.*` span attributes
+- optional content capture toggle
+- clean separation between trace metadata and captured prompt/output content
+
+### Adapt Into Onelink
+
+- use it as a reference for attribute shape and privacy toggles
+- keep `onelink` custom tracing because it already spans product-specific runtime layers
+
+### Do Not Adopt
+
+- replacing current tracing with the generic package
+
+The generic package is smaller and less aware of Captain orchestration than the current custom stack.
+
+## 6. `ruby_llm-mcp`
+
+### Adopt Directly
+
+- MCP client semantics for product-managed external tool servers
+- HTTP-oriented transports where the server lifecycle is external to `onelink`
+- OAuth storage concepts, adapted to account-scoped encrypted model fields
+- tool metadata discovery/projection into the existing Captain tool catalog
+
+### Adapt Into Onelink
+
+- MCP is an optional external tool-provider surface, not the main AI runtime
+- account-scoped `Captain::McpServer` records own configuration, allowed scopes, OAuth state, and redacted API output
+- discovered MCP tools must enter through the same tool metadata, policy, tracing, audit, and safety envelope as built-in and custom HTTP tools
+- stdio transport is treated as an operator-controlled exception because it executes local commands
+
+### Do Not Adopt
+
+- MCP as a replacement for native Captain tools
+- prompt/resource exposure as a product feature until there is a concrete enterprise use case
+- unrestricted stdio execution in production
+- automatic permission bypass for MCP tools
+
+## Target Architecture
+
+## 1. One AI Platform Layer
+
+All AI execution should converge behind one internal platform layer:
+
+- `lib/llm/config.rb`
+- `lib/llm/models.rb`
+- `lib/llm/api_client.rb`
+- `lib/llm/chat_client.rb`
+- `lib/llm/chat_request_runner.rb`
+- new:
+  - `lib/llm/capability_policy.rb`
+  - `lib/llm/message_serializer.rb`
+  - `lib/llm/history_restorer.rb`
+  - `lib/llm/schema_contract.rb`
+  - `lib/llm/event_bus.rb`
+  - `lib/llm/safety_policy.rb`
+
+Product services should consume this layer.
+
+They should not each invent:
+
+- their own content normalization
+- their own schema fallback logic
+- their own trace payload shape
+- their own moderation decision policy
+
+## 2. One Product Orchestration Layer
+
+Captain runtime should remain the orchestration layer for:
+
+- assistant root agent
+- scenario handoffs
+- tool registration and execution context
+- persisted conversation state
+- product-specific tracing callbacks
+
+This means:
+
+- keep `enterprise/lib/captain/runtime/*`
+- do not replace it with direct `RubyLLM::Agent`
+- but reduce duplicated logic outside this runtime
+
+## 3. One Structured Output Layer
+
+Every feature that expects structured output should use:
+
+- a named `RubyLLM::Schema`
+- one parse-and-validate contract
+- one invalid-response policy
+
+No feature should:
+
+- silently accept malformed shape because it is "Hash-like"
+- degrade into string parsing unless the feature explicitly defines that fallback
+- ship `reasoning` in user-facing product payloads unless that payload is internal-only
+
+## 4. One Safety Layer
+
+Safety should become a first-class platform concern, not an afterthought around the main request:
+
+- base moderation
+- custom safety rules
+- redaction
+- tool mutation rules
+- trace capture privacy rules
+
+Safety should apply consistently to:
+
+- user input
+- AI output
+- tool arguments
+- tool results before persistence when needed
+- exported trace content when capture is enabled
+
+## Detailed Workstreams
+
+## A. Core Runtime Consolidation
+
+### Problem
+
+There are still multiple AI execution styles in the codebase:
+
+- the newer RubyLLM-based service path in `enterprise/app/services/llm/base_ai_service.rb`
+- the common runner in `lib/llm/chat_request_runner.rb`
+- the Captain runtime path
+- older integration-oriented wrappers in `lib/integrations/llm_base_service.rb`
+
+### Decision
+
+Converge on one platform contract:
+
+- `Llm::ChatClient` for constructing chat
+- `Llm::ChatRequestRunner` for normalized non-agent runs
+- `Captain::Runtime` for orchestration-heavy runs
+
+### Changes
+
+- refactor `lib/integrations/llm_base_service.rb` to delegate to the same platform contract
+- stop embedding model/provider/runtime semantics inside feature services
+- enforce one canonical `message` shape across assistant, copilot, tasks, and helper paths
+
+### Definition Of Done
+
+- no major AI feature uses a bespoke request assembly path
+- no major AI feature bypasses common tracing or schema handling
+
+## B. Capability Model And Routing
+
+### Problem
+
+`onelink` currently models almost no capabilities besides `reasoning`.
+
+### Decision
+
+Promote model capabilities to first-class runtime input.
+
+### Capability Set To Support
+
+- `structured_output`
+- `tool_calling`
+- `streaming`
+- `multimodal_input`
+- `reasoning`
+- `embedding`
+- `transcription`
+- `moderation`
+
+### Changes
+
+- expand `config/llm.yml`
+- extend `lib/llm/models.rb`
+- add `Llm::CapabilityPolicy`
+- gate calls such as:
+  - `.with_schema`
+  - tool attachment
+  - multimodal content
+  - thinking options
+
+### Why
+
+This prevents:
+
+- attaching schema to unsupported models
+- attaching tools to models that should not be used that way
+- silently sending multimodal content to a text-only path
+
+## C. Message Model And Multimodal Fidelity
+
+### Problem
+
+Captain runtime history restoration is stronger than the generic path, and both still reduce some multimodal content to coarse text or JSON strings.
+
+### Decision
+
+Create one canonical message serializer/restorer shared by all AI paths.
+
+### Changes
+
+- extract a shared serializer from:
+  - `enterprise/lib/captain/runtime/history_restorer.rb`
+  - `enterprise/lib/captain/runtime/message_extractor.rb`
+  - `lib/llm/chat_request_runner.rb`
+- preserve:
+  - role
+  - content parts
+  - attachments
+  - tool calls
+  - tool results
+  - thinking
+  - usage
+  - agent_name when relevant
+
+### Definition Of Done
+
+- same input history restores equivalently in assistant and non-assistant flows
+- multimodal content does not degrade differently by execution path
+
+## D. Structured Output Hardening
+
+### Problem
+
+Schema usage is currently soft. Many services simply accept any `Hash`, fall back quietly, or return empty arrays on invalid structured output.
+
+### Decision
+
+Introduce one schema contract layer:
+
+- build schema
+- attach schema
+- validate result shape
+- retry or repair when invalid
+- persist normalized output only after validation
+
+### Changes
+
+- add `Llm::SchemaContract`
+- use it from:
+  - Captain assistant response handling
+  - Copilot response handling
+  - conversation completion
+  - FAQ generation
+  - onboarding extraction
+  - contact extraction helpers
+- expand current schema usage to include:
+  - `integer`
+  - `optional`
+  - `one_of`
+  - `define/reference`
+  - schema composition for repeated sub-objects
+
+### Definition Of Done
+
+- schema-invalid responses are visible, measurable, and retryable
+- product features no longer silently degrade because the model returned the wrong shape
+
+## E. Tooling Core
+
+### Goal
+
+Make built-in tools, custom HTTP tools, and future external tools behave as one logical system.
+
+### Keep
+
+- `enterprise/lib/captain/tool_registry.rb`
+- `enterprise/app/models/captain/custom_tool.rb`
+- idempotency and audit direction already present
+
+### Needed Changes
+
+- define one normalized tool result shape:
+  - `success`
+  - `data`
+  - `message`
+  - `error`
+  - `retryable`
+  - `audit`
+- require mutation tools to declare:
+  - risk level
+  - idempotency behavior
+  - confirmation behavior
+  - audit fields
+- tighten `Captain::ToolPolicy`
+  - do not automatically bypass permission checks in `agent` scope for risky write operations
+- add trace fields:
+  - tool class
+  - tool id
+  - built-in vs custom
+  - execution latency
+  - result size
+  - retryable failure or hard failure
+
+### Non-Goal
+
+Do not redesign tool UX or product concepts before this runtime hardening is complete.
+
+## F. MCP Boundary
+
+### Recommendation
+
+Keep MCP as a controlled external tool-provider boundary, not as the core AI runtime.
+
+### Current Position
+
+- `Captain::McpServer` provides account-scoped MCP server configuration
+- HTTP transports (`streamable`, `sse`) are the preferred SaaS path
+- OAuth metadata and tokens are stored through the product model instead of a generic engine store
+- API output redacts secrets from server configuration
+- MCP tool metadata is projected into the Captain tool model instead of creating a parallel tool system
+- stdio is disabled by default in production and must be explicitly enabled with `CAPTAIN_MCP_STDIO_ENABLED`
+- stdio commands can be restricted with `CAPTAIN_MCP_STDIO_COMMAND_ALLOWLIST`
+
+### What To Avoid
+
+- do not make MCP tools bypass `Captain::ToolPolicy`
+- do not expose MCP prompts/resources until product requirements justify it
+- do not let stdio become a tenant-configurable production escape hatch
+- do not create a second observability or audit path for MCP
+
+### When To Revisit
+
+Only revisit when one of these is true:
+
+- enterprise customers need broader MCP resource or prompt support
+- an external ecosystem around MCP tools becomes a product advantage for Captain
+- custom HTTP tools become insufficient for important integrations
+
+### Constraint
+
+If MCP arrives later, it must pass through:
+
+- `Captain::ToolPolicy`
+- `Llm::EventBus`
+- audit logging
+- moderation/safety checks where relevant
+- tracing and cost segmentation
+
+## G. Observability And Tracing
+
+## Current Good Foundation
+
+- OpenTelemetry export in `lib/opentelemetry_config.rb`
+- shared span constants in `lib/integrations/llm_instrumentation_constants.rb`
+- custom LLM/tool spans
+- Captain runtime trace callbacks
+
+## Problem
+
+Observability is useful today but not normalized enough to act as the canonical AI operating layer.
+
+### Decisions
+
+- keep OpenTelemetry
+- keep Langfuse as the main LLM trace UI
+- add a platform event bus
+- introduce a summarized event persistence model
+- standardize span taxonomy and required attributes
+
+### Required Span Taxonomy
+
+- root run span
+- agent session span
+- llm generation span
+- tool span
+- moderation span
+- embedding span
+- transcription span
+- schema repair span if retry or repair occurs
+
+### Required Attributes
+
+- `account_id`
+- `assistant_id`
+- `conversation_id`
+- `copilot_thread_id`
+- `feature`
+- `provider`
+- `model`
+- `prompt_id`
+- `prompt_hash`
+- `schema_name`
+- `tool_name`
+- `risk_level`
+- `trace_input_capture`
+- `trace_output_capture`
+- `runtime_mode`
+
+### Privacy Controls
+
+- add explicit content-capture toggle similar to `opentelemetry-instrumentation-ruby_llm`
+- do not capture full prompt/output bodies by default in production
+- allow opt-in capture for debugging or staging
+- support redaction hooks before export
+
+## H. Monitoring And Alerts
+
+### Recommendation
+
+Do not mount `ruby_llm-monitoring` as a separate UI.
+
+### Instead
+
+Adopt the model, not the engine:
+
+- persist summarized AI events in `onelink`
+- expose metrics to Prometheus
+- use Grafana for dashboards and alerts
+- use Langfuse for trace-level AI debugging and eval views
+
+### Event Model To Add
+
+Create a product-native event record or rollup table that stores:
+
+- event type
+- timestamp
+- account id
+- assistant id
+- conversation id
+- feature
+- provider
+- model
+- input tokens
+- output tokens
+- thinking tokens
+- duration
+- cost
+- error class
+- blocked by moderation
+- schema invalid
+- tool name
+- tool failure
+
+### Metrics To Expose
+
+- request count
+- p50/p95/p99 latency
+- provider error rate
+- model-specific error rate
+- tool success rate
+- moderation blocked rate
+- moderation skipped rate
+- schema invalid rate
+- cost per feature
+- cost per account
+- cost per model
+- handoff rate
+
+### Alerts To Add
+
+- moderation skipped
+- schema invalid spike
+- provider error spike
+- tool failure spike
+- sudden cost spike
+- p95 latency breach
+
+## I. Moderation And Safety
+
+## Base Moderation
+
+### Problem
+
+Current moderation is tied to OpenAI and silently skips if the key is unavailable.
+
+### Decision
+
+Promote moderation into a first-class safety layer with explicit runtime behavior.
+
+### Changes
+
+- create `Llm::SafetyPolicy`
+- model policies by:
+  - feature
+  - stage
+  - account or installation defaults
+- stages:
+  - input
+  - output
+  - tool_arguments
+  - tool_results
+
+### Runtime Modes
+
+- `disabled`
+- `warn_only`
+- `block`
+- `degraded`
+
+### Required Telemetry
+
+- moderation requested
+- moderation skipped
+- moderation flagged
+- moderation blocked
+- moderation provider error
+
+## Custom Moderation
+
+Base provider moderation is not enough for the actual product.
+
+Add product-native safety rules for:
+
+- PII and secret leakage in traces
+- unsafe CRM mutations from AI
+- disallowed vertical-specific content
+- account-specific blocked topics or instructions
+- custom blocklists and allowlists
+
+These should be implemented as deterministic policy checks around the model call, not as a separate LLM step.
+
+## J. Evals
+
+### Recommendation
+
+Add evals, but only after runtime contracts are normalized.
+
+The first shipped regression suite now exists for `captain.conversation_completion`:
+
+- fixture path: `config/llm_evals/conversation_completion.yml`
+- native runner: `bundle exec rake llm:evals:conversation_completion ACCOUNT_ID=...`
+- intended use: prompt/model regression checks for the internal auto-resolution classifier before operational rollout changes
+
+The deterministic offline safety pack now also exists:
+
+- moderation fixtures: `config/llm_evals/moderation.yml`
+- tool safety fixtures: `config/llm_evals/tool_safety.yml`
+- offline runner: `bundle exec rake llm:evals:deterministic`
+- full pack runner: `bundle exec rake llm:evals:all ACCOUNT_ID=...`
+- intended use: pre-release regression checks for moderation degradation modes, custom blocklists, and tool safety blocking without depending on live provider calls
+
+The combined release check now exists as a separate native operator path:
+
+- runner: `bundle exec rake llm:release_check ACCOUNT_ID=...`
+- admin API: `GET /api/v1/accounts/:account_id/captain/observability/release_check`
+- optional filters: `FEATURE=assistant MODEL=gpt-5.2 RUNTIME_MODE=captain_runtime ASSISTANT_ID=... SINCE=... UNTIL=... EVAL_MODEL=...`
+- API note: the HTTP endpoint defaults to `include_live=false` and enables account-scoped live evals only when explicitly requested
+- behavior: fails only on blocking operational gate or eval failures; `pass_with_warnings` remains a successful run with advisory warnings
+
+### What To Evaluate
+
+- assistant response correctness
+- tool selection correctness
+- schema validity
+- moderation outcomes
+- handoff behavior
+- conversation completion classification
+- FAQ generation quality on sampled knowledge content
+
+### What To Store
+
+- prompt version or hash
+- model id
+- account-independent gold fixtures
+- expected tools
+- expected structured output shape
+- pass or fail result
+- score when applicable
+
+### Dataset Types
+
+- golden customer conversations
+- copilot operator tasks
+- FAQ extraction samples
+- onboarding website samples
+- moderation edge cases
+- tool mutation safety cases
+
+### Recommendation On Tooling
+
+Use Langfuse for trace-linked eval workflows.
+
+Do not add another eval-specific product until the above datasets and contracts exist.
+
+## K. Testing Strategy
+
+Add contract tests for:
+
+- capability gating
+- schema strictness and repair
+- multimodal restore fidelity
+- tool authorization behavior
+- tool idempotency
+- moderation degraded mode
+- event-bus emission
+- trace attribute completeness
+- cost attribution correctness
+
+Regression suites should exist for:
+
+- assistant root prompt
+- scenario handoff chains
+- copilot retrieval and action flows
+- conversation completion
+- FAQ generation
+- onboarding extraction
+
+## Implementation Phases
+
+## Phase 1. Platform Normalization
+
+- consolidate execution paths onto one platform layer
+- add capability registry and gating
+- define canonical message serialization contract
+
+## Phase 2. Schema Hardening
+
+- add `Llm::SchemaContract`
+- remove soft schema parsing from features
+- migrate structured-output features to strict validation and controlled fallback
+
+## Phase 3. Safety And Tools
+
+- introduce `Llm::SafetyPolicy`
+- harden moderation modes
+- tighten `Captain::ToolPolicy`
+- normalize tool result contract
+
+## Phase 4. Event Bus And Summarized Monitoring
+
+- add `Llm::EventBus`
+- persist summarized AI events
+- expose metrics and alerts
+- segment costs by feature, account, and model
+
+## Phase 5. Evals And Release Gates
+
+- add golden datasets
+- run regression evals on prompt and model changes
+- gate important AI releases on eval baselines
+
+## Repository-To-Action Mapping
+
+| Reference Repo | Adopt | Adapt | Ignore For Now |
+| --- | --- | --- | --- |
+| `ruby_llm` | core runtime semantics, context, content model, registry concepts | capability policy, message fidelity, thinking policy | Rails chat UI, ActiveRecord chat models, image generation |
+| `ruby_llm-schema` | schema DSL, strict mode, validation | schema contract layer, richer schema usage in product features | helper ergonomics without operational value |
+| `ruby_llm-instrumentation` | event-bus pattern, metadata scoping | internal `Llm::EventBus` | direct monkey-patch approach |
+| `ruby_llm-monitoring` | cost/event/alert model | summarized AI events and metrics backend | mounted monitoring engine UI |
+| `opentelemetry-instrumentation-ruby_llm` | semantic conventions, capture toggles | span taxonomy and privacy controls | replacing custom product tracing |
+| `ruby_llm-mcp` | future boundary concept only | optional future external tool provider layer | immediate runtime adoption |
+
+## Definition Of Done
+
+The AI stack should be considered complete enough when:
+
+- all major AI features use one platform execution contract
+- all structured-output features use strict schema contracts
+- tool execution is consistent, auditable, and permission-safe
+- moderation is explicit, measurable, and not silently skipped
+- traces are complete enough to debug a run end-to-end
+- metrics and alerts exist for latency, errors, cost, moderation, and schema health
+- eval datasets exist for the highest-risk flows
+- new AI features naturally plug into the same runtime and safety envelope instead of inventing their own path
+
+## Non-Goals
+
+- matching every capability in all neighboring RubyLLM repositories
+- adding MCP because it is fashionable
+- adding new UI surfaces before the runtime contracts are stable
+- treating internal reasoning as a user-facing product field
+
+The right end state is not maximal breadth.
+
+The right end state is a narrow, coherent, RubyLLM-native AI platform that fully covers `onelink`'s real product use cases and is operationally safe to evolve.
