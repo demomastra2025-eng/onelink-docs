@@ -129,7 +129,9 @@ Built-in tools are now described through a shared metadata registry instead of s
 
 Current runtime behavior:
 
-- live `agent` and `scenario` runtimes only register tools that pass the shared tool policy for the current assistant account
+- live `agent` and `scenario` runtimes register tools from `tool_access`, then apply the shared tool policy for feature, high-risk, and confirmation checks
+- capability tools exposed in assistant settings (`faq_lookup`, `handoff`, contact note, private note) are controlled by their checkboxes, not by the agent permissioned-tool runtime list
+- prompt `tool://...` references can still expose non-capability tools, but they do not auto-enable capability tools whose checkbox is off
 - `copilot` only instantiates tools that pass both assistant `tool_access` and the shared tool policy for the current operator
 - create-oriented shared operations for `company`, `deal`, `task`, and `appointment` now use a short-lived idempotency cache to suppress accidental duplicate writes during repeated tool calls
 - tool execution now emits audit log entries when the account has the `audit_logs` feature enabled
