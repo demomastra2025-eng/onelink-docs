@@ -1,0 +1,192 @@
+---
+title: План интеграции WhatsApp Calls (feat/whatsapp-call)
+description: Детальная техническая и архитектурная проверка переноса end-to-end WhatsApp voice calling в проект onelink с учетом реального кода.
+---
+
+# План интеграции WhatsApp Calls (feat/whatsapp-call)
+
+## 0. Результат перепроверки и ключевой вывод
+
+`feat/whatsapp-call` переносится как отдельный WhatsApp voice-контур внутри `whatsapp_cloud` inbox, а не как новый тип канала и не через Twilio/Fonoster.
+
+В onelink уже есть смежные телеком-компоненты, поэтому перенос должен быть изолированным bounded context (`Call`, сервисы, события, media-server), чтобы не разъедать существующую телефонию.
+
+Ниже — production-oriented план и контракт для сверки с кодом.
+
+## 1. Что есть в onelink по сути ветки
+
+### 1.1 Данные
+- `db/migrate/20260408170902_create_calls.rb`
+- `db/migrate/20260421042235_add_media_server_fields_to_calls.rb`
+- `enterprise/app/models/call.rb`
+
+Статусы `Call`: `ringing`, `in_progress`, `completed`, `no_answer`, `failed`.
+
+### 1.2 API и callbacks
+- `enterprise/app/controllers/api/v1/accounts/whatsapp_calls_controller.rb`
+- `enterprise/app/controllers/media_server/callbacks_controller.rb`
+- `config/routes.rb`
+
+Роуты:
+- `GET /api/v1/accounts/:account_id/whatsapp_calls/active`
+- `POST /api/v1/accounts/:account_id/whatsapp_calls/initiate`
+- `POST /api/v1/accounts/:account_id/whatsapp_calls/:id/{accept,reject,terminate,agent_answer,reconnect,join,play_audio,upload_recording}`
+- `POST /callbacks/media_server/agent_disconnected`
+- `POST /callbacks/media_server/recording_ready`
+- `POST /callbacks/media_server/session_terminated`
+- `POST /callbacks/media_server/error`
+
+### 1.3 Сервисный слой
+- `enterprise/app/services/whatsapp/call_service.rb`
+- `enterprise/app/services/whatsapp/incoming_call_service.rb`
+- `enterprise/app/services/whatsapp/media_server_client.rb`
+- `enterprise/app/services/whatsapp/call_permission_reply_service.rb`
+- `enterprise/app/services/whatsapp/call_message_builder.rb`
+- `enterprise/app/services/whatsapp/providers/whatsapp_cloud_call_methods.rb`
+
+### 1.4 Jobs
+- `enterprise/app/jobs/whatsapp/call_recording_fetch_job.rb`
+- `enterprise/app/jobs/whatsapp/call_transcription_job.rb`
+- `enterprise/app/jobs/whatsapp/call_cleanup_job.rb`
+
+### 1.5 Frontend
+- `app/javascript/dashboard/api/whatsappCalls.js`
+- `app/javascript/dashboard/stores/whatsappCalls.js`
+- `app/javascript/dashboard/composables/useWhatsappCallSession.js`
+- `app/javascript/dashboard/composables/useCallReconnection.js`
+- `app/javascript/dashboard/components/widgets/WhatsappCallWidget.vue`
+- `app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue`
+- `app/javascript/dashboard/helper/actionCable.js`
+- `app/javascript/dashboard/featureFlags.js`
+
+### 1.6 Media-server
+- `enterprise/media-server/*`
+- `docker-compose.yaml`
+- `docker-compose.production.yaml`
+- `.env.example` (переменные `MEDIA_SERVER_*`)
+
+## 2. Архитектурная рамка для onelink
+
+### 2.1 Как работает поток
+1. Meta отправляет webhook `calls` -> `Whatsapp::IncomingCallService`.
+2. Сервис создает/обновляет `Call` и пишет message типа `voice_call`.
+3. ActionCable публикует события в UI (`incoming`, `accepted`, `agent_offer`, `ended` и т.д.).
+4. Агентские действия (`accept`, `reject`, `terminate`) меняют lifecycle и синхронизируют статус.
+5. Если включен `media_server_enabled`, WebRTC-связь идет через sidecar.
+6. В server-relay режиме после reload используется `/reconnect`.
+
+### 2.2 Что это не меняет
+- Не меняется существующий `Channel::Whatsapp` lifecycle.
+- Не меняется `Twilio/Fonoster` стек.
+- Не меняются базовые чаты/каналы и их базовые lifecycle.
+
+## 3. Контракт, который должен быть единым в коде и документах
+
+### 3.1 Call lifecycle
+- `ringing` — входящий/исходящий активирован, ждет ответа.
+- `in_progress` — соединение установлено.
+- `completed` — завершено успешно.
+- `no_answer` — никем не принято/не отозвано.
+- `failed` — технически завершено с ошибкой/некорректное.
+
+### 3.2 События ActionCable
+- `whatsapp_call.incoming`
+- `whatsapp_call.accepted`
+- `whatsapp_call.outbound_connected`
+- `whatsapp_call.agent_offer`
+- `whatsapp_call.ended`
+- `whatsapp_call.agent_disconnected`
+- `whatsapp_call.permission_granted`
+
+### 3.3 Runtime-роли
+- `accept`:
+  - direct-mode: `in_progress`
+  - media-server mode: `agent_offer` после peer-сессии
+- `reject`: terminal-статус (`failed`, если не был взят в работу; иначе завершение не переходит обратно)
+- `terminate`: terminal-статус `completed` + teardown
+
+## 4. Кейс-лист для onelink
+
+### 4.1 Inbound
+1. `connect` создает `Call` в `ringing`.
+2. Floating widget появляется у всех уполномоченных агентов.
+3. Принятие одним агентом переводит статус и убирает вызов у остальных через `whatsapp_call.accepted`.
+4. `reject` переводит в terminal status.
+5. При отсутствии ответа звонок должен перейти в `no_answer`/`failed` по политике timeout.
+
+### 4.2 Outbound
+1. Инициация из `ConversationHeader` создает `Call` в `ringing`.
+2. Если media-server выключен — прямой Meta webhook path.
+3. Если media-server включен — flow через `/sessions`.
+4. На ответ абонента статус уходит в `in_progress`.
+5. `terminate` завершает с `completed`.
+
+### 4.3 Permission
+1. Исходящий без права на звонок -> статус запроса/flow разрешения.
+2. При `call_permission_reply` UI и backend получают `permission_granted`.
+
+### 4.4 Конкурентность и multi-agent
+1. Один входящий звонок видят 2+ агента.
+2. Принятие только одним агентом корректно отрабатывает и убирает карточку у остальных.
+
+### 4.5 Reconnect и устойчивость
+1. В server-relay режиме после reload выполняется `/reconnect`.
+2. Создается новый peer-offer.
+3. Таймер продолжается с `elapsed_seconds`.
+
+### 4.6 Media path
+1. При отключении агента генерируется `agent_disconnected`.
+2. После завершения сессии приходят `recording_ready` и `session_terminated`.
+3. Запись прикрепляется к voice message.
+4. По наличию записи запускается транскрипция job.
+
+## 5. Что уже закрыто в runtime и что важно не потерять
+
+1. `media_server_enabled?` поддерживает и глобальную модель по `MEDIA_SERVER_URL`, и per-inbox override `provider_config['media_server_enabled']`.
+2. `CallService#reject` и `#terminate` закрыты `with_lock` и проверкой terminal-состояний.
+3. `IncomingCallService#handle_call_connect`/`#handle_call_terminate` защищены от повторов и гонок по состояниям.
+4. `whatsapp_call_cleanup_job` включен в `config/schedule.yml` с периодом 5 минут.
+5. В API и callbacks есть симметричный маршрут для `/callbacks/media_server/error`.
+
+## 6. Производственный порядок внедрения
+
+### Фаза A. Контракт и стабилизация
+1. Привести описание контрактов статусов/событий и пермишенов к коду один-в-один.
+2. Убедиться, что `media_server_enabled` одинаков для контроллера, inbound/outbound сервисов и frontend payload.
+
+### Фаза B. Надежность
+1. Проверить idempotency webhook и lock-гварды.
+2. Включить наблюдаемость по ошибкам media-server и callback-флоу.
+3. Проверить работу `whatsapp_call_cleanup_job` на зависших звонках.
+
+### Фаза C. Эксплуатационные кейсы
+1. Inbound/Outbound
+2. Permission flow
+3. Multi-agent accept/remove
+4. Reconnect
+5. Recording + транскрипция
+
+### Фаза D. Canary -> прод
+1. Запуск в одном пилотном аккаунте с несколькими inbox.
+2. Далее расширение после стабильной метрики и ручной валидации.
+
+## 7. Критерии готовности к production
+
+1. Контракт статусов, роутов и событий совпадает с runtime.
+2. Полные кейсы из раздела 4 покрыты в staging.
+3. Наличие наблюдаемости: статусы, callback failures, Sidekiq failures, media-server heartbeat.
+4. Наличие rollback-плана для флага `whatsapp_call` и `MEDIA_SERVER_*`.
+5. Обозначен on-call владелец инцидентов и порядок эскалации.
+
+## 8. Что дополнительно закрыть перед merge в onelink
+
+1. Прогнать все кейсы из раздела 4 с реальным WhatsApp Cloud sandbox.
+2. Убедиться в корректной работе двух режимов:
+   - direct
+   - server-relay (`media_server_enabled=true`)
+3. Проверить, что в show-представлении для server-relay не уходит `sdp_offer` с Meta.
+4. Добавить/актуализировать мониторинг для `error` callback.
+5. Зафиксировать флаги:
+   - `whatsapp_call` на уровне аккаунта
+   - `provider_config['calling_enabled']`
+   - `provider_config['media_server_enabled']`

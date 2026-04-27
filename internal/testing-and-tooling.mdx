@@ -1,64 +1,130 @@
 ---
 title: Internal Testing And Tooling
-description: Internal guide to the main One Link engineering tools, test layers, and local development commands.
+description: Internal руководство по проверке и диагностике WhatsApp Calls и смежного стека One Link.
 ---
 
 # Internal Testing And Tooling
 
-## Main Tooling
+## 1. Что это покрывает
 
-The repo uses:
+Этот документ описывает конкретно проверку `WhatsApp Calls` в onelink, включая backend на Rails, media-server и dashboard UI.
 
-- Rails and Bundler
-- pnpm
-- Vite
-- Vitest
-- Histoire
-- ESLint
-- Rubocop
-- Husky
-- Foreman and Overmind
+## 2. Tooling по слоям стека
 
-## Frontend Tooling
+### 2.1. Core runtime tooling
+- Rails app: `bundle` + RSpec + Sidekiq
+- Frontend dashboard: `pnpm`, `Vite`, ESLint, Vitest, Histoire
+- Media-server: Go binary (`enterprise/media-server`), docker-compose
+- Логи/мониторинг: `docker compose` + (по окружению) log/monitoring stack
 
-From `package.json` and `vite.config.mts`, the current frontend workflow includes:
+### 2.2. Где что смотреть
+- Backend код и маршруты: `app/`, `enterprise/`, `config/`
+- Frontend код: `app/javascript/dashboard/`
+- Media-server: `enterprise/media-server/`
+- Документация и планы: `docs/internal/`
 
-- `pnpm test` for Vitest
-- `pnpm story:dev` for Histoire
-- `pnpm eslint` and `pnpm eslint:fix`
-- SDK build through `BUILD_MODE=library vite build`
+## 3. Набор команд для проверки релизного качества
 
-## Backend Tooling
+### 3.1 Подготовка окружения
+- `cd /root/crafty/onelink/chatwoot`
+- `bundle install`
+- `pnpm install`
+- `bundle exec rails db:chatwoot_prepare`
+- `cd` вернуться в корень репозитория при проверке infra команд
 
-The backend test and lint stack includes:
-
-- RSpec in `spec/`
-- Rubocop
-- migration-driven schema maintenance
-
-## Local Runtime Commands
-
-The repo includes dev commands such as:
-
+### 3.2 Запуск dev/стейджей
 - `pnpm dev`
 - `pnpm dev:lite`
-- `pnpm start:dev`
-- `pnpm start:test`
+- `./bin/dev-lite-restart`
 
-## Testing Strategy By Layer
+### 3.3 Backend валидация
+- `bundle exec rails routes | rg whatsapp_calls`
+- `bundle exec rails runner "puts Call.pluck(:status).uniq"`
+- `bundle exec rspec` по целевым спецификациям, если они есть в `spec`
+- Sidekiq старт и cron: проверить `config/initializers/sidekiq.rb` и `config/schedule.yml`
 
-| Layer | Main tool |
-| --- | --- |
-| Backend models, services, requests | RSpec |
-| Frontend logic and components | Vitest |
-| Component development and visual exploration | Histoire |
-| Static quality checks | ESLint and Rubocop |
+### 3.4 Frontend валидация
+- `pnpm eslint`
+- `pnpm test`
+- `pnpm story:dev` для визуального сценарного прогонки UI widget/конверсационного header
 
-## Internal Rule
+### 3.5 Media-server и контейнеры
+- `docker compose --env-file .env.production -f docker-compose.production.yaml up -d --no-deps media-server`
+- `docker compose --env-file .env.production -f docker-compose.production.yaml logs -f media-server`
+- `docker compose --env-file .env.production -f docker-compose.production.yaml exec media-server wget -qO- http://localhost:4000/health`
+- `docker compose --env-file .env.production -f docker-compose.production.yaml exec chatwoot_rails bundle exec rails runner "puts ENV['MEDIA_SERVER_URL']"`
+- `docker compose --env-file .env.production -f docker-compose.production.yaml exec media-server curl -s http://localhost:4000/health`
+- `docker compose --env-file .env.production -f docker-compose.production.yaml exec media-server wget -qO- http://localhost:4000/metrics`
 
-Use the narrowest verification that matches the changed surface:
+## 4. Кейс-маршруты для ручной проверки WhatsApp Calls
 
-- model and service specs for backend logic
-- request specs for contract changes
-- Vitest for UI logic
-- Histoire when shared component behavior needs inspection
+### 4.1 Базовые вызовы
+1. Inbound: входящий `connect` создает `Call`, показывает floating widget, есть accept/reject.
+2. Outbound: в `ConversationHeader` нажать звонок, проверить статус `ringing`, затем transition в active после ответа абонента.
+3. Hangup: завершение выставляет `completed`.
+4. Rejected/missed: отклонение или timeout lead к terminal статусу.
+5. Внутри каждого кейса проверить корректный контракт `payload.media_server_enabled` и `sdp_offer` в show/бroadCast.
+
+### 4.2 Multi-agent
+1. Два агента в одном inbox при входящем звонке.
+2. Первый нажимает accept, второй должен потерять этот звонок из incoming списка по `whatsapp_call.accepted`.
+
+### 4.3 Permission flow
+1. Исходящий без права на звонок.
+2. Проверить transition в `permission_requested`.
+3. Проверить сообщение `permission_granted` в UI.
+
+### 4.4 Reconnect
+1. Принять звонок в server-relay режиме.
+2. Перезагрузить вкладку.
+3. Проверить восстановление через `/whatsapp_calls/:id/reconnect` и новый peer-offer.
+4. Таймер должен продолжаться с корректным offset.
+
+### 4.5 Media-server path
+1. Проверить что `MEDIA_SERVER_URL` включен.
+2. Проверить callback-события: `agent_disconnected`, `recording_ready`, `session_terminated`, `error`.
+3. Проверить, что запись не теряется и прикрепляется к message при завершении.
+4. Проверить идемпотентность Media-событий:
+   - `connect` повторный запрос не переведет call обратно в `ringing`/`in_progress`.
+   - `terminate` повторный callback не вызовет дубля записи статуса/конверсии.
+   - одновременные `accept`/`terminate` с разных агентов не создают гонок статусов.
+   - `session_terminated` на terminal звонке не должен повторно менять статус.
+
+## 5. Критические риски и требования к закрытию
+
+### 5.1 Дизайн и архитектура
+- `Call` статусы в документации и коде должны совпадать.
+- Все REST-роуты и action names должны совпадать (нет `hangup`, только `terminate`).
+- Media-server callbacks должны иметь симметричный контракт client↔Rails.
+
+### 5.2 Надежность
+- `Whatsapp::CallCleanupJob` должен выполняться по расписанию (`whatsapp_call_cleanup_job` в `config/schedule.yml`).
+- Дубликаты Meta webhook должны быть идемпотентными.
+- Гонки между accept/reject/terminate должны иметь безопасные guards.
+
+### 5.3 Наблюдаемость
+- Проверить логирование в `whatsapp_calls` flow на каждом статусном переходе.
+- Отдельно мониторить ошибки callbacks и failures в Sidekiq.
+- Добавить алерты на рост `failed` и отсутствие heartbeat у media-server.
+
+### 5.4 Что уже закрыто в runtime
+- идемпотентность:
+  - `IncomingCallService#handle_call_connect` и `handle_call_terminate` игнорируют terminal-состояния.
+  - `CallService#reject`/`#terminate` защищены `with_lock`.
+- `media_server` контроль:
+  - базово по `MEDIA_SERVER_URL`
+  - плюс per-inbox override через `channel.provider_config['media_server_enabled']`.
+  - при отсутствии override используется глобальная логика через `Call.media_server_enabled?(inbox: inbox)`.
+
+### 5.5 Что важно зафиксировать перед production
+- В `show`-response не должно быть `sdp_offer` в server-relay режиме (media-server on), чтобы UI корректно переходил в `agent offer` flow.
+- Для multi-agent сценариев событие `whatsapp_call.accepted` должно удалять входящий виджет у всех остальных агентов и оставлять только у принятого.
+- Для `terminate` и `reject` должен быть явный guard от terminal-состояний во всех код-пути (`with_lock` + `terminal?`).
+
+## 6. Минимальный production-готовый чеклист
+
+1. Контракт документирован и совпадает с runtime.
+2. Есть smoke для inbound, outbound, permission, reconnection, multi-agent, recording.
+3. Есть fallback для page reload в server-relay.
+4. Есть очистка stale звонков.
+5. Есть rollback-план по флагу `whatsapp_call` и переменным `MEDIA_SERVER_*`.
