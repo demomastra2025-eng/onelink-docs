@@ -1,6 +1,6 @@
 ---
 title: Agent Skills для интеграторов
-description: Как партнёры и технические команды клиентов могут установить и использовать One Link integration skills в Codex и Claude Code.
+description: Как партнёры и технические команды клиентов могут установить и использовать One Link integration skill в Claude Code; внутренние Hermes skills ведутся отдельно.
 sidebarTitle: Agent Skills
 ---
 
@@ -8,21 +8,13 @@ sidebarTitle: Agent Skills
 
 Для внешних API-потребителей подготовлен отдельный skill bundle.
 
-Сейчас поддержаны два варианта:
+Сейчас публично поддержан skill bundle для Claude Code. Внутренние Hermes domain skills OneLink ведутся отдельно в Hermes Agent на сервере.
 
-- skill для Codex
-- skill для Claude Code
-
-Они помогают выбирать API-поверхность, модель auth, path family и event-driven сценарий интеграции.
+Skill помогает выбирать API-поверхность, модель auth, path family и event-driven сценарий интеграции.
 
 Группы технических клиентов и партнеры могут установить специальную функцию интеграции One Link для работы с One Link Cloud API извне.
 
-Набор навыков доступен в двух вариантах:
-
-- навык Codex
-- навык Claude Code
-
-Оба варианта предназначены для внешних потребителей API. Они помогают:
+Публичный bundle предназначен для внешних потребителей API и Claude Code. Он помогает:
 
 - выбор правильной поверхности API
 - выбор подходящей модели authentication
@@ -47,22 +39,6 @@ sidebarTitle: Agent Skills
 
 ## Установка
 
-### Codex
-
-1. Скопируйте папку навыков `onelink-integrator` в каталог навыков Codex:
-
-```bash
-mkdir -p ~/.codex/skills
-cp -R .codex/skills/onelink-integrator ~/.codex/skills/onelink-integrator
-```
-
-2. Перезапустите Codex, чтобы он загрузил новый навык.
-
-3. Начните использовать его с таких подсказок, как:
-
-```text
-Use $onelink-integrator to choose the right One Link API surface for our customer portal messaging flow.
-```
 
 ### Claude Code
 
@@ -88,7 +64,6 @@ cp -R .claude/skills/onelink-integrator ~/.claude/skills/onelink-integrator
 Рекомендуемые места:
 
 ```bash
-~/.codex/skills/onelink-integrator/references/openapi/
 ~/.claude/skills/onelink-integrator/references/openapi/
 ```
 
@@ -110,9 +85,6 @@ export ONE_LINK_OPENAPI_DIR=/path/to/openapi
 Навык поставляется со сценарием локального поиска:
 
 ```bash
-python ~/.codex/skills/onelink-integrator/scripts/search_openapi.py conversation
-python ~/.codex/skills/onelink-integrator/scripts/search_openapi.py message --surface client
-python ~/.codex/skills/onelink-integrator/scripts/search_openapi.py account --surface platform
 
 python ~/.claude/skills/onelink-integrator/scripts/search_openapi.py conversation
 python ~/.claude/skills/onelink-integrator/scripts/search_openapi.py message --surface client
@@ -134,13 +106,6 @@ flowchart TD
 ```
 
 ## Шаблоны подсказок
-
-Используйте подсказки в этой форме:
-
-- `Use $onelink-integrator to design a webhook-driven sync between One Link and our ERP for contacts, companies, and appointment completion.`
-- `Use $onelink-integrator to explain whether our mobile app should use the Client API or the Application API.`
-- `Use $onelink-integrator to draft initial cURL requests for creating a contact and opening a conversation in a workspace.`
-- `Use $onelink-integrator to identify the likely path family for appointment payments and tell me what to verify in the current OpenAPI files.`
 
 Примеры Claude Code:
 
