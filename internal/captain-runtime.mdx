@@ -134,6 +134,8 @@ Current runtime behavior:
 - prompt `tool://...` references can still expose non-capability tools, but they do not auto-enable capability tools whose checkbox is off
 - `copilot` only instantiates tools that pass both assistant `tool_access` and the shared tool policy for the current operator
 - create-oriented shared operations for `company`, `deal`, `task`, and `appointment` now use a short-lived idempotency cache to suppress accidental duplicate writes during repeated tool calls
+- CRM deal tools are pipeline-aware. `list_deal_pipelines` returns active account pipelines with ordered stages and stage IDs; `list_deal_stages` returns stages for a pipeline/current deal plus previous/next stage by `position`. When `create_deal`, `search_deals`, `update_deal`, or `transition_deal_stage` is prompt-referenced for the live agent/scenario runtime, the stage catalog tools are added as companions so the agent can resolve duplicate stage names and call mutations with `stage_id` instead of guessing.
+- `transition_deal_stage(stage_action: "next"|"previous")` moves the current deal by stage `position` inside its current pipeline; explicit `stage_name`/`stage_code` lookups are scoped to the current pipeline unless `pipeline_id` or `pipeline_code` is supplied.
 - tool execution now emits audit log entries when the account has the `audit_logs` feature enabled
 
 ## Jobs And Services
