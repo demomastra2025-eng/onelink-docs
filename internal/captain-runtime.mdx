@@ -130,7 +130,7 @@ Built-in tools are now described through a shared metadata registry instead of s
 Current runtime behavior:
 
 - live `agent` and `scenario` runtimes register tools from `tool_access`, then apply the shared tool policy for feature, high-risk, and confirmation checks
-- capability tools exposed in assistant settings (`faq_lookup`, `handoff`, contact note, private note) are controlled by their checkboxes, not by the agent permissioned-tool runtime list
+- capability tools exposed in assistant settings (`faq_lookup`, `handoff`, contact note, private note, cancel response) are controlled by their checkboxes, not by the agent permissioned-tool runtime list
 - prompt `tool://...` references can still expose non-capability tools, but they do not auto-enable capability tools whose checkbox is off
 - `copilot` only instantiates tools that pass both assistant `tool_access` and the shared tool policy for the current operator
 - create-oriented shared operations for `company`, `deal`, `task`, and `appointment` now use a short-lived idempotency cache to suppress accidental duplicate writes during repeated tool calls
@@ -158,6 +158,15 @@ For assistant v2 specifically:
 - `Captain::Assistant::AgentRunnerService` builds the Captain business state and scoped `RubyLLM::Context`
 - `Captain::Runtime::AgentRunner` selects the current agent from restored history
 - `Captain::Runtime::Runner` rebuilds the per-agent chat, restores history, executes tools, and persists the updated conversation state
+
+### Response Cancellation
+
+Captain response cancellation has two entry points:
+
+- manager-side stop control in the conversation UI, which writes a short-lived Redis cancellation state for the active conversation and turns the assistant typing indicator off
+- native `cancel_response` capability tool, which stores `pending_response_cancellation` in the runtime context and halts the current tool run
+
+`Captain::Conversation::ResponseBuilderJob` treats both entry points as silent cancellation signals. It checks cancellation before generation, after generation, before message creation, inside runtime typing callbacks, and in late error handling. When cancellation matches the current buffer token or latest incoming message, the job clears the current buffer state, clears the cancellation state, keeps the conversation pending, and does not create an outgoing message, private note, handoff, or response-usage increment. Token usage may still be recorded when a provider response already returned usage data.
 
 ## Design Rules
 
