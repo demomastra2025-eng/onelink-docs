@@ -9,10 +9,8 @@ This internal page points to the active source-of-truth documents in the Chatwoo
 
 ## Active source of truth
 
-- `ONELINK_FONOSTER_VOICE_CONTRACT.md` - main production contract for Fonoster, `onelink-ai-voice`, and Rails.
-- `ONELINK_EXTERNAL_GEMINI_LIVE_VOICEAPP.md` - deployment/runbook for the Onelink-hosted Gemini Live VoiceApp.
-- `ONELINK_BRIDGE_API_CONTRACT.md` - bridge command API and inbound route/event callbacks.
-- `ONELINK_CRM_GEMINI_SYNC_HANDOFF.md` - short operational handoff/checklist for cross-team production sync.
+- `ONELINK_VOICE_RUNTIME_MATRIX_CONTRACT.md` - OneLink-owned runtime matrix and acceptance contract for operator, AI, and app call modes.
+- `FONOSTER_ONELINK_VOICE_EXECUTION_CONTRACT.md` - Fonoster/OneLink execution contract for calls, media, events, recording, and cleanup.
 
 Older notes in `fonoster-docs/` are archived background. Do not use them as implementation requirements unless the requirement is also present in one of the active documents above.
 
@@ -40,7 +38,7 @@ Send only:
 - Fonoster `EXTERNAL` app ref for Onelink AI voice
 - network policy for TCP `50061`
 - technical fallback behavior
-- event/retry/finalize rules from `ONELINK_FONOSTER_VOICE_CONTRACT.md`
+- event/retry/finalize rules from `ONELINK_VOICE_RUNTIME_MATRIX_CONTRACT.md` and `FONOSTER_ONELINK_VOICE_EXECUTION_CONTRACT.md`
 
 Do not send:
 
