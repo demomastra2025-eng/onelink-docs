@@ -42,6 +42,11 @@ description: Implementation plan for making OneLink Captain + Gemini Live AI Voi
    - No hidden mismatch between tool catalog visibility and runtime callability.
    - All new behavior emits safe lifecycle events and is covered by focused Rails/Node/frontend tests.
 
+6. **Operator mode remains a first-class production path**
+   - Operator mode is not a fallback, degraded mode, or side effect of the AI runtime rollout.
+   - Transfer/operator/recording/topology changes must not be bundled into the human-like AI rollout.
+   - Operator changes require a separate contract, joint smoke matrix, rollout gate, and proof of refs, terminal reasons, cleanup, and recording/transcript ownership.
+
 ---
 
 ## Current Runtime Summary
@@ -943,6 +948,30 @@ pnpm exec eslint \
    - says closing phrase if configured;
    - finalizes transcript and post-call Captain features.
 
+### Separate operator-mode joint smoke matrix
+
+Operator mode is a first-class production path and must be validated separately from the AI human-like rollout. Do not treat it as a fallback-only or degraded path.
+
+1. Inbound -> operator native.
+2. Outbound -> operator/customer.
+3. AI -> operator transfer.
+4. Caller hangup before operator answer.
+5. Operator hangup first.
+6. Operator unavailable.
+7. Failed bridge.
+8. Recording/transcript continues or explicitly stops by contract.
+9. Terminal events contain all required refs and reasons.
+10. OneLink call session does not remain active after completion.
+
+For every operator smoke, confirm:
+
+- parent/original call ref;
+- operator/runtime call ref when a separate leg exists;
+- stream ref and media session ref when media is present;
+- terminal source and terminal reason;
+- session cleanup in OneLink;
+- recording/transcript ownership after transfer or media topology changes.
+
 ### Production rollout gates
 
 - No increase in first-audio p95 beyond agreed threshold.
@@ -950,6 +979,7 @@ pnpm exec eslint \
 - No increase in `tool_failed` rate except for known upstream failures.
 - Sidecar `/health` returns zero active sessions after completed calls.
 - Fresh logs have no new `ERROR`, `FATAL`, `UnhandledPromiseRejection`, `NoMethodError`, `NameError`.
+- Any operator/transfer/recording/topology change is gated separately and is production-ready only after the operator joint smoke matrix passes with confirmed refs, terminal reasons, cleanup, and recording/transcript ownership.
 
 ---
 
@@ -1011,6 +1041,15 @@ Mitigation:
 - Ship sane defaults.
 - Keep MVP UI minimal: silence, interruption, fillers, tone.
 
+### Risk: Operator mode is accidentally degraded by AI runtime changes
+
+Mitigation:
+- Treat operator mode as a first-class production path.
+- Keep AI human-like rollout separate from operator/transfer/recording/topology changes.
+- Do not introduce recursive app handoff or blind direct bridge paths for operator mode.
+- Require a separate operator media/lifecycle contract and joint smoke matrix before production.
+- Production readiness for operator changes requires confirmed refs, terminal reasons, session cleanup, and recording/transcript ownership.
+
 ---
 
 ## Definition of Done
@@ -1026,6 +1065,7 @@ The work is complete when:
 - Metrics prove first-response speed is not regressed.
 - Rails, Node, and frontend focused tests pass.
 - DEV smoke calls prove silence, interruption, fast tool, slow tool, transfer, and end-call flows.
+- Any operator-mode change has passed the separate joint smoke matrix with confirmed refs, terminal reasons, cleanup, and recording/transcript ownership.
 
 ---
 
