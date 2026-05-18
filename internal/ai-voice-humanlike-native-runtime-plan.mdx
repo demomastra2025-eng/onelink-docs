@@ -1,0 +1,1034 @@
+---
+title: AI Voice Human-Like Native Runtime Plan
+description: Implementation plan for making OneLink Captain + Gemini Live AI Voice human-like, proactive, async-tool-capable, and production reliable without sacrificing first-response latency.
+---
+
+# AI Voice Human-Like Native Runtime Implementation Plan
+
+> **For Hermes:** Use `subagent-driven-development` to implement this plan task-by-task. Keep changes surgical, preserve the dirty tree, and verify each phase with the listed focused checks before moving on.
+
+**Goal:** Make OneLink Captain + AI Voice feel human-like, empathetic, proactive, and fully functional while preserving the current direct Gemini Live voice-to-voice speed target around first audio/first response.
+
+**Architecture:** Keep `gemini-3.1-flash-live-preview` as the realtime voice-to-voice brain. Keep Captain/Rails as the source of business context, guardrails, tool policy, and persistence. Add a native sidecar `DialogueDirector` that controls realtime conversational behavior: silence, fillers, interruptions, async tool wait, deferred tool result injection, and graceful transfer/end-call.
+
+**Tech Stack:** Rails/Chatwoot OneLink Captain, `Telephony::AiVoice` internal APIs, Node.js `services/onelink-ai-voice`, Gemini Live WebSocket, Fonoster managed stream, Vue Captain settings UI, RSpec, Vitest, Node test runner.
+
+---
+
+## Non-Negotiable Product Requirements
+
+1. **No latency regression by design**
+   - Keep direct Gemini Live voice-to-voice.
+   - Do not insert STT -> text LLM -> TTS into the primary path.
+   - Do not use extra LLM calls for simple fillers like “Секунду, проверю”.
+   - Sidecar-generated fillers must start within roughly 200-300 ms when needed.
+
+2. **No awkward dead air**
+   - The caller should never wait silently while tools run, unless silence is intentionally configured.
+   - Tool wait, provider setup, delayed model continuation, and user idle must all have deterministic runtime handling.
+
+3. **Agent stays in control of the dialogue**
+   - One short question at a time.
+   - If the caller is silent, the agent prompts and then gracefully closes or transfers.
+   - If the caller interrupts, the agent yields like a human: finishes the current word only, makes a tiny pause, gives a short backchannel acknowledgement such as “ага”, “понял”, “мм”, “аха”, then listens/responds without resuming stale speech.
+
+4. **Captain remains the business brain**
+   - Shared Captain settings stay shared: `feature_memory`, `feature_faq`, rules, guardrails, tool access, context access.
+   - Voice-specific runtime behavior lives under `assistant.config['voice_settings']`.
+   - Do not duplicate Captain memory/FAQ flags into voice settings.
+
+5. **Native, observable, testable implementation**
+   - No prompt-only hacks.
+   - No hidden mismatch between tool catalog visibility and runtime callability.
+   - All new behavior emits safe lifecycle events and is covered by focused Rails/Node/frontend tests.
+
+---
+
+## Current Runtime Summary
+
+### Existing OneLink pieces to preserve
+
+- Rails context builder: `app/services/telephony/ai_voice/context_builder.rb`
+  - Emits `context.ai`, `context.captain`, `context.tools`, transfer, recording.
+  - Merges routing-policy AI settings with `captain_assistant.config['voice_settings']`.
+
+- Voice tool dispatcher: `app/services/telephony/ai_voice/tool_dispatch_service.rb`
+  - Native voice tools: `find_contact`, `create_contact`, `create_note`, `update_conversation`, `request_transfer`, `end_call`.
+  - Captain tools are exposed through `captain_assistant.direct_agent_tools`.
+  - `faq_lookup` is already voice-optimized with `semantic: false` and a longer timeout.
+
+- Gemini Live client: `services/onelink-ai-voice/src/realtime/gemini-live-client.js`
+  - Uses realtime audio input/output.
+  - Emits input/output transcripts.
+  - Supports provider interruption events.
+  - Supports function calling.
+
+- Voice application: `services/onelink-ai-voice/src/app/voice-application.js`
+  - Bridges Fonoster media stream to Gemini Live.
+  - Sends initial greeting.
+  - Handles tool calls, transfer, end call, transcripts, recording, and completion.
+  - Has a `postToolWatchdog` that nudges Gemini when a completed tool result does not produce speech.
+
+### Main runtime gap
+
+The system still treats a Gemini tool call mostly as `await tool -> return response`. For slow tools this can create silence. The missing layer is a native sidecar runtime controller that can:
+
+- speak deterministic filler phrases immediately;
+- run selected tools in background;
+- inject deferred tool results back into Gemini;
+- handle idle/silence escalation;
+- cancel output cleanly on interruption;
+- record observability metrics for latency and dead-air.
+
+---
+
+## External Patterns To Borrow, Not Copy
+
+Reference examples live under `/root/crafty/example`.
+
+1. `pipecat/examples/turn-management/turn-management-detect-user-idle.py`
+   - Borrow: idle retry count, escalating prompts, reset on user turn, end task after repeated silence.
+
+2. `pipecat/examples/turn-management/turn-management-interruption-config.py`
+   - Borrow: avoid reacting to micro-noise, turn-start strategies, interruption configuration.
+
+3. `pipecat/examples/realtime/realtime-gemini-live-async-tool.py`
+   - Borrow: long-running tools should not freeze the conversation; result is integrated later.
+
+4. `pipecat-examples/gemini-live-starters/phone-bot/bot.py`
+   - Borrow: concise scenario-specific prompt, explicit end-call function, transcript event hooks, thinking budget disabled for speed.
+
+5. `pipecat-examples/bot-ready-signalling/`
+   - Borrow: do not emit first audio until media/client is ready; avoid clipped greetings.
+
+6. `pipecat-examples/instant-voice/`
+   - Borrow: accept caller input immediately; do not wait for bot setup to listen.
+
+7. `gemini-live-api-examples/`
+   - Borrow: Gemini 3.1 Live features: barge-in, tools, input/output transcription, proactive audio, affective dialog.
+   - Note: proactive audio and affective dialog require v1alpha in current Gemini docs; gate behind config and verify before production default.
+
+---
+
+## Target Architecture
+
+```text
+Fonoster managed stream
+  -> OneLink AI Voice sidecar
+     -> DialogueDirector
+        - readiness/greeting gate
+        - silence/idle timers
+        - filler speech
+        - tool wait policy
+        - deferred tool results
+        - barge-in cleanup
+        - graceful close/transfer
+     -> GeminiLiveClient
+        - gemini-3.1-flash-live-preview
+        - audio in/out
+        - input/output transcription
+        - function calling
+        - interruptions
+        - optional v1alpha proactive/affective flags
+  -> Rails Telephony::AiVoice APIs
+     -> Captain context, tools, policies, persistence
+  -> Conversation timeline / events / metrics
+```
+
+---
+
+## Data Contract: `assistant.config.voice_settings`
+
+### Required normalized shape
+
+Rails should emit a complete normalized `context.ai` payload. Sidecar should prefer `context.ai` over ENV. ENV remains infrastructure fallback only.
+
+```json
+{
+  "humanlike_defaults_profile": "standard_v1",
+  "provider": "gemini-live",
+  "model": "gemini-3.1-flash-live-preview",
+  "api_version": "v1beta",
+  "voice": "sulafat",
+  "language": "ru-KZ",
+  "temperature": 0.3,
+  "max_output_tokens": 120,
+  "max_duration_sec": 900,
+
+  "first_message": "Здравствуйте! Чем могу помочь?",
+  "closing_message": "Спасибо за звонок. Хорошего дня!",
+  "transfer_message": "Сейчас соединю вас со специалистом.",
+
+  "interruptions_enabled": true,
+  "clear_audio_on_interrupt": true,
+  "finish_current_word_on_interrupt": true,
+  "interrupt_word_boundary_grace_ms": 120,
+  "post_interrupt_micro_pause_ms": 180,
+  "interrupt_ack_enabled": true,
+  "interrupt_ack_phrases": ["Ага.", "Понял.", "Мм.", "Аха.", "А-а, понял."],
+  "interrupt_ack_max_duration_ms": 700,
+  "speech_start_sensitivity": "START_SENSITIVITY_HIGH",
+  "speech_end_sensitivity": "END_SENSITIVITY_HIGH",
+  "prefix_padding_ms": 120,
+  "silence_duration_ms": 300,
+  "turn_aggregation_delay_ms": 400,
+  "post_interrupt_resume_delay_ms": 250,
+  "min_interrupt_words": 1,
+
+  "silence_prompt_enabled": true,
+  "silence_prompt_after_ms": 2500,
+  "second_silence_prompt_after_ms": 6500,
+  "max_silence_ms": 18000,
+  "end_call_on_silence_enabled": true,
+  "silence_prompt": "Вы ещё на линии? Могу подсказать варианты.",
+  "second_silence_prompt": "Если удобно, скажите коротко: запись, статус заявки или оператор.",
+  "final_silence_message": "Похоже, сейчас неудобно говорить. Я завершу звонок, вы сможете продолжить позже.",
+
+  "filler_phrases": ["Понял.", "Да, вижу.", "Сейчас уточню."],
+  "tool_start_phrases": ["Секунду, проверю."],
+  "tool_delay_phrases": ["Ещё смотрю, почти готово."],
+  "tool_failure_phrases": ["Не получилось проверить автоматически. Могу соединить со специалистом."],
+  "tool_delay_after_ms": 1800,
+  "post_tool_continuation_ms": 4000,
+
+  "proactive_audio_enabled": false,
+  "affective_dialog_enabled": false,
+  "max_sentences": 2,
+  "emotional_style": "warm_professional",
+  "emotional_intensity": "low",
+  "natural_pause_enabled": true,
+  "natural_pause_ms": [120, 450],
+  "thinking_cue_enabled": true,
+  "thinking_cue_phrases": ["Так...", "Сейчас...", "Мм, понял."],
+  "nonverbal_cues_enabled": true,
+  "nonverbal_cue_phrases": ["Угу.", "Мм.", "Да."],
+  "nonverbal_cue_max_per_minute": 1,
+  "sigh_cues_enabled": false,
+  "sigh_cue_max_per_call": 0,
+
+  "ambient_noise_enabled": false,
+  "ambient_noise_profile": "office_room_tone",
+  "ambient_noise_volume_dbfs": -42,
+  "ambient_noise_duck_on_caller_speech": true,
+  "ambient_noise_outbound_only": true
+}
+```
+
+### Contract rules
+
+- Preserve explicit `false` and `0`.
+- Do not use `value || default` for booleans/numbers.
+- Keep `feature_memory` and `feature_faq` as assistant-level shared settings.
+- Do not expose provider secrets in context.
+- Treat `api_version: v1alpha` as an explicit opt-in for proactive/affective features until verified in production-like DEV.
+- Interruption acknowledgements are local deterministic backchannels, not extra LLM calls. They must be short, language-matched, and disabled for urgent/terminal paths where immediate listening is safer.
+- Emotionality must be bounded and role-safe: short pauses, backchannels, and warm phrasing are allowed; theatrical sighs, fake heavy breathing, flirting, or over-emotional acting are not production defaults.
+- Sparse nonverbal backchannels are part of the out-of-box humanlike default, but capped and suppressible. Sigh/breath cues stay off by default until the exact voice/model renders them naturally in DEV.
+- Ambient noise is optional and off by default. If enabled, mix only local prebuffered outbound room tone after model audio is produced; never feed it into Gemini input, VAD, transcript, or tool logic.
+
+### Out-of-box humanlike default profile
+
+Every new Voice Assistant should start with `humanlike_defaults_profile: standard_v1`, not with a bare provider config. The default must already feel usable without manual tuning:
+
+- realtime direct Gemini Live path stays enabled for speed;
+- first greeting, closing, transfer phrase, and max two-sentence replies are present;
+- interruption handling is on: immediate listening, current-word grace, stale-audio cleanup, micro-pause, and short acknowledgement;
+- silence handling is on: first prompt, second guided prompt, and graceful close after repeated silence;
+- tool wait handling is on: start phrase, delay phrase, failure fallback, and async/deferred policy;
+- naturalness is on: low-intensity warm style, short deterministic pauses, sparse “угу/мм/да” backchannels capped to one per minute;
+- risky extras are off: affective/proactive v1alpha flags, sigh/breath acting, and ambient room tone.
+
+The UI may expose “Basic / Advanced” controls, but Basic mode should still preserve this full default profile. A newly created assistant should pass DEV smoke without the operator opening advanced settings.
+
+---
+
+## Tool Execution Policy
+
+### Tool modes
+
+Add a normalized voice tool policy to the context catalog:
+
+```json
+{
+  "name": "search_available_slots",
+  "source": "captain",
+  "enabled": true,
+  "realtime_safe": true,
+  "timeout_ms": 3000,
+  "voice_execution_mode": "async",
+  "voice_result_delivery": "when_idle",
+  "voice_start_phrase": "Секунду, проверю свободное время.",
+  "requires_confirmation": false,
+  "risk_level": "low"
+}
+```
+
+Supported modes:
+
+- `blocking_fast`
+  - Expected under ~1000 ms.
+  - Gemini can wait for result.
+  - Examples: `find_contact`, `get_contact`, `get_conversation`, simple FAQ.
+
+- `async_deferred`
+  - Sidecar starts tool in background and immediately gives Gemini/voice a pending acknowledgement.
+  - Result is injected when available.
+  - Examples: scheduling search, CRM search/update, payments lookup, external HTTP custom tools.
+
+- `terminal_action`
+  - Tool causes transfer, hangup, or close.
+  - No post-tool continuation unless explicitly configured.
+  - Examples: `request_transfer`, `end_call`, `handoff` when mapped to live call transfer.
+
+- `confirmation_required`
+  - Sidecar/Captain must collect explicit spoken confirmation before executing.
+  - Examples: payment creation/refund, mutating CRM in sensitive contexts, destructive custom HTTP tools.
+
+### First safe default mapping
+
+- `blocking_fast`:
+  - `faq_lookup`
+  - `find_contact`
+  - `create_contact`
+  - `get_contact`
+  - `get_conversation`
+  - `update_conversation`
+  - `create_note`
+  - `add_private_note`
+  - `add_contact_note`
+
+- `async_deferred`:
+  - `search_deals`
+  - `get_deal`
+  - `create_deal`
+  - `update_deal`
+  - `search_tasks`
+  - `create_task`
+  - `search_available_slots`
+  - `create_appointment`
+  - `search_kaspi_pay_payments`
+  - custom HTTP tools unless explicitly marked fast
+
+- `terminal_action`:
+  - `request_transfer`
+  - `end_call`
+  - live-call mapped `handoff`
+
+- `confirmation_required`:
+  - `create_kaspi_pay_payment`
+  - `refund_kaspi_pay_payment`
+  - high-risk non-idempotent custom HTTP tools
+
+---
+
+## Implementation Phases
+
+## Phase 0: Baseline and Safety Survey
+
+**Objective:** Record current runtime behavior and avoid corrupting the dirty tree.
+
+**Files:** No code changes.
+
+**Steps:**
+
+1. Capture branch and dirty tree:
+
+```bash
+cd /root/crafty/onelink/chatwoot
+git status --short --branch --untracked-files=all
+```
+
+2. Capture current voice service health and current model without printing secrets:
+
+```bash
+cd /root/crafty
+curl -sS http://127.0.0.1:8081/health
+```
+
+3. Add/confirm baseline metrics target:
+
+- first media stream established -> first `realtime_audio_out`;
+- first media stream established -> `media_writer_started`;
+- tool start -> filler spoken;
+- tool start -> result;
+- interruption -> output buffer cleared;
+- silence start -> prompt.
+
+**Acceptance:** Current behavior is documented; no runtime mutations were made.
+
+---
+
+## Phase 1: Normalize Voice Settings Contract in Rails
+
+**Objective:** Make Rails emit all human-like voice runtime settings in `context.ai` with safe defaults.
+
+**Files:**
+
+- Create: `app/services/telephony/ai_voice/voice_settings_defaults.rb`
+- Modify: `app/services/telephony/ai_voice/context_builder.rb`
+- Modify: `enterprise/app/models/captain/assistant.rb` if create-time defaults are needed there
+- Test: `spec/requests/internal/voice/ai/context_spec.rb`
+
+**Implementation details:**
+
+1. Add `Telephony::AiVoice::VoiceSettingsDefaults` with:
+   - `DEFAULTS` hash containing the full `standard_v1` humanlike profile, not only provider/model keys;
+   - `.normalize(raw_settings)`;
+   - boolean parser preserving `false`;
+   - integer parser preserving `0` where valid;
+   - arrays for phrase lists;
+   - API version default `v1beta`.
+
+2. New assistant creation should initialize `assistant.config['voice_settings']` from `standard_v1` unless an explicit template/config is supplied.
+
+3. Update `ContextBuilder#ai_payload` to call the normalizer instead of manually reading each key.
+
+4. Merge order remains:
+
+```text
+routing_policy.ai_voice_settings < captain_assistant.config['voice_settings'] < normalized defaults for missing keys
+```
+
+5. Keep `captain_payload` as business context only; do not duplicate all voice settings there.
+
+**RSpec cases:**
+
+- default context includes all required voice settings;
+- default context uses `humanlike_defaults_profile: standard_v1` with interruption, silence, fillers, natural pauses, and sparse backchannels enabled;
+- new assistant creation persists the full default `voice_settings` profile;
+- assistant voice settings override legacy routing settings;
+- explicit `interruptions_enabled: false` is preserved;
+- explicit `clear_audio_on_interrupt: false` is preserved;
+- numeric zero is preserved where meaningful;
+- proactive/affective flags are emitted only as booleans, no secrets.
+
+**Verify:**
+
+```bash
+cd /root/crafty/onelink/chatwoot
+DISABLE_SPRING=1 RBENV_ROOT=/root/.rbenv PATH=/root/.rbenv/bin:/root/.rbenv/shims:$PATH bundle exec rspec spec/requests/internal/voice/ai/context_spec.rb
+```
+
+---
+
+## Phase 2: Apply Per-Agent Realtime Settings in Sidecar
+
+**Objective:** Sidecar must prefer `context.ai` over ENV for runtime behavior.
+
+**Files:**
+
+- Modify: `services/onelink-ai-voice/src/index.js`
+- Modify: `services/onelink-ai-voice/src/config.js`
+- Modify: `services/onelink-ai-voice/src/realtime/gemini-live-client.js`
+- Test: `services/onelink-ai-voice/test/config.test.js`
+- Test: `services/onelink-ai-voice/test/gemini-live-client.test.js`
+- Test: `services/onelink-ai-voice/test/voice-application-streaming.test.js`
+
+**Implementation details:**
+
+1. In `index.js`, pass per-agent values:
+
+```js
+interruptions: context.ai?.interruptions_enabled ?? config.interruptions,
+speechStartSensitivity: context.ai?.speech_start_sensitivity || config.speechStartSensitivity,
+speechEndSensitivity: context.ai?.speech_end_sensitivity || config.speechEndSensitivity,
+prefixPaddingMs: context.ai?.prefix_padding_ms ?? config.prefixPaddingMs,
+silenceDurationMs: context.ai?.silence_duration_ms ?? config.silenceDurationMs,
+turnCoverage: context.ai?.turn_coverage || config.turnCoverage,
+```
+
+2. In `VoiceApplication`, resolve per-session values from `context.ai` after bootstrap, not only constructor ENV:
+   - `clear_audio_on_interrupt`;
+   - `post_tool_continuation_ms`;
+   - filler timings;
+   - silence timings.
+
+3. In `GeminiLiveClient`, support configurable API version/URL:
+   - default remains current v1beta WSS;
+   - if `api_version === 'v1alpha'`, use v1alpha endpoint;
+   - gate proactive/affective config behind explicit flags.
+
+4. Add setup payload support:
+
+```js
+if (this.proactiveAudioEnabled) {
+  setup.proactivity = { proactiveAudio: true };
+}
+if (this.affectiveDialogEnabled) {
+  setup.enableAffectiveDialog = true;
+}
+```
+
+Name casing must match the actual Gemini Live wire protocol verified by tests/examples before enabling in prod. If unsure, keep behind config and add a test that asserts the exact payload shape chosen.
+
+**Verify:**
+
+```bash
+cd /root/crafty/onelink/chatwoot/services/onelink-ai-voice
+npm test -- config.test.js gemini-live-client.test.js voice-application-streaming.test.js
+```
+
+---
+
+## Phase 3: Add `DialogueDirector`
+
+**Objective:** Add a native sidecar controller for human-like turn management without additional LLM latency.
+
+**Files:**
+
+- Create: `services/onelink-ai-voice/src/sessions/dialogue-director.js`
+- Modify: `services/onelink-ai-voice/src/app/voice-application.js`
+- Test: `services/onelink-ai-voice/test/dialogue-director.test.js`
+- Test: `services/onelink-ai-voice/test/voice-application-streaming.test.js`
+
+**Responsibilities:**
+
+- Keep runtime state:
+  - `callerSpeaking`;
+  - `assistantSpeaking`;
+  - `lastCallerActivityAt`;
+  - `lastAssistantActivityAt`;
+  - `idleRetryCount`;
+  - `toolInFlight` map;
+  - `closed`;
+  - active timer handles.
+
+- Public methods:
+
+```js
+onSessionReady({ realtime, call, session, context })
+onCallerTranscript(item)
+onAssistantTranscript(item)
+onAssistantAudio(metadata)
+onInterrupt(metadata)
+onToolStarted(toolCall, policy)
+onToolCompleted(toolCall, toolResult)
+onToolFailed(toolCall, error)
+onTurnComplete(metadata)
+onCompletion(reason)
+close(reason)
+```
+
+- Actions:
+  - `sendText(text, metadata)` via Gemini Live `realtime.sendText` for model-mediated speech;
+  - optional direct local audio/TTS only if implemented later; do not block MVP on it;
+  - `session.safeEvent` and `session.safeControl` for observability;
+  - `call.hangup` only through terminal flow.
+
+**Silence escalation:**
+
+- First idle timeout: `silence_prompt`.
+- Second idle timeout: `second_silence_prompt`.
+- Max idle timeout: `final_silence_message` then `end_call`/hangup.
+
+**Important:** Reset idle retry on any real caller transcript or provider activity indicating caller speech.
+
+**Emotionality / naturalness:**
+
+- Keep the primary path Gemini Live voice-to-voice; do not add extra LLM calls for emotion.
+- Use prompt/style plus `emotional_style` and low `emotional_intensity` for warm, calm operator behavior.
+- DialogueDirector controls deterministic human cues: small pauses before answers, sparse “угу/мм/так”, short thinking cues during lookup, and interruption acknowledgements.
+- Use provider affective/proactive dialog only behind explicit `affective_dialog_enabled` / `api_version: v1alpha` gates after DEV verification.
+- Do not overuse sighs or audible acting. If needed, treat them as optional nonverbal cues with a strict per-minute cap and disable them by default for business calls.
+
+**Verify:**
+
+```bash
+cd /root/crafty/onelink/chatwoot/services/onelink-ai-voice
+npm test -- dialogue-director.test.js voice-application-streaming.test.js
+```
+
+---
+
+## Phase 4: Tool Fillers and Tool Wait State
+
+**Objective:** Ensure the caller hears immediate feedback while tools run.
+
+**Files:**
+
+- Modify: `services/onelink-ai-voice/src/tools/tool-executor.js`
+- Modify: `services/onelink-ai-voice/src/sessions/voice-session.js`
+- Modify: `services/onelink-ai-voice/src/app/voice-application.js`
+- Modify: `services/onelink-ai-voice/src/sessions/dialogue-director.js`
+- Test: `services/onelink-ai-voice/test/tool-executor.test.js`
+- Test: `services/onelink-ai-voice/test/dialogue-director.test.js`
+
+**Behavior:**
+
+1. On tool start:
+   - emit `tool_started` as today;
+   - DialogueDirector sends configured `tool_start_phrase` unless disabled or terminal action.
+
+2. If tool still running after `tool_delay_after_ms`:
+   - emit `tool_wait_filler`;
+   - send configured delay phrase.
+
+3. On tool success:
+   - cancel delay timer;
+   - emit `tool_completed`;
+   - if blocking tool, return result to Gemini as today;
+   - if async tool, inject result when appropriate.
+
+4. On tool failure:
+   - cancel delay timer;
+   - emit `tool_failed`;
+   - say short fallback phrase if Gemini does not respond quickly.
+
+**Safety rules:**
+
+- Never say “готово” before success.
+- Never run post-tool continuation for `transfer`, `end_call`, or `hangup`.
+- Do not expose raw tool errors or upstream bodies to the caller.
+
+---
+
+## Phase 5: Async / Deferred Tool Results
+
+**Objective:** Slow tools must not freeze the voice conversation.
+
+**Files:**
+
+- Modify: `app/services/telephony/ai_voice/tool_dispatch_service.rb`
+- Modify: `services/onelink-ai-voice/src/tools/tool-executor.js`
+- Modify: `services/onelink-ai-voice/src/realtime/gemini-live-client.js`
+- Modify: `services/onelink-ai-voice/src/app/voice-application.js`
+- Test: `spec/requests/internal/voice/ai/context_spec.rb`
+- Test: `services/onelink-ai-voice/test/tool-executor.test.js`
+- Test: `services/onelink-ai-voice/test/gemini-live-client.test.js`
+- Test: `services/onelink-ai-voice/test/voice-application-streaming.test.js`
+
+**Catalog additions:**
+
+Add keys to each tool exposed through `/internal/voice/ai/context`:
+
+- `voice_execution_mode`
+- `voice_result_delivery`
+- `timeout_ms`
+- `realtime_safe`
+- `requires_confirmation`
+- `risk_level`
+
+**Async implementation options:**
+
+Preferred Gemini 3.1 path:
+
+- Mark compatible function declarations as non-blocking if Gemini Live protocol supports it in the raw WSS format used here.
+- Use result scheduling:
+  - `WHEN_IDLE` for normal tool results;
+  - `INTERRUPT` only for urgent terminal/safety events;
+  - `SILENT` for context-only background updates.
+
+Fallback native sidecar path if raw Gemini WSS support is uncertain:
+
+1. On async tool call, sidecar immediately sends a tool response like:
+
+```json
+{
+  "ok": true,
+  "pending": true,
+  "tool_call_id": "...",
+  "message": "Проверяю, сообщу результат через несколько секунд."
+}
+```
+
+2. Run real tool promise in background.
+
+3. When result returns, inject into Gemini with `realtime.sendText`:
+
+```text
+Результат инструмента search_available_slots готов. Используй его в следующей короткой голосовой реплике клиенту: ...
+```
+
+4. DialogueDirector decides whether to prompt immediately or wait until caller/model idle.
+
+**Acceptance:** A simulated 5-10 second tool does not create dead air; caller can interrupt while tool runs; result is not lost.
+
+---
+
+## Phase 6: Barge-In Hardening
+
+**Objective:** Interruption must feel instant and must not resurrect stale speech.
+
+**Files:**
+
+- Modify: `services/onelink-ai-voice/src/app/voice-application.js`
+- Modify: `services/onelink-ai-voice/src/realtime/gemini-live-client.js`
+- Modify: `services/onelink-ai-voice/src/sessions/dialogue-director.js`
+- Test: `services/onelink-ai-voice/test/voice-application-streaming.test.js`
+- Test: `services/onelink-ai-voice/test/gemini-live-client.test.js`
+
+**Behavior:**
+
+On `serverContent.interrupted` or caller speech while AI output is active:
+
+- cancel active filler/silence timers;
+- switch to listening/capture mode immediately on caller speech; caller audio/transcript must continue flowing to Gemini/session state while outbound audio is being drained;
+- if `finish_current_word_on_interrupt` is true, allow only a bounded current-word tail up to `interrupt_word_boundary_grace_ms`; this grace affects only outbound playback, never inbound capture;
+- clear the rest of `outputPacer` when `clear_audio_on_interrupt` is true so no stale sentence can continue;
+- emit `caller_interrupted` and `realtime_interrupted`;
+- after the caller's barge-in is confirmed, insert `post_interrupt_micro_pause_ms` and play one local short acknowledgement from `interrupt_ack_phrases` when `interrupt_ack_enabled` is true;
+- suppress the acknowledgement when the caller is still speaking continuously, the event is only micro-noise, or the session is entering transfer/end-call/safety handling;
+- do not continue old post-tool continuation;
+- keep async tool results in state, but deliver them only when the next turn makes sense.
+
+**Human backchannel rule:** The target feel is “the agent was interrupted, politely yielded, and stayed in control” rather than hard robotic cutoff. The allowed sequence is:
+
+```text
+AI speaking -> caller starts -> inbound capture continues immediately -> AI finishes current word only on outbound -> ~150-250 ms pause -> “ага/понял/мм/аха” -> answer using the already captured caller turn
+```
+
+Do not finish the whole phrase or sentence. Do not say a backchannel over sustained caller speech. Do not let Gemini regenerate the acknowledgement unless provider-native affective dialog is explicitly enabled and verified; default path is sidecar/local audio or a tiny preconfigured phrase.
+
+**Node test cases:**
+
+- interruption with `finish_current_word_on_interrupt: true` keeps only the bounded current-word tail and drops the rest of queued output;
+- inbound caller audio/transcript is captured immediately during the outbound current-word tail and is not lost or delayed;
+- interruption with the flag disabled clears output immediately;
+- confirmed barge-in schedules micro-pause plus one configured acknowledgement phrase;
+- sustained caller speech suppresses the acknowledgement so the agent does not talk over the caller;
+- terminal actions and safety interrupts suppress acknowledgement and stale continuation.
+
+**Verify:** Interruption clears queued audio after the current-word tail, no stale frames play, and the acknowledgement latency stays inside the configured micro-pause/backchannel budget.
+
+---
+
+## Phase 7: Startup Readiness and First Greeting
+
+**Objective:** Avoid clipped greetings while preserving first-response speed.
+
+**Files:**
+
+- Modify: `services/onelink-ai-voice/src/app/voice-application.js`
+- Optional create: `services/onelink-ai-voice/src/audio/startup-cue.js`
+- Test: `services/onelink-ai-voice/test/voice-application-streaming.test.js`
+
+**Behavior:**
+
+- Start listening as soon as media stream is available.
+- Do not speak greeting until media stream is write-ready.
+- If caller speaks before greeting, suppress or shorten greeting and answer the caller.
+- Optional startup cue is short and best-effort only.
+- Continue using initial keepalive only as media stability protection, not as UX filler.
+
+**Acceptance:** First response remains fast; greeting is not clipped; caller speech during setup is not ignored.
+
+---
+
+## Phase 7A: Optional Ambient Room Tone
+
+**Objective:** Add optional subtle “office/room tone” without latency regression or speech-recognition quality loss.
+
+**Files:**
+
+- Optional create: `services/onelink-ai-voice/src/audio/ambient-mixer.js`
+- Optional assets: `services/onelink-ai-voice/assets/ambient/office-room-tone.pcm`
+- Modify: `services/onelink-ai-voice/src/app/voice-application.js`
+- Test: `services/onelink-ai-voice/test/ambient-mixer.test.js`
+
+**Behavior:**
+
+- Default `ambient_noise_enabled: false`.
+- If enabled, use a preloaded/prebuffered local PCM loop; do not call any model, TTS, network, or file decode path during live speech.
+- Mix ambient audio only into outbound frames after Gemini/model audio and local fillers are ready.
+- Never include ambient audio in inbound capture, Gemini input, VAD, transcript, recordings used for STT, or interruption detection.
+- Keep volume very low, for example around `-42 dBFS`; prefer neutral room tone over recognizable office chatter.
+- Duck or mute ambient audio while the caller speaks, during barge-in acknowledgement, and during tool/safety/transfer prompts.
+- Make it per-assistant configurable and A/B testable, not a global default.
+
+**Risks:** Too-loud or speech-like noise can harm perceived quality, confuse VAD/barge-in, reduce intelligibility, and feel fake/unprofessional. Recognizable voices in background audio create privacy/compliance risk; use synthetic/non-speech room tone only.
+
+**Acceptance:** First-audio latency is unchanged; no extra network/model call exists on the critical path; interruption detection metrics do not regress; subjective MOS/intelligibility does not drop in DEV smoke calls.
+
+---
+
+## Phase 8: Voice-Safe Captain Tool Policy
+
+**Objective:** Expose useful business functionality without unsafe or slow realtime behavior.
+
+**Files:**
+
+- Modify: `app/services/telephony/ai_voice/tool_dispatch_service.rb`
+- Possibly modify: `enterprise/lib/captain/tool_registry.rb` if metadata should live centrally
+- Test: `spec/requests/internal/voice/ai/context_spec.rb`
+- Test: `spec/requests/internal/voice/ai/tools_spec.rb`
+
+**Rules:**
+
+- Read-only/low-risk tools can be realtime-visible.
+- Mutating tools need idempotency and, where needed, spoken confirmation.
+- High-risk payment/refund/custom HTTP actions require confirmation.
+- Tools visible in `context.tools` must be callable through `/internal/voice/ai/tools/:name`.
+
+**Initial voice-safe bundles:**
+
+- Support:
+  - `faq_lookup`, `search_documentation`, `get_conversation`, `get_contact`, `add_private_note`, `handoff`.
+
+- CRM:
+  - `search_deals`, `get_deal`, `create_deal`, `update_deal`, `create_task`, `create_touch`.
+
+- Scheduling:
+  - `search_scheduling_services`, `search_available_slots`, `create_appointment`, `cancel_appointment`.
+
+- Payments:
+  - `get_kaspi_pay_integration_status`, `get_kaspi_pay_payment_status`, `search_kaspi_pay_payments`.
+  - Payment creation/refund only with explicit confirmation.
+
+---
+
+## Phase 9: Scenario-Driven Voice Flows
+
+**Objective:** Replace generic “chatbot” behavior with short, reliable business call flows.
+
+**Files:**
+
+- Captain scenario data/model paths as needed under `enterprise/app/models/captain/` and `enterprise/app/services/captain/`
+- Prompt/template paths under `enterprise/lib/captain/prompts/`
+- Docs as needed under `docs/internal/`
+
+**Recommended scenarios:**
+
+1. FAQ/support question.
+2. Appointment booking.
+3. Existing request/status check.
+4. CRM lead qualification.
+5. Payment/status/invoice confirmation.
+6. Complaint/escalation.
+7. Operator transfer.
+8. Graceful close.
+
+**Scenario prompt shape:**
+
+- objective;
+- required fields;
+- allowed tools;
+- confirmation rules;
+- transfer conditions;
+- final summary sentence;
+- max two spoken sentences per turn.
+
+**Acceptance:** The agent asks one question at a time and uses tools deterministically instead of asking the caller to repeat known data.
+
+---
+
+## Phase 10: Observability and Conversation Timeline
+
+**Objective:** Make human-like runtime behavior measurable and debuggable.
+
+**Files:**
+
+- Modify: `services/onelink-ai-voice/src/app/voice-application.js`
+- Modify: `services/onelink-ai-voice/src/diagnostics/health-server.js`
+- Modify: Rails event/control services if new event types need allowlisting:
+  - `app/services/telephony/ai_voice/control_service.rb`
+  - `app/services/telephony/ai_voice/event_adapter_service.rb`
+  - `app/services/telephony/events_ingestion_service.rb`
+- Test: relevant Node tests and Rails request/service specs.
+
+**Events/metrics to add:**
+
+- `first_audio_latency_ms`
+- `media_to_first_audio_ms`
+- `dead_air_ms`
+- `silence_prompt_started`
+- `silence_prompt_spoken`
+- `silence_final_close`
+- `tool_filler_spoken`
+- `tool_wait_ms`
+- `async_tool_result_ready`
+- `async_tool_result_injected`
+- `barge_in_count`
+- `interruption_clear_ms`
+
+**Acceptance:** We can compare before/after and prove we did not regress the ~0.7s first response target.
+
+---
+
+## Phase 11: Captain Settings UI
+
+**Objective:** Let account users configure voice behavior without env changes.
+
+**Files:**
+
+- Modify: `app/javascript/dashboard/components-next/captain/pageComponents/assistant/settings/AssistantSystemSettingsForm.vue`
+- Modify: `app/javascript/dashboard/routes/dashboard/captain/assistants/settings/Settings.vue` if merge keys change
+- Modify locale files under:
+  - `app/javascript/dashboard/i18n/locale/ru/`
+  - `app/javascript/dashboard/i18n/locale/en/`
+  - `app/javascript/dashboard/i18n/locale/kk/`
+- Test: `AssistantSystemSettingsForm.spec.js`
+
+**UI sections:**
+
+- Realtime model and voice.
+- Speech and interruptions.
+- Silence handling.
+- Tool waiting phrases.
+- Empathy/tone.
+- Advanced Gemini 3.1 options: proactive audio, affective dialog, API version.
+
+**Important:** Keep advanced Gemini flags disabled by default until verified.
+
+**Verify:**
+
+```bash
+cd /root/crafty/onelink/chatwoot
+pnpm exec vitest --no-watch --no-cache --no-coverage app/javascript/dashboard/components-next/captain/pageComponents/assistant/settings/AssistantSystemSettingsForm.spec.js
+pnpm exec eslint app/javascript/dashboard/routes/dashboard/captain/assistants/settings/Settings.vue app/javascript/dashboard/components-next/captain/pageComponents/assistant/settings/AssistantSystemSettingsForm.vue
+```
+
+---
+
+## Phase 12: End-to-End Verification
+
+**Objective:** Prove the system is reliable in DEV before production rollout.
+
+### Rails verification
+
+```bash
+cd /root/crafty/onelink/chatwoot
+DISABLE_SPRING=1 RBENV_ROOT=/root/.rbenv PATH=/root/.rbenv/bin:/root/.rbenv/shims:$PATH bundle exec rspec \
+  spec/requests/internal/voice/ai/context_spec.rb \
+  spec/requests/internal/voice/ai/tools_spec.rb \
+  spec/requests/internal/voice/ai/event_and_finalize_spec.rb
+```
+
+### Node sidecar verification
+
+```bash
+cd /root/crafty/onelink/chatwoot/services/onelink-ai-voice
+npm test
+```
+
+### Frontend verification
+
+```bash
+cd /root/crafty/onelink/chatwoot
+pnpm exec vitest --no-watch --no-cache --no-coverage \
+  app/javascript/dashboard/components-next/captain/pageComponents/assistant/settings/AssistantSystemSettingsForm.spec.js
+
+pnpm exec eslint \
+  app/javascript/dashboard/routes/dashboard/captain/assistants/settings/Settings.vue \
+  app/javascript/dashboard/components-next/captain/pageComponents/assistant/settings/AssistantSystemSettingsForm.vue
+```
+
+### Manual DEV smoke scenarios
+
+1. Caller says nothing:
+   - first silence prompt;
+   - second prompt;
+   - graceful close.
+
+2. Caller interrupts greeting:
+   - AI stops;
+   - no stale audio continues;
+   - AI answers caller's actual input.
+
+3. Fast FAQ:
+   - no visible dead air;
+   - answer uses FAQ result.
+
+4. Slow scheduling tool:
+   - immediate filler;
+   - optional delay filler;
+   - caller can interrupt;
+   - result is used when available.
+
+5. Transfer:
+   - says transfer phrase;
+   - does not run post-tool continuation;
+   - call lifecycle finalizes correctly.
+
+6. End call:
+   - says closing phrase if configured;
+   - finalizes transcript and post-call Captain features.
+
+### Production rollout gates
+
+- No increase in first-audio p95 beyond agreed threshold.
+- No increase in failed call sessions.
+- No increase in `tool_failed` rate except for known upstream failures.
+- Sidecar `/health` returns zero active sessions after completed calls.
+- Fresh logs have no new `ERROR`, `FATAL`, `UnhandledPromiseRejection`, `NoMethodError`, `NameError`.
+
+---
+
+## Implementation Order
+
+1. Phase 0 baseline.
+2. Phase 1 Rails voice settings contract.
+3. Phase 2 sidecar per-agent settings.
+4. Phase 3 DialogueDirector shell with timers but no async tools yet.
+5. Phase 4 tool fillers.
+6. Phase 5 async/deferred tools.
+7. Phase 6 barge-in hardening.
+8. Phase 7 startup readiness.
+9. Phase 8 voice-safe tool policy.
+10. Phase 10 observability.
+11. Phase 11 UI.
+12. Phase 9 scenario flows once runtime is stable.
+13. Phase 12 final verification and rollout.
+
+This order intentionally delivers the biggest UX improvement early while keeping the risky async-tool and UI expansion isolated.
+
+---
+
+## Risks and Mitigations
+
+### Risk: Affective/proactive Gemini flags break WSS setup
+
+Mitigation:
+- Keep disabled by default.
+- Gate with `api_version: v1alpha`.
+- Add setup-payload tests.
+- Smoke in DEV before production.
+
+### Risk: Async tool result interrupts the caller awkwardly
+
+Mitigation:
+- Default result delivery: `WHEN_IDLE`.
+- Only urgent terminal/safety events use interrupt.
+- DialogueDirector stores deferred result if caller is speaking.
+
+### Risk: Fillers become annoying
+
+Mitigation:
+- Rate-limit fillers per tool and per turn.
+- Do not repeat identical phrase twice in a row.
+- Make phrases configurable.
+
+### Risk: Tool mutates data twice
+
+Mitigation:
+- Preserve Captain idempotency patterns.
+- Use confirmation for risky actions.
+- Do not retry mutating tools automatically after Gemini interruption.
+
+### Risk: More settings make UI confusing
+
+Mitigation:
+- Hide advanced Gemini flags under advanced section.
+- Ship sane defaults.
+- Keep MVP UI minimal: silence, interruption, fillers, tone.
+
+---
+
+## Definition of Done
+
+The work is complete when:
+
+- Voice context emits normalized settings.
+- Sidecar applies per-agent realtime settings.
+- DialogueDirector controls silence, fillers, interruptions, tool wait, and cleanup.
+- Slow tools no longer create silent blocking behavior.
+- Barge-in clears queued audio and stale timers.
+- Voice-safe Captain tools are cataloged with execution modes and risk policy.
+- Metrics prove first-response speed is not regressed.
+- Rails, Node, and frontend focused tests pass.
+- DEV smoke calls prove silence, interruption, fast tool, slow tool, transfer, and end-call flows.
+
+---
+
+## Short Product Summary
+
+Keep Gemini Live as the fast voice-to-voice model. Make OneLink feel human by adding a native `DialogueDirector` in the sidecar. Captain remains the business brain; sidecar becomes the real-time conversation director. Tools run with explicit voice execution modes, slow tools are handled asynchronously, and the caller hears natural short fillers instead of dead air.
