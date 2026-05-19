@@ -1,0 +1,887 @@
+---
+title: WhatsApp Cloud AI Voice Agent Native Runtime Plan
+description: Native OneLink architecture for adding Captain-powered, humanlike, ultra-low-latency AI voice-agent support to WhatsApp Cloud API Calls while preserving the existing Fonoster/PSTN voice channel.
+---
+
+# WhatsApp Cloud AI Voice Agent Native Runtime Plan
+
+> **For Hermes:** Use `subagent-driven-development` when executing this plan task-by-task. Keep production read-only until explicit approval. DEV restart/smoke requires explicit approval. Never print secrets.
+
+## Goal
+
+Implement a native, reliable, fast, voice-to-voice AI agent for WhatsApp Cloud API Calls while preserving the existing clean Fonoster/PSTN Voice channel.
+
+The target system must:
+
+- keep WhatsApp Cloud Calls as a native `Channel::Whatsapp` call transport;
+- keep Fonoster/PSTN as a separate Voice/Fonoster transport;
+- reuse the existing OneLink AI Voice runtime instead of creating a second AI stack;
+- reuse Captain as the reasoning/business/tool brain;
+- give the voice agent its own realtime humanlike dialogue layer;
+- support async/deferred tools without dead air;
+- target sub-second perceived response speed;
+- preserve recording, transcript, finalization, tools, handoff, cleanup, idempotency, and observability.
+
+## Implementation navigation
+
+Use this page in this order:
+
+1. **Executive answers** — confirms the product decisions: 0.5s target boundary, async tools, Captain brain + voice liveliness, and reliability model.
+2. **Current project anchors** — maps the plan to current Rails, Go media-server, and Node `onelink-ai-voice` files.
+3. **Target architecture** — defines the native transport split and the shared AI runtime boundary.
+4. **Latency design** — defines what must be measured to prove fast voice-to-voice performance.
+5. **Async tool architecture** — defines how tools must avoid dead air.
+6. **Captain brain + voice liveliness model** — defines how Captain remains the brain while the voice runtime controls realtime behavior.
+7. **WhatsApp Cloud inbound AI call flow** — implementation flow from Meta webhook to transcript/finalize.
+8. **Conversation-status routing contract** — hard rule: `open -> human operator UI`, `pending -> AI voice agent`.
+9. **New Rails services** — Rails implementation entry points.
+10. **Go media-server runtime stream** — required media-server changes for AI runtime attach.
+11. **Node onelink-ai-voice changes** — transport-neutral runtime and WhatsApp attach endpoint.
+12. **Human takeover** — operator takeover from AI inside the same WhatsApp media session.
+13. **Recording and finalize** — PASS criteria for transcript, recording, terminal state and cleanup.
+14. **Reliability and idempotency** — failure/duplicate-event handling.
+15. **Observability** — events, timings and health counters needed for RCA and SLA proof.
+16. **Implementation phases** — recommended build sequence.
+17. **Test matrix** — Rails, Node, Go and frontend verification.
+18. **DEV acceptance** — final gate before any production rollout.
+19. **Risk register** — known risks and mitigations.
+
+What is intentionally not in this page:
+
+- production rollout commands;
+- secrets or environment values;
+- final code-level snippets for every method;
+- public client-facing documentation.
+
+Those belong in implementation PRs, env/runbooks, or public docs only after the internal contract is accepted.
+
+## Executive answers
+
+### 1. Will the voice agent answer in 0.5 seconds?
+
+**Target:** yes for the caller-perceived first audible response, but it must be measured at the correct boundary.
+
+There are two different latencies:
+
+1. **First audible acknowledgement / comfort audio**
+   - target: `<= 0.5s` after media stream is ready and the runtime has a valid outbound audio path;
+   - example: short greeting/acknowledgement/filler such as “Здравствуйте”, “Секунду”, “Да, слушаю”.
+
+2. **Full semantic answer after understanding + tools + Captain reasoning**
+   - target: normally `0.7–1.5s` for simple turns;
+   - slower if external tools, embeddings, CRM, network, or provider latency are involved.
+
+So the architecture must not promise “every intelligent answer in 0.5s”. The correct production target is:
+
+- `<= 0.5s` to first audible voice response after media readiness;
+- `<= 0.7s` to bridge-observed valid first `AUDIO_OUT` / runtime outbound frame where possible;
+- `<= 1.5s` for most normal non-tool user turns;
+- no dead air during slow tools because the DialogueDirector speaks filler and continues asynchronously.
+
+For WhatsApp Cloud specifically, cold-path setup has more steps than PSTN/Fonoster:
+
+```text
+Meta webhook -> Rails -> media-server WebRTC/SDP -> runtime stream -> Node -> Gemini Live
+```
+
+Therefore 0.5s is realistic only after the media path is established and optimized with:
+
+- pre-created/fast media-server session;
+- parallel context bootstrap and realtime setup;
+- immediate short first audio once stream is writable;
+- no second recursive route;
+- no blocking tools before first speech;
+- explicit first-audio telemetry.
+
+### 2. Will tools work asynchronously?
+
+**Yes, they should.** The target design requires two tool modes:
+
+1. **Blocking fast tools**
+   - hard timeout: roughly `300–800ms` for trivial CRM/contact/status actions;
+   - used only when result is safe and fast enough for realtime speech.
+
+2. **Async deferred tools**
+   - return immediately as `pending/request_id`;
+   - run in background in Rails/Captain/jobs;
+   - DialogueDirector says a short natural phrase instead of silence;
+   - when result is ready, it is injected back into the active Gemini Live session if the call is still open;
+   - if call is no longer open, result is saved to conversation/note/follow-up.
+
+Slow tools must not block voice-to-voice. This is mandatory for quality.
+
+### 3. How does the voice agent get Captain intelligence but keep its own voice liveliness?
+
+The voice agent should be split into two cooperating layers:
+
+```text
+Captain = brain / business reasoning / tools / account knowledge / rules
+Voice Agent Runtime = realtime voice behavior / timing / silence / interruption / fillers / turn-taking
+```
+
+Captain owns:
+
+- assistant identity;
+- system instruction;
+- rules/guidelines/guardrails;
+- account-scoped tools;
+- private/custom tool permissions;
+- FAQ/knowledge/CRM/scheduling logic;
+- handoff policy.
+
+Voice Agent owns:
+
+- first audible response;
+- short spoken style;
+- interruption/barge-in behavior;
+- silence prompts;
+- filler phrases while tools run;
+- natural pauses;
+- nonverbal micro-cues;
+- output cancellation;
+- realtime transcript/finalize lifecycle;
+- media speed and reliability.
+
+Implementation detail: do **not** create a parallel `Captain::VoiceAgent` model unless a real domain gap appears. The project already has voice settings inside `Captain::Assistant.config['voice_settings']`, and `Telephony::AiVoice::ContextBuilder` already converts Captain + voice settings + tools into runtime context.
+
+### 4. Is this proposal maximally reliable and high-quality?
+
+It is the most reliable architecture for this codebase because it follows the existing OneLink boundaries:
+
+- Rails remains source of truth for accounts, calls, conversations, messages, tools, transcript, recording and finalize.
+- WhatsApp Cloud Calls remain native `Channel::Whatsapp` calls.
+- Go media-server remains the WebRTC/Meta media layer.
+- Node `onelink-ai-voice` remains the realtime AI voice runtime.
+- Captain remains the business/assistant/tool brain.
+- Fonoster/PSTN and WhatsApp Cloud are separate transports into one shared AI runtime.
+
+The key quality requirement is not only architecture; it is acceptance gating. This plan is not “done” until tests and DEV live smoke prove speed, audio, tools, recording, transcript, finalize and cleanup.
+
+## Current project anchors
+
+### Existing WhatsApp Cloud Calls layer
+
+- `enterprise/app/models/call.rb`
+- `enterprise/app/services/whatsapp/incoming_call_service.rb`
+- `enterprise/app/services/whatsapp/call_service.rb`
+- `enterprise/app/services/whatsapp/media_server_client.rb`
+- `enterprise/app/controllers/api/v1/accounts/whatsapp_calls_controller.rb`
+- `enterprise/app/controllers/media_server/callbacks_controller.rb`
+- `enterprise/media-server/internal/session/session.go`
+- `enterprise/media-server/internal/media/bridge.go`
+- `enterprise/media-server/internal/peer/meta_peer.go`
+- `enterprise/media-server/internal/peer/agent_peer.go`
+
+### Existing AI Voice/Captain layer
+
+- `app/services/telephony/ai_voice/context_builder.rb`
+- `app/services/telephony/ai_voice/voice_settings_defaults.rb`
+- `app/services/telephony/ai_voice/tool_dispatch_service.rb`
+- `app/services/telephony/ai_voice/transcript_ingestion_service.rb`
+- `app/services/telephony/ai_voice/finalization_service.rb`
+- `services/onelink-ai-voice/src/app/voice-application.js`
+- `services/onelink-ai-voice/src/dialogue/dialogue-director.js`
+- `services/onelink-ai-voice/src/sessions/voice-session.js`
+- `services/onelink-ai-voice/src/realtime/gemini-live-client.js`
+
+### Existing humanlike runtime plan
+
+- `docs/internal/ai-voice-humanlike-native-runtime-plan.mdx`
+
+This WhatsApp plan should implement that runtime plan as a shared voice behavior layer, not as WhatsApp-only behavior.
+
+## Target architecture
+
+```text
+                       ┌────────────────────────────┐
+                       │ Captain::Assistant          │
+                       │ - rules / guardrails        │
+                       │ - voice_settings            │
+                       │ - account tools             │
+                       └─────────────┬──────────────┘
+                                     │
+                                     ▼
+┌──────────────────────┐   ┌────────────────────────────┐
+│ WhatsApp Cloud Calls │   │ Rails AI Voice Context      │
+│ Meta WebRTC/SDP      │──▶│ ContextBuilder / Tools      │
+└──────────┬───────────┘   │ Transcript / Finalize       │
+           │               └─────────────┬──────────────┘
+           ▼                             │
+┌──────────────────────┐                 │
+│ Go media-server      │                 │
+│ Meta peer / RTP      │                 │
+│ Recording / callbacks│                 │
+│ Runtime stream       │◀────────────────┘
+└──────────┬───────────┘
+           │ PCM/frames
+           ▼
+┌────────────────────────────────────────┐
+│ Node onelink-ai-voice                  │
+│ Transport-neutral VoiceApplication     │
+│ DialogueDirector                       │
+│ Gemini Live                            │
+│ Tool executor                          │
+│ Transcript/finalize client             │
+└────────────────────────────────────────┘
+```
+
+## Core architectural rule
+
+WhatsApp Cloud Calls must be implemented as a **native WhatsApp call transport** into the shared AI Voice runtime.
+
+Do not:
+
+- route WhatsApp calls through Fonoster;
+- fake the AI as a browser tab;
+- duplicate Captain logic;
+- embed Gemini directly in Go media-server;
+- create a second unrelated AI voice runtime.
+
+## Latency design
+
+### Required timing metrics
+
+Every call must expose these timestamps:
+
+- `webhook_received_at`
+- `call_row_created_at`
+- `routing_decided_at`
+- `media_session_create_started_at`
+- `media_session_created_at`
+- `meta_pre_accept_started_at`
+- `meta_accept_completed_at`
+- `runtime_stream_ready_at`
+- `node_runtime_attached_at`
+- `context_ready_at`
+- `gemini_setup_complete_at`
+- `first_audio_write_at`
+- `first_audio_observed_at` when available
+- `first_model_audio_at`
+- `first_user_audio_at`
+- `first_transcript_turn_at`
+
+### Perceived first response target
+
+The first audible response should not wait for all business context and tools if the call already has enough basic context to greet.
+
+Preferred startup order:
+
+```text
+1. accept call / establish media
+2. create runtime stream
+3. start Gemini setup and Rails context bootstrap in parallel
+4. when stream writable, send first short audible phrase
+5. attach full Captain context/tools as soon as ready
+6. continue with semantic dialogue
+```
+
+### Avoided latency traps
+
+- No recursive runtime app route.
+- No tool call before first speech.
+- No FAQ embedding search before greeting.
+- No full CRM hydration before the first audible response.
+- No waiting for recording setup before streaming audio.
+- No browser-agent WebRTC dependency for AI mode.
+
+## Async tool architecture
+
+### Tool catalog fields
+
+Extend tool catalog with voice execution policy:
+
+```json
+{
+  "name": "faq_lookup",
+  "timeout_ms": 6000,
+  "realtime_safe": true,
+  "voice_execution_mode": "async_deferred",
+  "voice_result_delivery": "when_idle",
+  "requires_confirmation": false,
+  "risk_level": "low"
+}
+```
+
+Recommended modes:
+
+- `blocking_fast`: contact lookup, simple update, note creation;
+- `async_deferred`: FAQ semantic search, CRM search, external HTTP, scheduling availability;
+- `confirmation_required`: destructive/high-risk actions;
+- `terminal_action`: end call, transfer/handoff.
+
+### Runtime behavior
+
+When a slow tool starts:
+
+```text
+Gemini requests tool
+  -> Node classifies execution mode
+  -> if async_deferred: Rails returns request_id immediately
+  -> DialogueDirector says filler phrase
+  -> tool runs in background
+  -> result arrives by callback/poll/event
+  -> Node injects result into active Gemini session if still open
+  -> if not open, Rails stores result as note/follow-up metadata
+```
+
+### UX rule
+
+The caller should never hear long silence because a tool is slow. The agent should say short natural phrases:
+
+- “Секунду, проверю.”
+- “Да, вижу, сейчас уточню.”
+- “Почти готово.”
+- “Не получилось проверить автоматически, могу соединить со специалистом.”
+
+## Captain brain + voice liveliness model
+
+### Captain payload
+
+`Telephony::AiVoice::ContextBuilder` should continue to build:
+
+- `captain.assistant_id`
+- `captain.name`
+- `captain.system_prompt`
+- `captain.rules`
+- `captain.response_guidelines`
+- `captain.guardrails`
+- `captain.handoff_tool_name`
+- `tools[]`
+
+### Voice settings payload
+
+`context.ai` should include humanlike settings from:
+
+- routing policy legacy voice settings;
+- Captain assistant `config['voice_settings']`;
+- normalized defaults from `Telephony::AiVoice::VoiceSettingsDefaults`.
+
+Voice runtime uses these for:
+
+- language;
+- voice;
+- first message;
+- interruptions;
+- silence prompts;
+- filler phrases;
+- tool delay phrases;
+- max duration;
+- max sentences;
+- natural pauses;
+- nonverbal cues;
+- ambient/noise settings if later enabled.
+
+### Prompt split
+
+The final realtime system prompt should have two clear parts:
+
+```text
+Business/Captain brain:
+- account rules
+- product instructions
+- tools
+- handoff constraints
+
+Voice behavior:
+- short spoken answers
+- no markdown
+- one question at a time
+- fast acknowledgement
+- pause/interrupt/silence policy
+- tool filler behavior
+```
+
+This gives the voice agent Captain intelligence without making Captain responsible for realtime audio timing.
+
+## WhatsApp Cloud inbound AI call flow
+
+```text
+1. Meta sends WhatsApp call webhook.
+2. Rails Whatsapp::IncomingCallService creates/updates Call.
+3. Rails resolves the Chatwoot Conversation for the caller/inbox.
+4. Whatsapp::CallRoutingService decides human_only / ai_only / reject from Conversation.status and channel policy.
+5. If Conversation.status == open: keep the call for a human operator; UI rings and the operator answers through the dashboard interface.
+6. If Conversation.status == pending: route the call to the AI voice agent; enqueue Whatsapp::AiVoiceAcceptJob.
+7. AI job reserves the call idempotently under lock.
+8. Rails creates media-server session.
+9. Rails pre-accepts/accepts the Meta call.
+10. Rails creates or links Telephony::CallSession for AI runtime context.
+11. Rails asks media-server for runtime stream.
+12. Rails starts Node onelink-ai-voice WhatsApp call attach.
+13. Node attaches to runtime stream.
+14. Node bootstraps Rails context and Gemini Live.
+15. DialogueDirector sends first audio quickly.
+16. Gemini + Captain tools drive the call.
+17. Terminal event finalizes transcript, recording, call message and cleanup.
+```
+
+### Conversation-status routing contract
+
+This is a hard product routing rule for WhatsApp Cloud Calls when AI voice is enabled on the inbox/channel:
+
+- `Conversation.status == open` means a human operator owns the conversation. The WhatsApp call must ring in the operator UI, and the operator takes the call from the dashboard interface. The AI voice agent must not auto-answer this call unless an explicit fallback/overflow policy says so.
+- `Conversation.status == pending` means the conversation is waiting for AI/Captain handling. The WhatsApp call should be auto-answered by the AI voice agent, using the Captain assistant attached to the inbox/routing policy.
+- If no conversation exists yet, `Whatsapp::IncomingCallService` should create/resolve the conversation according to existing Chatwoot/OneLink rules, then route from the resolved status. The default for AI-enabled inboxes should be explicit in policy, not guessed inside the media-server.
+- If the status is neither `open` nor `pending`, routing must fail safe: either `human_ring` or `reject` by policy, but never silently auto-answer by AI without a logged reason.
+- This rule is evaluated in Rails only. Go media-server and Node AI runtime receive the already-decided mode and must not re-decide business ownership.
+
+## New Rails services
+
+Create:
+
+- `enterprise/app/services/whatsapp/call_routing_service.rb`
+- `enterprise/app/services/whatsapp/ai_voice_call_service.rb`
+- `enterprise/app/jobs/whatsapp/ai_voice_accept_job.rb`
+
+### Call routing service
+
+Input:
+
+- `Call`
+- `Inbox`
+- `Channel::Whatsapp`
+- account feature flags
+- provider config
+- Captain assistant availability
+
+Output:
+
+```ruby
+{
+  action: 'ai_accept', # or human_ring / reject
+  reason: 'inbox_ai_voice_enabled',
+  assistant_id: 616,
+  mode: 'ai_only'
+}
+```
+
+### AI accept service
+
+Responsibilities:
+
+- reserve call safely;
+- create media session;
+- pre-accept/accept Meta call;
+- create runtime stream;
+- create/link `Telephony::CallSession`;
+- start Node runtime attach;
+- update `Call` metadata;
+- broadcast AI state;
+- cleanup on failure.
+
+## Go media-server runtime stream
+
+Current Go bridge connects:
+
+```text
+Meta WebRTC <-> browser AgentPeer
+```
+
+AI needs:
+
+```text
+Meta WebRTC <-> runtime stream <-> Node AI runtime
+```
+
+Add runtime stream support to Go media-server:
+
+- read Meta/customer RTP;
+- decode/transcode to runtime PCM frames if needed;
+- send caller audio frames to Node;
+- receive assistant audio frames from Node;
+- encode/packetize to Meta local track;
+- preserve recording and callbacks;
+- enforce one active outbound speaker.
+
+Suggested endpoints:
+
+```text
+POST /sessions/:id/runtime-agent
+GET  /sessions/:id/runtime-stream
+POST /sessions/:id/runtime-disconnect
+PATCH /sessions/:id/active-source
+```
+
+Runtime stream response:
+
+```json
+{
+  "runtime_session_id": "rt_...",
+  "stream_url": "wss://.../sessions/:id/runtime-stream?token=***",
+  "codec": "pcm_s16le",
+  "input_sample_rate": 16000,
+  "output_sample_rate": 24000,
+  "expires_at": "..."
+}
+```
+
+Security:
+
+- internal auth only;
+- one-time runtime stream token;
+- account/session scoped;
+- token TTL 60-120 seconds;
+- no secrets in logs.
+
+## Node onelink-ai-voice changes
+
+Make `VoiceApplication` transport-neutral.
+
+Create:
+
+- `services/onelink-ai-voice/src/media/media-transport.js`
+- `services/onelink-ai-voice/src/media/fonoster-managed-transport.js`
+- `services/onelink-ai-voice/src/media/whatsapp-cloud-transport.js`
+- `services/onelink-ai-voice/src/http/whatsapp-cloud-controller.js`
+
+Add endpoint:
+
+```text
+POST /internal/whatsapp-cloud/calls
+```
+
+Payload shape:
+
+```json
+{
+  "call_ref": "whatsapp:<provider_call_id>",
+  "account_id": 530,
+  "inbox_id": 123,
+  "conversation_id": 456,
+  "whatsapp_call_id": 789,
+  "provider_call_id": "...",
+  "media_session_id": "...",
+  "runtime_stream_url": "wss://...",
+  "runtime_stream_token": "[REDACTED]",
+  "caller_number": "+...",
+  "ingress_number": "+..."
+}
+```
+
+Node should:
+
+- validate internal token;
+- create session registry entry;
+- attach `WhatsappCloudTransport`;
+- bootstrap Rails context;
+- start Gemini Live;
+- run DialogueDirector;
+- handle tools;
+- send transcript/control/finalize to Rails;
+- cleanup on terminal/disconnect.
+
+## Human takeover
+
+WhatsApp AI transfer is not PSTN transfer. It is human takeover inside the same media-server session.
+
+Flow:
+
+```text
+1. AI calls request_transfer.
+2. Rails marks Call as transfer_requested.
+3. UI broadcasts transfer event.
+4. Human clicks Join/Accept.
+5. Media-server creates browser AgentPeer.
+6. Active outbound source switches from runtime_ai to agent_peer:<id>.
+7. AI becomes listen-only or disconnects.
+8. Human talks to caller.
+9. Finalize remains idempotent and single-owner.
+```
+
+Media-server must enforce:
+
+- only one active outbound source to Meta;
+- runtime AI cannot speak over human;
+- transfer timeout fallback is explicit.
+
+## Recording and finalize
+
+Recording/finalize is part of PASS, not follow-up.
+
+Required:
+
+- record both caller and AI/human directions when available;
+- attach/update exact WhatsApp call message;
+- persist transcript turns;
+- call finalize once;
+- allow late recording metadata enrichment;
+- prevent late non-terminal events from reopening terminal calls;
+- cleanup Node sessions and Go streams;
+- `/health.sessions=0` after terminal.
+
+## Reliability and idempotency
+
+Every boundary must be retry-safe:
+
+- duplicate Meta webhooks;
+- duplicate Rails jobs;
+- duplicate media-server callbacks;
+- duplicate Node finalize attempts;
+- caller hangup during accept;
+- runtime stream created but Node attach fails;
+- Node crashes mid-call;
+- Go session terminates first;
+- Rails finalization temporarily fails;
+- recording arrives late.
+
+Use explicit states:
+
+```text
+ringing -> ai_accepting -> in_progress -> transfer_requested -> completed/failed/no_answer
+```
+
+Do not do slow network calls inside long DB locks.
+
+## Observability
+
+Add structured events:
+
+- `whatsapp_ai_route_decided`
+- `whatsapp_ai_accept_started`
+- `whatsapp_ai_media_session_created`
+- `whatsapp_ai_meta_accepted`
+- `whatsapp_ai_runtime_stream_created`
+- `whatsapp_ai_runtime_attached`
+- `whatsapp_ai_context_ready`
+- `whatsapp_ai_gemini_ready`
+- `whatsapp_ai_first_audio_write`
+- `whatsapp_ai_first_audio_observed`
+- `whatsapp_ai_tool_started`
+- `whatsapp_ai_tool_pending`
+- `whatsapp_ai_tool_result_injected`
+- `whatsapp_ai_transfer_requested`
+- `whatsapp_ai_finalized`
+- `whatsapp_ai_failed`
+
+Health endpoints should show active counts separately:
+
+```json
+{
+  "fonoster_sessions": 0,
+  "whatsapp_cloud_sessions": 0,
+  "realtime_sessions": 0,
+  "runtime_streams": 0
+}
+```
+
+## Implementation phases
+
+### Phase 0: baseline and contract gates
+
+- Confirm clean branch/status.
+- Keep prod untouched.
+- Do path-specific review/staging before commit.
+- Complete current Voice contract gates separately.
+
+### Phase 1: finish shared humanlike runtime
+
+- Complete `VoiceSettingsDefaults` coverage.
+- Expand `DialogueDirector`.
+- Add silence/interruption/filler/async tool policies.
+- Add telemetry for first audio and turn timings.
+
+### Phase 2: make Node transport-neutral
+
+- Extract `MediaTransport` interface.
+- Wrap existing Fonoster stream as adapter.
+- Ensure all existing Fonoster tests still pass.
+
+### Phase 3: add WhatsApp runtime stream to Go media-server
+
+- Add runtime stream endpoints.
+- Add secure WS/internal stream.
+- Add RTP/PCM/Opus bridge logic.
+- Preserve human AgentPeer flow.
+
+### Phase 4: Rails WhatsApp AI routing and accept
+
+- Add routing service.
+- Add AI accept job/service.
+- Link Call to AI runtime session.
+- Broadcast AI state.
+
+### Phase 5: Node WhatsApp attach endpoint
+
+- Add `/internal/whatsapp-cloud/calls`.
+- Add `WhatsappCloudTransport`.
+- Reuse VoiceSession, Gemini, tools, transcript, finalize.
+
+### Phase 6: async tools
+
+- Add tool execution policy fields.
+- Add pending request result injection.
+- Add graceful fallback for slow/failing tools.
+
+### Phase 7: human takeover
+
+- Add transfer events.
+- Add active outbound source switch.
+- Add UI join/takeover state.
+
+### Phase 8: recording/finalize/cleanup hardening
+
+- Exact call/message source selection.
+- Late-event immutable finalize guard.
+- Duplicate callback idempotency.
+- Health cleanup verification.
+
+### Phase 9: DEV smoke and rollout
+
+- Run targeted tests.
+- Restart DEV only with approval.
+- Smoke WhatsApp human flow first.
+- Smoke WhatsApp AI flow.
+- Smoke tools separately.
+- Prod only after explicit approval.
+
+## Test matrix
+
+### Rails
+
+```bash
+bundle exec rspec \
+  spec/requests/internal/voice/ai/context_spec.rb \
+  spec/requests/internal/voice/ai/tools_spec.rb \
+  spec/services/whatsapp/call_service_spec.rb \
+  spec/requests/api/v1/accounts/whatsapp_calls_spec.rb \
+  spec/requests/media_server/callbacks_spec.rb
+```
+
+Add new specs for:
+
+- `Whatsapp::CallRoutingService`;
+- `Whatsapp::AiVoiceCallService`;
+- AI accept idempotency;
+- duplicate webhook safety;
+- runtime attach failure cleanup;
+- finalization does not reopen terminal call;
+- exact WhatsApp call message update.
+
+### Node
+
+```bash
+cd services/onelink-ai-voice
+npm test
+```
+
+Add tests for:
+
+- transport-neutral `VoiceApplication`;
+- WhatsApp transport attach;
+- first audio telemetry;
+- async tool pending/result injection;
+- close/finalize retry;
+- no active sessions after terminal.
+
+### Go
+
+```bash
+cd enterprise/media-server
+go test ./...
+```
+
+Add tests for:
+
+- runtime stream auth;
+- one-time token;
+- active outbound source switching;
+- runtime stream cleanup;
+- duplicate terminate;
+- no breakage to browser AgentPeer flow.
+
+### Frontend
+
+```bash
+pnpm vitest run \
+  app/javascript/dashboard/helper/specs/actionCable.spec.js \
+  app/javascript/dashboard/composables/specs/useWhatsappCallSession.spec.js
+```
+
+Add tests for:
+
+- AI accepted state;
+- transfer requested state;
+- human takeover join;
+- duplicate events;
+- fallback to human flow when AI disabled.
+
+## DEV acceptance
+
+Do not call PASS until all are true:
+
+- normal WhatsApp human call still works;
+- WhatsApp AI inbound call answers;
+- first audible response timing is measured;
+- caller audio reaches Gemini/runtime;
+- AI audio reaches caller;
+- transcript persists;
+- recording/finalize persists;
+- `/health.sessions=0` after hangup;
+- slow tool does not create dead air;
+- async tool result can be injected or safely persisted;
+- transfer to human works or is explicitly out of MVP scope;
+- duplicate webhook/callback does not duplicate rows/messages;
+- no prod deploy without approval.
+
+## Risk register
+
+### Risk: 0.5s cannot be met on cold path
+
+Mitigation:
+
+- define 0.5s boundary as post-media-ready first audible response;
+- use immediate comfort audio;
+- parallelize context/Gemini setup;
+- measure exact deltas.
+
+### Risk: tools slow down conversation
+
+Mitigation:
+
+- async tool policy;
+- filler phrases;
+- background result injection;
+- hard timeouts.
+
+### Risk: AI and human speak over each other
+
+Mitigation:
+
+- media-server active outbound source;
+- one active sender to Meta;
+- explicit transfer state.
+
+### Risk: duplicate terminal/finalize
+
+Mitigation:
+
+- immutable finalize guard;
+- idempotency keys;
+- late event diagnostic-only unless recording enrichment.
+
+### Risk: wrong abstraction creates maintenance debt
+
+Mitigation:
+
+- no new parallel Captain model;
+- no WhatsApp-through-Fonoster hack;
+- transport-neutral runtime adapters.
+
+## Final architecture verdict
+
+This is the correct OneLink-native direction:
+
+```text
+Captain intelligence + Voice Agent realtime behavior + shared AI runtime + separate native transports.
+```
+
+It gives the best chance of being fast and reliable because each subsystem keeps its natural responsibility:
+
+- Captain: brain/tools/rules.
+- Voice runtime: realtime voice behavior/speed.
+- Rails: truth/finalize/tools/messages.
+- Go media-server: WhatsApp WebRTC media.
+- Fonoster: PSTN transport.
+- WhatsApp Cloud: Meta call transport.
+
+The plan is acceptable only if implementation proves speed, async tools, recording/finalize, cleanup and DEV smoke. Architecture alone is not enough.
