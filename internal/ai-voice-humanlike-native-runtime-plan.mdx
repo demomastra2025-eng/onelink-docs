@@ -19,9 +19,11 @@ description: Implementation plan for making OneLink Captain + Gemini Live AI Voi
 
 1. **No latency regression by design**
    - Keep direct Gemini Live voice-to-voice.
+   - Target first audible response/acknowledgement around 0.5 seconds in normal conditions; human-like behavior must not add blocking work before first audio.
    - Do not insert STT -> text LLM -> TTS into the primary path.
    - Do not use extra LLM calls for simple fillers like “Секунду, проверю”.
    - Sidecar-generated fillers must start within roughly 200-300 ms when needed.
+   - Do not wait for slow tools, FAQ/search, CRM, scheduling, or post-call persistence before giving the first audible response; use fillers/async handling instead.
 
 2. **No awkward dead air**
    - The caller should never wait silently while tools run, unless silence is intentionally configured.
@@ -46,6 +48,13 @@ description: Implementation plan for making OneLink Captain + Gemini Live AI Voi
    - Operator mode is not a fallback, degraded mode, or side effect of the AI runtime rollout.
    - Transfer/operator/recording/topology changes must not be bundled into the human-like AI rollout.
    - Operator changes require a separate contract, joint smoke matrix, rollout gate, and proof of refs, terminal reasons, cleanup, and recording/transcript ownership.
+
+7. **Text Captain behavior remains unchanged by default**
+   - Human-like AI Voice changes apply only to `Telephony::AiVoice` sessions and the `services/onelink-ai-voice` sidecar.
+   - Normal text-channel Captain runtime must not read or apply `assistant.config['voice_settings']`.
+   - Voice-only fields such as `voice_execution_mode`, `voice_result_delivery`, fillers, silence handling, barge-in, and async/deferred delivery are ignored by normal text-channel Captain unless explicitly gated by a separate text feature flag.
+   - Shared Captain tools, rules, guardrails, memory, FAQ, and context access may be reused, but existing text behavior must remain backward-compatible.
+   - `conversation.status = pending` is not sufficient to start AI Voice; live call activation requires an explicit voice/call session context.
 
 ---
 
@@ -974,7 +983,8 @@ For every operator smoke, confirm:
 
 ### Production rollout gates
 
-- No increase in first-audio p95 beyond agreed threshold.
+- No increase in first-audio p95 beyond the agreed threshold; normal-condition first audible response/acknowledgement target stays around 0.5 seconds.
+- No human-like feature may add a blocking network/model/tool call before first audio.
 - No increase in failed call sessions.
 - No increase in `tool_failed` rate except for known upstream failures.
 - Sidecar `/health` returns zero active sessions after completed calls.
@@ -1062,9 +1072,11 @@ The work is complete when:
 - Slow tools no longer create silent blocking behavior.
 - Barge-in clears queued audio and stale timers.
 - Voice-safe Captain tools are cataloged with execution modes and risk policy.
-- Metrics prove first-response speed is not regressed.
+- Metrics prove first-response speed is not regressed and normal-condition first audible response/acknowledgement remains around 0.5 seconds.
+- No slow tool, FAQ/search, CRM, scheduling, or post-call persistence work blocks first audio.
 - Rails, Node, and frontend focused tests pass.
 - DEV smoke calls prove silence, interruption, fast tool, slow tool, transfer, and end-call flows.
+- Text Captain regression checks prove normal pending text conversations, Captain auto-replies, tools, FAQ, memory, and handoff behavior are unchanged without AI Voice context.
 - Any operator-mode change has passed the separate joint smoke matrix with confirmed refs, terminal reasons, cleanup, and recording/transcript ownership.
 
 ---
