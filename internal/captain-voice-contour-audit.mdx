@@ -1,0 +1,219 @@
+---
+title: Captain Voice Contour Audit
+description: Детальный разбор Captain- и голосового контура с практиками для переноса из 4.14.
+---
+
+## Детальный разбор контура Captain и голосового функционала для вашего форка
+
+Ниже — полный аудит состояния 4.13.x (на уровне вашей сборки) и готовый список практик, которые уже можно перенять из релиза 4.14.
+
+### 0) Короткая правка про версию
+
+- Фактически в вашей сборке используется `4.12.1` (по метаданным `package.json` и `config/app.yml`).
+- Значит, перенос 4.14 нужно делать как отдельный план с контролем регрессий, а не как простой `cherry-pick`.
+
+### 1) Что уже реализовано по Captain/AI Voice в текущем форке (по контуру)
+
+Контур уже рабочий, не «заготовка». Привязка по уровням:
+
+- Inbound routing:
+  - Точка входа `/internal/telephony/inbound/route` с выбором `operator|ai|app|reject` и передачей call metadata через `Telephony::InboundRoutingService`.
+  - Привязка к `call_ref`, `conversation_id`, `inbox_id`, `account_id` уже делается централизованно.
+- Контекст AI:
+  - `GET/POST /internal/voice/ai/context` собирает runtime payload в `Telephony::AiVoice::ContextBuilder`.
+  - В контексте уже присутствуют блоки AI-конфига, captain-конфига, tools и параметров transfer/recording.
+- Контроль состояния:
+  - `POST /internal/voice/ai/control` пишет timeline + control events в `Telephony::AiVoice::ControlService`.
+  - Есть allowlist экшенов и фиксированные типы lifecycle-событий.
+- События:
+  - `/internal/voice/ai/events` адаптирует payload и делегирует в `Telephony::EventsIngestionService`.
+  - Идемпотентность и нормализация событий уже реализованы в ingestion слое.
+- Инструменты:
+  - `/internal/voice/ai/tools/:name` принимает как нативные voice tools, так и Captain tools.
+  - В dispatch есть валидация и построение run-time контекста для tool execution.
+- Транскрипты:
+  - Имеется отдельный ingestion path для partial/final transcript и синхронизация с timeline/сообщениями.
+- Финализация:
+  - `/internal/voice/ai/finalize` фиксирует итоговый статус, ошибки, метаданные и запуск post-call задач.
+
+Итого: у вас уже есть полноценный backbone для голосового AI-сервиса с persistence, событиями, tool routing, post-call автопроцессами и безопасной финализацией.
+
+### 1.1) Что это даёт с точки зрения бизнес-процессов
+
+- Операторский путь (operator mode) не уничтожается текущими AI-событиями, а живёт отдельной веткой.
+- Запись/транскрипт и пост-обработка привязаны к сессии и не «висят» только в sidecar памяти.
+- Любой tool-вызов, даже падение одной tool-ветки, не должен дестабилизировать общую lifecycle сессии.
+
+### 2) Где находится Captain в этом конуре (не только UI)
+
+Ключевые точки, которые реально управляют голосом и его поведением:
+
+- `enterprise/app/models/captain/assistant.rb` — источники бизнес-конфига, шаблонов, доступных tool-ов, политик и runtime visibility.
+- `enterprise/lib/captain/context_fields.rb` — runtime поля контекста и рендер/фильтрация по роли доступа.
+- `enterprise/lib/captain/tool_catalog.rb` — общий каталог инструментов и политика их представления.
+- `enterprise/app/services/captain/assistant/*` — run payload, trace payload, prompt helper, runner orchestration.
+
+Поэтому, если нужно изменить поведение ассистента в голосе, обычно делается в комбинации:
+- Captain metadata (assistants + tool catalog)
+- Rails `ContextBuilder` (что именно попасть в контекст сессии)
+- Sidecar `tool-dispatch` и диалоговый контроллер (как доставлять результат в реальном времени)
+
+### 3) Слабые места текущего контура (в порядке убывания влияния)
+
+- Нет полноценного слоя `DialogueDirector` (по сути, есть задел и пост-инструментный watchdog, но не единый stateful контроллер).
+- Долгие tool calls пока больше похожи на ожидаемые действия, чем на полностью асинхронный human-like pipeline.
+- Нет в документе полноценной маппинга `voice_execution_mode`/`voice_result_delivery` для всех tools по умолчанию.
+- Единая нормализация voice-настроек требует донастройки по всем типам данных (false/0/массы фраз) чтобы избежать сюрпризов.
+- Консистентный contract для advanced Gemini-флагов (proactive/affective) пока лучше держать только через explicit config + guarded gating.
+
+### 4) Что прямо сейчас есть из 4.14 (по вашему списку), и как это соотносится
+
+Ниже пометка по вашему списку:
+
+- Companies: creation/details/notes/history/labels/activity.
+  - В контуре голоса — частично релевантно через общий Captain tool set; в чистом AI voice нужно проверить, какие из этих capabilities уже доступны в вашей tool-каталоге.
+  - Риск: дублирование истории, если и AI, и operator одновременно пишут в один и тот же contact/conversation блок.
+- Help Center: bulk actions / AI translation / URL embeds / category-based article creation.
+  - Это уже больше CMS/knowledge уровень, чем реальный голосовой runtime.
+  - Рекомендуется использовать через отдельный Captain tool `faq/knowledge` только после нормализации источников и confidence policy.
+- Captain/AI: document sync / FAQ improvements / handoff classification / config refresh fixes.
+  - Это ключевой блок для вашего запроса: переносим почти полностью, но интегрируется через:
+    - context builder,
+    - tool policy,
+    - control события,
+    - post-call метрики.
+- Inbox UX: bulk actions etc.
+  - Почти не влияет на телефонию, но косвенно важно для диагностики: если пользовательский фидбек о звонках должен быстро попадать в инбокс.
+- Integrations: Linear issue linking / template previews / WhatsApp campaign vars / IMAP auth options.
+  - Для вас релевантно в первую очередь WhatsApp variables + runtime robustness с campaign context на уровне tool-level.
+- Voice: WhatsApp/Twilio calling, inbound calls, recordings, call join support.
+  - Самый релевантный блок.
+  - WhatsApp вход уже частично отражён в enterprise сервисах (`ai_voice_runtime_client`, `ai_voice_call_service`).
+  - Twilio/call join требуют отдельного adapter-слоя и расширения event/state модели.
+- Security: webhook validation, SSRF hardening, safer uploads, SAML fixes, admin auth checks.
+  - Защита webhooks + SSRF/объектные ссылки крайне важны именно для голосового provider callback и attachments.
+- Reliability: reports / notifications / email / CSAT / CSV / portals / widgets / TikTok / Slack.
+  - Из этого блока для voice наиболее полезно расширение retry и observability (логика ошибок и деградации по каждому runtime шагу).
+
+### 5) Что именно рекомендую внедрить первоочередно (перенос 4.14 для вашего контура)
+
+#### B.1. Минимальный пакет (1–2 спринта, низкий риск)
+
+1. `voice_settings` нормализация в Rails:
+  - Добавить/закрепить полный профиль `standard_v1`.
+  - Явно сохранять `false` и `0` (без truthy-фолбэков).
+  - Прописать полный набор human-like knobs в `context.ai`.
+2. Политика инструментов в едином формате:
+  - Для каждого tool-а добавить `voice_execution_mode`, `voice_result_delivery`, `timeout_ms`, `requires_confirmation`, `risk_level`.
+  - Привязать tool policy к Captain catalog в единой схеме.
+3. Улучшение UX без изменения first-response:
+  - На старте длинной tool-ветки сразу фраза «Секунду, проверю».
+  - Запуск проверки tool результата в фоне и инжект по `WHEN_IDLE`.
+
+#### B.2. Средний пакет (3-й–4-й спринт)
+
+1. `Document Sync + FAQ` для голоса:
+  - Синхронизация документов/FAQ в captain-safe cache.
+  - В prompt передавать ревизию KB (для трассируемости ответов).
+2. Handoff classification:
+  - Классификатор причин эскалации (по intent/confidence/urgency).
+  - Автоматический transfer только по policy.
+3. Config refresh:
+  - Пассивный refresh на каждом финальном/контрольном этапе с защитой дедупликации.
+  - Вынести «чистый» contract для контекста и не смешивать с ENV.
+
+#### B.3. Расширение платформы (по readiness)
+
+1. Twilio inbound/ outbound adapter:
+  - отдельный bridge contract + события.
+2. call join:
+  - API tool `request_call_join` + статус join в session state.
+3. Voice runtime hardening:
+  - deterministic interruption lifecycle,
+  - timer lifecycle для filler/idle/tool states,
+  - отдельные события в timeline.
+
+### 6) Какие файлы обязательно трогать первым делом (чтобы не плодить мусор)
+
+1. `app/services/telephony/ai_voice/context_builder.rb`
+2. `app/services/telephony/ai_voice/tool_dispatch_service.rb`
+3. `app/services/telephony/ai_voice/voice_settings_defaults.rb` (если используется/появляется)
+4. `app/services/telephony/ai_voice/event_adapter_service.rb`
+5. `app/services/telephony/ai_voice/control_service.rb`
+6. `app/controllers/internal/voice/ai/*`
+7. `enterprise/app/services/captain/assistant/*`
+8. `services/onelink-ai-voice/src/app/voice-application.js`
+9. `services/onelink-ai-voice/src/realtime/gemini-live-client.js`
+10. `services/onelink-ai-voice/src/tools/tool-executor.js`
+11. `services/onelink-ai-voice/src/sessions/dialogue-director.js` (будущий новый слой)
+
+### 7) Карта контроля качества после доработок
+
+- Технические метрики:
+  - `media_to_first_audio_ms` не хуже текущего.
+  - `tool_wait_ms` не приводит к dead-air > целевого.
+  - `async_tool_result_injected` > 0 без роста `tool_failed`.
+  - `interruption_clear_ms` стабильный и малый.
+- Операционные метрики:
+  - Доля успешных handoff в целевых сценариях.
+  - Частота ложных handoff.
+  - Количество повторных finalize/ошибок контроля сессий.
+- Качество диалога:
+  - Нет «роботного» поведения (микро-паузы, backchannel, отсутствие прерванного ответа).
+  - Отсутствие повторов filler.
+  - Нет выдавливания long-tool на caller.
+
+### 8) Риск-матрица (что может сломаться)
+
+- Перенос через 4.14 features может сломать текущее поведение, если не зафиксировать baseline по контрольным разговорам.
+- Упирание в provider-specific callbacks может дать рассинхрон state между bridge-call, conversation и AI-session.
+- Асинхронный tool pipeline без строгого policy может вызвать duplicate actions.
+- Неуправляемые advanced Gemini-флаги (proactive/affective) могут ухудшить latency/recognition.
+- Любые изменения в operator routing должны идти отдельной матрицей smoke, никогда не в том же MR с voice UX.
+
+### 9) Прямой вывод для запуска в вашей задаче
+
+Ваш форк уже почти на базе, которую описанный 4.14-направление может усилить без полной миграции:
+
+- Базовая каркасная часть Captain и voice контекста уже есть.
+- Главная ценность 4.14 для вас — это именно document sync, FAQ pipeline, handoff classification, более строгий config refresh и голосовые Twilio/call-join сценарии.
+- Рекомендуемый порядок:
+  - 1) нормализация voice settings + tool policy,
+  - 2) DialogueDirector + asynchronous tool flow,
+  - 3) handoff/classification + KB sync,
+  - 4) Twilio/call join adapter.
+
+---
+
+### 10) Чеклист внедрения изменений в этом документе (copy-paste в Jira)
+
+1. Зафиксировать baseline:
+  - `/internal/voice/ai/context` response (current).
+  - типовые сценарии interruption, slow tool, transfer, finalize.
+2. Внедрить нормализацию settings:
+  - сохранить все defaults, добавить контракт + валидацию.
+3. Настроить `tool_execution_mode` map:
+  - `blocking_fast / async_deferred / terminal_action / confirmation_required`.
+4. Внедрить диалоговый контроллер:
+  - state machine + idle/silence + barge-in.
+5. Перевести long tools в async path:
+  - filler до результата + deferred inject.
+6. Добавить handoff классификатор:
+  - explicit reason + urgency + department routing.
+7. Запустить smoke + operator joint matrix:
+  - отдельно от AI-only rollout.
+8. Включить наблюдаемость:
+  - все новые события в logs/timeline/control.
+
+### 11) Рекомендуемый итоговый формат передачи в команду
+
+Если нужно передать это в команду в виде actionable тикетов, удобнее разделить на 4 эпика:
+- Epic A: Голосовые настройки и контракт (без runtime UX).
+- Epic B: Диалоговый контроллер и anti-dead air.
+- Epic C: Tool policy + async/deferred results.
+- Epic D: Twilio/Join/advanced security и operator-safe rollout.
+
+Каждый эпик закрываем только если есть:
+- автоматический spec на critical path;
+- ручной smoke для 10 сценариев;
+- метрика первого ответа без регрессии.
