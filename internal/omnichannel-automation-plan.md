@@ -1,6 +1,6 @@
 ---
 title: Omnichannel Automation And Outbound Plan
-description: Internal runtime note for how broadcasts, personal sends, stages, and automation fit together in the current outbound model.
+description: Internal runtime note for how broadcasts, personal sends, follow-up groups, and automation fit together in the current outbound model.
 ---
 
 # Omnichannel Automation And Outbound Plan
@@ -11,7 +11,7 @@ Document the current outbound architecture after the shift from a standalone `to
 
 - mass broadcasts
 - personal sends
-- reusable stages
+- reusable follow-up groups
 - shared templates
 - automation-triggered outbound actions
 
@@ -32,7 +32,7 @@ Inside the outbound surface, the product is split into:
   - audience-based outbound campaigns
 - `Персональные`
   - one scheduled outbound message for one contact and one channel target
-- `Этапы рассылок`
+- `Дожимы`
   - reusable multi-step personal outbound definitions
 - `Шаблоны`
   - reusable authoring assets used from the same outbound surface
@@ -49,14 +49,14 @@ The user-facing product terms map to the current backend entities like this:
   - `CampaignDelivery`
 - personal outbound send
   - `Reminder`
-- outbound stage set
+- follow-up group
   - `ReminderGroup`
 
 This split is intentional:
 
 - `Campaign` handles one content definition applied to an audience fanout
 - `Reminder` handles one scheduled outbound action for one resolved target
-- `ReminderGroup` stores reusable staged personal outbound sequences
+- `ReminderGroup` stores reusable grouped personal outbound sequences
 
 ## Why These Are Not One Table
 
@@ -106,21 +106,21 @@ Relevant files:
 - `app/jobs/reminders/process_pending_reminders_job.rb`
 - `app/jobs/reminders/execute_reminder_job.rb`
 
-## Stages
+## Follow-up groups
 
-`Этапы рассылок` are reusable grouped definitions for personal sends.
+`Дожимы` are reusable grouped definitions for personal sends.
 
 They are implemented through `ReminderGroup` and are used for:
 
-- manual stage application
-- automation-triggered stage materialization
+- manual follow-up group application
+- automation-triggered follow-up group materialization
 - future default outbound flows per entity type
 
 Important behavior:
 
-- a stage group expands into concrete `Reminder` records
+- a follow-up group expands into concrete `Reminder` records
 - changing the group later does not rewrite already-created reminders
-- the stage layer is reusable content and timing logic, not the trigger engine
+- the follow-up group layer is reusable content and timing logic, not the trigger engine
 
 Relevant files:
 
@@ -218,9 +218,9 @@ The current codebase iteration already includes:
 
 - one campaigns surface that can switch between mass and personal modes
 - personal send creation, editing, deletion, and analytics
-- separate stages page
+- separate follow-up groups page
 - conversation-side delayed message creation using the same core editor
-- automation actions for personal sends and stages
+- automation actions for personal sends and follow-up groups
 - AI-authored personal sends
 - channel-aware target resolution shared more closely across outbound paths
 
