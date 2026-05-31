@@ -73,6 +73,49 @@ POST /internal/voice/ai/finalize
 
 `/event` and `/finalize` are adapter endpoints and must be idempotent.
 
+## Caller hangup event contract
+
+Change note: the AI Voice runtime now emits the canonical action `caller_hangup` when the customer/PSTN caller disconnects before the call reaches a normal operator/AI completion path.
+
+Trigger condition:
+
+- provider/bridge end, close, hangup, or disconnect callback proves the caller leg ended first
+- the runtime has not already emitted a terminal event for that call ref
+- retries or duplicate provider callbacks reuse the same idempotent event key and must not create a second terminal event
+
+Canonical payload fields for support and ops monitoring:
+
+```json
+{
+  "event": "caller_hangup",
+  "call_ref": "<current bridge call ref>",
+  "event_key": "runtime:<call_ref>:caller_hangup",
+  "ended_by": "caller",
+  "hangup_reason": "caller_hangup",
+  "end_reason": "caller_hangup",
+  "ended_at": "<ISO-8601 timestamp>",
+  "provider": "fonoster",
+  "provider_event_type": "<raw provider/bridge event>",
+  "provider_status": "<raw provider status>",
+  "metadata": {
+    "bridge_call_ref": "<bridge call ref>",
+    "runtime_call_ref": "<runtime call ref when present>",
+    "stream_ref": "<media stream ref when present>",
+    "media_session_ref": "<media session ref when present>"
+  }
+}
+```
+
+Consumer contract:
+
+- For the canonical runtime event, Rails stores the raw event in `telephony_events.event_type='caller_hangup'`.
+- Rails normalizes `caller_hangup` to `telephony_call_sessions.status='cancelled'` with `ended_by='caller'` and `end_reason='caller_hangup'`.
+- A legacy `call_ended` payload with `reason`/`hangup_reason` equal to `caller_hangup` or `caller_hung_up` must also normalize to `cancelled`.
+- The native `voice_call:<call_ref>` message and conversation `additional_attributes.call_status` use `cancelled`; the frontend removes active ringing/call widgets for that terminal status.
+- `caller_hung_up` remains a business/finalize terminal state. Do not expose it as a separate UI `call_status`.
+- Provider-specific end details stay in raw payload/metadata fields. Do not add provider-specific user-visible call statuses.
+- Rails must not receive realtime audio frames for this event.
+
 ## Auth summary
 
 Bridge callbacks accept compatible bridge auth headers:
