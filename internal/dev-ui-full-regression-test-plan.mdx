@@ -1,0 +1,614 @@
+---
+title: DEV UI Full Regression Test Plan
+description: Professional manual and semi-automated test plan for full OneLink DEV UI confidence testing, evidence capture, and bug logging.
+---
+
+# DEV UI Full Regression Test Plan
+
+Status: current operational plan for full UI confidence testing on `https://dev.one-link.kz`.
+
+Primary goal: after execution, the team should know which OneLink UI surfaces are production-ready, which are blocked by data/config/provider state, and which defects must be fixed before release.
+
+This plan is intentionally internal. It references runtime paths, test users, logs, DB reads, and Hermes skills.
+
+## Coverage Reality
+
+A full OneLink regression run is designed for **release confidence**, not a mathematical guarantee that every possible positive and negative scenario has been exhausted. The practical target is to cover each important flow at the deepest evidence layer that is safe and available on DEV.
+
+Use this ladder for every test row:
+
+1. `UI`: the browser-visible flow works or fails with clear evidence.
+2. `API`: the frontend request/response contract is verified, including expected 2xx/4xx/422 behavior.
+3. `DB`: the expected DEV database state was created, updated, deleted, or intentionally unchanged.
+4. `JOB/QUEUE`: background jobs, retries, or scheduled work are observed when the feature depends on them.
+5. `PROVIDER/LIVE`: an external provider, QR session, webhook callback, telephony call, delivery receipt, or sidecar completed the real integration path.
+6. `AUTOMATED`: targeted RSpec/Vitest/lint/build checks exist or were run for the code slice.
+
+Do not collapse these into one vague `PASS`. A module can be `UI+API+DB PASS` while still `PROVIDER/LIVE NOT RUN`.
+
+## Hermes And Project Test Capability
+
+Current tooling available to Hermes on this project:
+
+- Browser tools for live DEV UI navigation, screenshots, console capture, and manual E2E-style interaction.
+- Rails runner/DB read probes for `chatwoot_dev` state checks.
+- Rails logs/systemd/service probes for DEV runtime correlation.
+- RSpec for backend models, services, jobs, requests, controllers, policies, Captain, integrations, and runtime contracts.
+- Vitest for frontend stores, components, composables, routes, helpers, and API clients.
+- ESLint/RuboCop/syntax checks for static verification.
+- Sidecar/provider probes where local services expose health/status endpoints.
+
+Current important gaps:
+
+- The app repo has broad RSpec/Vitest coverage, but no committed Playwright/Cypress-style browser E2E suite was identified in the current package dependencies. Hermes browser QA is therefore the live browser layer unless/until a formal E2E suite is added.
+- External providers cannot be exhaustively covered without dedicated sandbox credentials, test phone/accounts, callback fixtures, and safe rate-limit budgets.
+- QR, WhatsApp/Weixin delivery, Fonoster/audio, Postiz/Kaspi/provider payment/media flows require live/sandbox proof before `PROVIDER/LIVE PASS`.
+- PROD proof is out of scope without explicit approval.
+
+## Source Of Truth And Required Skills
+
+- Product repo: `/root/crafty/onelink/chatwoot`
+- DEV host: `https://dev.one-link.kz`
+- DEV service: `onelink-chatwoot-dev.service`
+- DEV DB: `chatwoot_dev`
+- Default DEV test account: use `bakhitov.akhan@gmail.com` when a browser login is required and a valid session is not already present.
+- Manual/browser QA skill: `onelink-manual-qa-dev-ui`
+- Test selection skill: `onelink-testing-matrix`
+- Runtime evidence skill: `onelink-runtime-log-triage`
+- Coverage map: `/internal/agent-skill-and-doc-coverage`
+
+Code/runtime evidence wins over docs if a claim conflicts.
+
+## Scope
+
+### In scope
+
+- DEV UI availability and navigation.
+- Auth and account guards.
+- Dashboard, inboxes, conversations, messages, search, notifications.
+- Inbox/channel creation flows including QR/auth-artifact flows.
+- Settings/admin pages.
+- Captain/AI configuration and runtime UI surfaces.
+- CRM, contacts, companies, deals, touches, outbound flows.
+- Scheduling resources/services/appointments.
+- Automations, macros, integrations, webhooks.
+- SMM/content pages.
+- Help Center admin surfaces.
+- Campaigns/outbound pages.
+- Voice/telephony/call UI where DEV dependencies allow meaningful evidence.
+- Browser console and failed API/network requests.
+- Runtime/log/DB evidence for UI results that depend on server state.
+
+### Out of scope unless explicitly approved
+
+- PROD deploy/restart/mutation.
+- Destructive DB reset or mass data cleanup.
+- Real provider-side destructive actions outside DEV test accounts.
+- Secret/token disclosure in reports.
+- Load/stress testing beyond basic UI responsiveness checks.
+
+## Safety Rules
+
+1. Test DEV only unless explicit production approval is given.
+2. Report `PROD touched: no` in every test report unless production was explicitly approved.
+3. Never print or store passwords, session cookies, auth tokens, QR tickets, provider secrets, or `.env` values.
+4. Use DEV-safe test entity names with a run prefix, for example `QA-UI-YYYYMMDD-HHMM-<module>`.
+5. Record every created/changed DEV entity in the run log.
+6. Do not call a module `PASS` if there are unresolved console errors or failed API requests affecting that module.
+7. Do not call a visual/browser flow `PASS` from curl or code checks alone.
+
+## Test Run Roles
+
+- Test lead / agent: executes the plan and owns evidence completeness.
+- Fix owner: handles defects found during the run.
+- Reviewer: verifies severity, reproducibility, and whether a defect blocks release.
+
+For Hermes-led execution, one agent may perform the test lead role, but defect fixes should remain separate from test execution unless the user explicitly asks to fix immediately.
+
+## Entry Criteria
+
+Before starting the full run:
+
+```bash
+for path in / /app/login /vite-dev/@vite/client; do
+  curl --resolve dev.one-link.kz:443:127.0.0.1 -k -sS -o /dev/null -w "dev.one-link.kz${path} %{http_code}\n" "https://dev.one-link.kz${path}"
+done
+systemctl is-active onelink-chatwoot-dev.service || true
+```
+
+Expected:
+
+- `/` returns `200` or a valid auth redirect path.
+- `/app/login` returns `200`.
+- `/vite-dev/@vite/client` returns `200`.
+- `onelink-chatwoot-dev.service` is `active`.
+
+If backend/runtime state matters, also prove Rails environment and DB:
+
+```bash
+cd /root/crafty/onelink/chatwoot
+export RBENV_ROOT=/root/.rbenv
+export PATH=/opt/node-24/bin:/root/.rbenv/shims:/root/.rbenv/bin:$PATH
+eval "$(rbenv init - bash)"
+RAILS_ENV=development bundle exec rails runner 'puts({ env: Rails.env, db: ActiveRecord::Base.connection.current_database }.to_json)'
+```
+
+Expected: `env=development`, `db=chatwoot_dev`.
+
+## Evidence Standard
+
+Every tested area must record:
+
+- Test ID.
+- URL.
+- User/account/role when relevant.
+- Preconditions and test data.
+- Steps executed.
+- Expected result.
+- Actual result.
+- Browser console after clearing old logs.
+- Failed API/network requests.
+- Screenshot path when visual evidence matters.
+- Backend/log/DB evidence when server state matters.
+- Created/changed DEV entities.
+- Evidence layers covered: `UI`, `API`, `DB`, `JOB/QUEUE`, `PROVIDER/LIVE`, `AUTOMATED`.
+- Result: `PASS`, `PARTIAL PASS`, `BUG`, `BLOCKED`, `NOT RUN`, or `N/A`.
+
+Browser procedure:
+
+1. Open the target route.
+2. Immediately clear browser console noise.
+3. Execute the test steps.
+4. Capture snapshot or screenshot if relevant.
+5. Read console and network/API failures after the action.
+6. If server state is involved, correlate with logs/DB/API reads.
+
+Known non-blocking DEV noise:
+
+- Browser extension errors such as `Could not establish connection. Receiving end does not exist` are not app bugs unless correlated with app behavior.
+- Lit/Vite dev-mode warnings are expected in DEV unless the task is production build hardening.
+
+## Result Definitions
+
+- `PASS`: all required evidence layers for that test row are satisfied. For normal CRUD this usually means at least `UI+API+DB`; for integration rows it may also require `JOB/QUEUE` or `PROVIDER/LIVE`.
+- `PARTIAL PASS`: some layers passed, but at least one material layer is intentionally not run or unavailable. Example: `UI+API+DB PASS; PROVIDER/LIVE NOT RUN`.
+- `BUG`: reproducible defect with steps/evidence.
+- `BLOCKED`: cannot test due to missing credentials, unavailable provider, missing feature flag, missing data, service outage, or permission boundary.
+- `NOT RUN`: intentionally deferred or outside this run.
+- `N/A`: not applicable for the current account/feature set.
+
+Release confidence labels:
+
+- `UI PASS`: browser-visible behavior passed, but backend/live depth may still be absent.
+- `UI+API+DB PASS`: browser behavior and server persistence/contract passed for DEV.
+- `LIVE PASS`: external provider/sidecar/callback/delivery path completed with evidence.
+- `DEV UI PASS`: full target surface verified on DEV at the depth required by the test rows.
+- `CODE-SLICE DONE`: code/spec checks passed, but live DEV UI was not verified.
+- `PROD PASS`: only after approved production deployment and live production proof.
+
+## Severity Model
+
+- `Critical`: blocks login, primary routing, conversation handling, message sending, data integrity, or causes cross-account/security exposure.
+- `High`: breaks an important customer/admin flow with no reasonable workaround.
+- `Medium`: broken feature or confusing behavior with workaround available.
+- `Low`: visual/content/minor UX issue that does not block task completion.
+
+Priority model:
+
+- `P0`: fix before any release/demo.
+- `P1`: fix before customer-facing release.
+- `P2`: fix soon; acceptable with known workaround.
+- `P3`: backlog polish.
+
+## Bug Log Template
+
+Use this exact structure for every issue:
+
+```markdown
+### BUG-<run>-<number>: <short title>
+
+- Severity: Critical | High | Medium | Low
+- Priority: P0 | P1 | P2 | P3
+- Category: Functional | Console | API | Visual | UX | Permission | Data | Performance
+- Status: Open | Fixed | Retest Passed | Won't Fix | Duplicate
+- Environment: DEV `https://dev.one-link.kz`
+- URL:
+- Account/User/Role:
+- Preconditions:
+- Steps to reproduce:
+  1.
+  2.
+  3.
+- Expected:
+- Actual:
+- Console errors:
+- Failed API/network:
+- Backend/log/DB evidence:
+- Screenshot/media:
+- Created/changed DEV data:
+- Suspected owner: Backend | Frontend | Captain | Integrations | Ops | Unknown
+- Retest notes:
+```
+
+## Final Report Template
+
+```markdown
+# OneLink DEV UI Regression Report - <date/run-id>
+
+## Executive Summary
+
+- Environment: DEV `https://dev.one-link.kz`
+- Account/User:
+- Scope:
+- Evidence depth summary: UI / API / DB / JOB/QUEUE / PROVIDER-LIVE / AUTOMATED
+- Started:
+- Finished:
+- PROD touched: no
+- Overall result: PASS | PARTIAL PASS | PASS WITH KNOWN ISSUES | BLOCKED | FAIL
+
+## Counts
+
+- PASS:
+- BUG Critical:
+- BUG High:
+- BUG Medium:
+- BUG Low:
+- BLOCKED:
+- NOT RUN:
+
+## Release Recommendation
+
+- Go / No-Go:
+- Required fixes before release:
+- Acceptable known issues:
+- Retest required:
+
+## Tested Areas
+
+- Auth:
+- Dashboard:
+- Conversations/Inboxes:
+- Channels/QR:
+- Settings/Admin:
+- Captain:
+- CRM:
+- Scheduling:
+- SMM/Content:
+- Integrations/Automations:
+- Help Center:
+- Voice/Calls:
+
+## Defects
+
+<bug log entries>
+
+## Evidence Index
+
+- Screenshots:
+- Logs/DB probes:
+- Console/API captures:
+
+## DEV Data Created Or Changed
+
+- Entity:
+- ID/URL:
+- Cleanup needed: yes/no
+```
+
+## Full Test Matrix
+
+### A. Environment And Auth
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-AUTH-001 | DEV availability | Open `/`, `/app/login`, `/vite-dev/@vite/client` | Required entry checks pass |
+| UI-AUTH-002 | Login page | Open `/app/login` | Login page renders with no blocking console/API errors |
+| UI-AUTH-003 | Authenticated login | Log in as DEV test user | Redirects to `/app/accounts/:accountId/...` |
+| UI-AUTH-004 | SSO page | Open `/app/login/sso` | Page renders or redirects intentionally |
+| UI-AUTH-005 | Signup page | Open `/app/auth/signup` | Page renders or redirects intentionally |
+| UI-AUTH-006 | Reset password | Open `/app/auth/reset/password` | Form renders without broken route |
+| UI-AUTH-007 | Password edit guard | Open `/app/auth/password/edit` | Guard/error state is understandable |
+| UI-AUTH-008 | Confirmation guard | Open `/app/auth/confirmation` | Guard/error state is understandable |
+| UI-AUTH-009 | No accounts guard | Exercise no-account state if test user exists | Redirect/state is understandable |
+| UI-AUTH-010 | Suspended account guard | Open suspended route if account exists | Permission/account state is understandable |
+
+### B. Core Navigation And Dashboard
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-NAV-001 | Dashboard | Open `/app/accounts/:accountId/dashboard` | Dashboard loads; widgets/data states render |
+| UI-NAV-002 | Sidebar | Click each primary sidebar item | Navigation works; active item updates |
+| UI-NAV-003 | Deep link refresh | Reload several deep routes | Route restores without blank page |
+| UI-NAV-004 | 404/stale route | Open invalid account child route | Clear not-found/redirect behavior |
+| UI-NAV-005 | Responsive baseline | Check narrow viewport if tooling allows | Sidebar/header remain usable |
+
+### C. Conversations, Inboxes, Messages
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-CONV-001 | Conversation list | Open conversations/inbox route | List loads or valid empty state appears |
+| UI-CONV-002 | Conversation detail | Open existing conversation | Messages, contact panel, composer render |
+| UI-CONV-003 | Message composer | Type draft and validate controls | Composer accepts input; no JS errors |
+| UI-CONV-004 | Assignment controls | Open assignee/team/status controls | Controls render and reflect state |
+| UI-CONV-005 | Inbox filtered route | Open `/app/accounts/:accountId/inbox/:inbox_id` | Correct filtered view loads |
+| UI-CONV-006 | Inbox view root | Open `/app/accounts/:accountId/inbox-view` | Dedicated inbox view loads |
+| UI-CONV-007 | Inbox view typed | Open `/app/accounts/:accountId/inbox-view/:type/:id` | Filtered dedicated view loads |
+| UI-CONV-008 | Labels/views | Check labels/custom views if data exists | Filter behavior is correct |
+| UI-CONV-009 | Contact side panel | Open customer profile/context from conversation | Context loads without API errors |
+| UI-CONV-010 | Attachments/media | Inspect conversation with attachment if available | Preview/download state works or clear fallback |
+
+### D. Search And Notifications
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-SRCH-001 | Global search route | Open `/app/accounts/:accountId/search` | Search shell renders |
+| UI-SRCH-002 | Search query | Search known term and nonsense term | Results and empty states behave correctly |
+| UI-SRCH-003 | Search tabs | Switch available tabs | Each tab loads or is disabled intentionally |
+| UI-NOTIF-001 | Notifications | Open `/app/accounts/:accountId/notifications` | List/empty state renders |
+| UI-NOTIF-002 | Notification navigation | Click notification if available | Navigates to the correct record |
+| UI-NOTIF-003 | Read/unread | Toggle read state if safe | State persists or blocked reason is clear |
+
+### E. Channel And Inbox Setup
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-CHAN-001 | Inbox list | Open settings inbox list | Inboxes load; create button visible for admin |
+| UI-CHAN-002 | New inbox dialog | Open `/dialog/inboxes/new` | Channel picker renders |
+| UI-CHAN-003 | Channel search/list | Inspect available channel types | Current providers visible according to account features |
+| UI-CHAN-004 | Website/email/API channel | Start safe non-provider setup if available | Wizard validates and creates expected DEV entity or blocks clearly |
+| UI-CHAN-005 | WhatsApp Cloud | Open setup path if enabled | Form/state renders without broken route |
+| UI-CHAN-006 | WhatsApp Web QR | Open finish/QR flow for DEV inbox if available | QR/status panel renders; refresh/expiry visible |
+| UI-CHAN-007 | Weixin QR/auth artifact | Open Weixin finish URL for DEV inbox | Existing inbox/channel state matches UI; no silent failure |
+| UI-CHAN-008 | Stale finish URL | Open finish URL with invalid/deleted inbox | UI explains error or redirects with context |
+| UI-CHAN-009 | Provider diagnostics | Correlate QR/auth state with DB/log/API | UI matches backend/provider state |
+
+### F. Settings And Admin
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-SET-001 | Account settings | Open general account settings | Page renders and data loads |
+| UI-SET-002 | Profile settings | Open profile page | Page renders; own profile visible |
+| UI-SET-003 | Agents | Open agents settings | List/create/edit controls behave by permission |
+| UI-SET-004 | Teams | Open teams settings | List/create/edit controls behave by permission |
+| UI-SET-005 | Labels | Open labels settings | CRUD controls render; validation works |
+| UI-SET-006 | Canned responses | Open canned responses | List/form states work |
+| UI-SET-007 | Macros | Open macros | List/form states work |
+| UI-SET-008 | Automation rules | Open automations | List/form states work; event/action pickers load |
+| UI-SET-009 | SLA/reports/security | Open each enabled page | No broken routes; permission states clear |
+| UI-SET-010 | Integrations | Open integrations settings | Catalog/hooks render; secrets not leaked |
+| UI-SET-011 | Custom roles | Open custom roles if enabled | Permission matrix renders |
+| UI-SET-012 | Assignment policies | Open assignment policies | List/form states work |
+| UI-SET-013 | Agent bots/audit logs/billing | Open if enabled | Renders or blocks with clear feature/permission state |
+
+### G. Captain / AI / Copilot / Tools
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-CAP-001 | Captain base | Open Captain route | Feature/permission guard works; no blank page |
+| UI-CAP-002 | Assistants list | Open assistant list | List/empty state renders |
+| UI-CAP-003 | Assistant detail | Open or create DEV-safe assistant if needed | Settings sections render |
+| UI-CAP-004 | Prompts/rules | Open prompt/rules editor | Text formatting preserves line breaks/lists |
+| UI-CAP-005 | Documents | Open documents tab | Upload/crawl/resync states render; no secret leakage |
+| UI-CAP-006 | Tools | Open tools/custom tools page | Built-in/custom tool access matches account scope |
+| UI-CAP-007 | Tool test/preview | Run safe preview if configured | Preview result matches backend logs; errors are visible |
+| UI-CAP-008 | Scenarios | Open scenarios | List/editor/validation states work |
+| UI-CAP-009 | Sandbox/copilot | Open sandbox/copilot if enabled | Messages/actions render without blocking errors |
+| UI-CAP-010 | Evaluations/observability | Open if enabled | Route loads; live-LLM blocked/enabled state is explicit |
+
+### H. CRM, Contacts, Companies, Touches, Outbound
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-CRM-001 | Contacts index | Open contacts | List/filters/search load |
+| UI-CRM-002 | Contact detail | Open contact | Profile, conversations, notes render |
+| UI-CRM-003 | Companies index/detail | Open companies and one detail | Company data loads; related records visible |
+| UI-CRM-004 | Deals/workflows | Open CRM/deals if enabled | Kanban/list/detail states render |
+| UI-CRM-005 | Conversation modal from CRM | Open linked conversation modal | Correct conversation opens; no ID mismatch |
+| UI-CRM-006 | Touches/touch plans | Open touch pages if enabled | Terminology and states match backend `content`/touch model |
+| UI-CRM-007 | Outbound/campaigns | Open outbound and campaigns aliases | Redirects and child routes work |
+| UI-CRM-008 | Safe create/edit validation | Try DEV-safe create/edit where scoped | Validation errors are visible; no silent failure |
+
+### I. Scheduling
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-SCH-001 | Scheduling base | Open scheduling route | Calendar/list shell renders |
+| UI-SCH-002 | Resources | Open resources/specialists | List and blocked/delete states are clear |
+| UI-SCH-003 | Services | Open services | List/form states render |
+| UI-SCH-004 | Appointments | Open appointments | Status/timezone display is correct |
+| UI-SCH-005 | Create/edit validation | Exercise safe validation path | Errors are clear and backend does not 500 |
+| UI-SCH-006 | Captain scheduling link | If enabled, inspect Captain scheduling tools UI | Tool visibility matches assistant/account config |
+
+### J. Automations, Integrations, Webhooks
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-AUTO-001 | Automation list | Open automations | List/empty state renders |
+| UI-AUTO-002 | Rule builder | Open/create DEV-safe rule draft if allowed | Event/action fields load across conversation/deal/task/appointment |
+| UI-AUTO-003 | Macros | Open macros | Action list UI works |
+| UI-INT-001 | Integrations catalog | Open integrations page | Installed/available apps render |
+| UI-INT-002 | Hook detail | Open installed integration if available | Config is visible without secret leakage |
+| UI-WH-001 | Webhooks | Open webhook settings if available | List/form/test states render; endpoint validation works |
+| UI-WH-002 | Failed integration state | Inspect disabled/error hook if available | Error state is visible and actionable |
+
+### K. SMM / Content
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-SMM-001 | SMM base | Open `/app/accounts/:accountId/smm` | Page renders or feature guard is explicit |
+| UI-SMM-002 | Calendar | Open SMM calendar | Calendar/content states render |
+| UI-SMM-003 | Channels | Open content channels if enabled | Protected APIs return correct auth behavior; no server secret exposure |
+| UI-SMM-004 | Create content validation | Exercise safe validation path | UI maps to backend `content`; validation clear |
+
+### L. Help Center
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-HC-001 | Help Center base | Open help center admin route | Page renders or feature guard is explicit |
+| UI-HC-002 | Portals/categories/articles | Open each enabled admin page | List/detail states render |
+| UI-HC-003 | Locale/settings | Open settings/locales if enabled | Config state renders without blank page |
+| UI-HC-004 | Public portal distinction | Verify public portal assumptions separately if needed | Dashboard admin and public portal behavior are not confused |
+
+### M. Voice / Telephony / Calls
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-VOICE-001 | Voice inbox/settings | Open voice/telephony settings if enabled | Page renders; provider state clear |
+| UI-VOICE-002 | Webphone UI | Open browser phone surface if enabled | Registration/call buttons reflect sidecar/provider state |
+| UI-VOICE-003 | Incoming call UI | If live DEV route available, inspect incoming card | Answer/reject/hangup controls behave correctly |
+| UI-VOICE-004 | AI Voice state | If live DEV call available, verify AI routing | PASS only with routing/audio/session/recording/finalize proof |
+| UI-VOICE-005 | Runtime correlation | Check sidecar/log/DB state for any voice claim | UI state matches runtime state |
+
+### N. Cross-cutting Quality
+
+| ID | Area | Steps | Expected |
+| --- | --- | --- | --- |
+| UI-XCUT-001 | Console hygiene | Check console after every module | No module-affecting errors |
+| UI-XCUT-002 | API failures | Capture failed requests | No unexpected 4xx/5xx for happy paths |
+| UI-XCUT-003 | Empty states | Inspect pages with no data | Clear empty state with next action |
+| UI-XCUT-004 | Permission states | Inspect admin-only routes with available roles | 403/hidden/redirect behavior is clear |
+| UI-XCUT-005 | Localization | Inspect RU/EN copy on key public/admin pages | No broken placeholders or machine-garbled critical text |
+| UI-XCUT-006 | Loading states | Refresh heavy pages | No infinite spinner without error |
+| UI-XCUT-007 | Direct deep links | Paste route into address bar/reload | No blank app or router crash |
+| UI-XCUT-008 | Visual layout | Screenshot key pages | No clipped buttons, overlapping panels, unusable modal |
+| UI-XCUT-009 | Data persistence | Refresh after safe edit/create | State persists or failure is visible |
+| UI-XCUT-010 | Audit/security basics | Inspect sensitive pages | No tokens/secrets leaked in UI or console |
+
+## Execution Phases
+
+### Phase 0: Setup
+
+1. Generate run id: `QA-UI-YYYYMMDD-HHMM`.
+2. Create evidence directory: `/root/crafty/onelink/qa-runs/<run-id>/`.
+3. Create subdirectories:
+   - `screenshots/`
+   - `console/`
+   - `api/`
+   - `logs/`
+4. Run entry checks.
+5. Confirm account id and user role.
+6. Open browser and clear console.
+
+### Phase 1: Route Smoke
+
+Goal: prove all major route families open or intentionally guard/redirect.
+
+Run all matrix rows that only require navigation and read-only inspection.
+
+Output: route smoke result list with console/API failures.
+
+### Phase 2: Critical User Flows
+
+Goal: prove the primary operating flows work end-to-end on DEV.
+
+Minimum critical flows:
+
+1. Login and dashboard landing.
+2. Conversation list and detail.
+3. Message composer usability without necessarily sending external provider traffic.
+4. Inbox/channel setup list and new-channel dialog.
+5. One QR/auth-artifact flow if DEV test provider state exists.
+6. Captain assistant list/detail/tools/documents.
+7. CRM contact/company/deal navigation.
+8. Settings/admin core pages.
+9. Search and notifications.
+
+Output: critical-flow report with screenshots and bugs.
+
+### Phase 3: Module Regression
+
+Goal: cover the rest of the product surfaces.
+
+Execute the remaining matrix by module:
+
+1. Settings/admin.
+2. Automations/macros/integrations/webhooks.
+3. Scheduling.
+4. SMM/content.
+5. Help Center.
+6. Campaigns/outbound.
+7. Voice/calls when live DEV dependencies are available.
+
+Output: module-by-module status.
+
+### Phase 4: Runtime Correlation
+
+Goal: prevent false UI conclusions.
+
+Use runtime evidence for:
+
+- QR/auth artifacts.
+- Captain tools/evals/knowledge/observability.
+- Channel/provider state.
+- Voice/calls.
+- 500 errors or unexpected 404s.
+- Repeated failed API requests.
+
+Minimum logs/probes:
+
+- Rails service active.
+- Rails logs around error timestamp.
+- DB read for entity existence when route depends on `account_id`, `inbox_id`, `assistant_id`, etc.
+- Sidekiq/provider/sidecar logs only when relevant.
+
+### Phase 5: Triage And Retest
+
+1. Deduplicate issues.
+2. Assign severity and owner.
+3. Mark release blockers.
+4. Fixes are not part of this plan unless explicitly requested.
+5. After fixes, rerun only impacted test IDs plus any adjacent regression IDs.
+6. Update bug status to `Retest Passed` only with fresh evidence.
+
+## Exit Criteria
+
+Full run can be considered successful when:
+
+- Entry checks pass.
+- All Critical and High flows are either `PASS` or have approved/understood blockers.
+- No `Critical` or `High` open bugs remain for release-critical flows.
+- Every `Medium` issue has an owner and workaround/retest decision.
+- Every `BLOCKED` item states exactly what is missing.
+- Browser console/API failures are classified and not ignored.
+- Final report contains evidence index and DEV data created/changed.
+- PROD was not touched unless explicitly approved and documented.
+
+## Go / No-Go Guidance
+
+- `Go`: no Critical/High bugs, no unknown blockers, and release-critical flows have the required depth (`UI+API+DB`, plus `PROVIDER/LIVE` where the business promise depends on an external channel/provider).
+- `Go with known issues`: only Medium/Low issues remain, documented with workarounds; any missing live/provider layer is explicitly accepted.
+- `No-Go`: any Critical/High bug in auth, routing, conversations, message handling, channel setup, Captain runtime UI, data integrity, or cross-account/security behavior.
+- `Blocked`: environment/provider/test data prevents confidence; missing blocker must be resolved before release decision.
+
+## Recommended First Run Order
+
+1. Phase 0 setup and entry checks.
+2. A: Environment/Auth.
+3. B: Core navigation/dashboard.
+4. C: Conversations/inboxes/messages.
+5. E: Channel/inbox setup, especially current Weixin/QR concern.
+6. F: Settings/admin.
+7. G: Captain.
+8. H: CRM/outbound/touches.
+9. I/J/K/L/M modules.
+10. N: Cross-cutting quality pass.
+11. Final report and blocker list.
+
+## Deliverables
+
+Each full test run must produce:
+
+- `report.md`: final report using the template above.
+- `bugs.md`: all bug entries in the bug log template.
+- `matrix-results.csv` or `matrix-results.md`: row-by-row result for every test ID.
+- `screenshots/`: visual evidence.
+- `console/`: console/API error captures where relevant.
+- `logs/`: runtime/log/DB evidence snippets where relevant.
+
+Suggested location:
+
+```bash
+/root/crafty/onelink/qa-runs/<run-id>/
+```
+
+Do not commit run artifacts unless explicitly requested; keep durable methodology in this doc and bug summaries in the chosen tracker/docs only.

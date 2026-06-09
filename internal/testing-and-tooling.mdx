@@ -53,6 +53,38 @@ The repo includes dev commands such as:
 | Frontend logic and components | Vitest |
 | Component development and visual exploration | Histoire |
 | Static quality checks | ESLint and Rubocop |
+| Live DEV browser/manual flows | Hermes browser tools against `https://dev.one-link.kz` |
+| Runtime correlation | Rails runner, DB reads, logs, queues, sidecar/provider probes |
+
+## Current Coverage Inventory
+
+A 2026-05-28 repository/tooling audit observed:
+
+- `1107` RSpec files under `spec/`.
+- `442` frontend `*.spec.js` files under `app/javascript/`.
+- `96` Histoire stories.
+- RSpec coverage is broad across services, controllers, jobs, models, requests, policies, Captain/LLM, integrations, telephony, and enterprise code.
+- Frontend specs are broad across stores, API clients, routes, helpers, composables, and selected components.
+- No Playwright/Cypress/Selenium browser E2E dependency was present in `package.json`; live browser coverage is currently manual/semi-automated through Hermes browser tools unless a formal E2E suite is added.
+
+Treat these counts as inventory, not confidence by themselves. A flow is release-ready only when the relevant layer assertions have been run and matched to live DEV behavior where needed.
+
+## Evidence Depth Model
+
+Use this depth model in reports and release decisions:
+
+- `UI`: browser-visible behavior verified.
+- `API`: request/response contract verified, including expected negative statuses.
+- `DB`: persistence or intentional non-persistence verified in `chatwoot_dev`.
+- `JOB/QUEUE`: Sidekiq/scheduled/background behavior verified where relevant.
+- `PROVIDER/LIVE`: external provider, QR, callback, delivery, telephony, payment, or sidecar path verified.
+- `AUTOMATED`: targeted RSpec/Vitest/lint/build checks passed.
+
+Do not report a single unqualified `PASS` for external integrations. Prefer examples like:
+
+- `UI+API+DB PASS; PROVIDER/LIVE NOT RUN`
+- `UI PASS; API 422 validation BUG`
+- `LIVE PASS: QR scanned, channel connected, DB/provider status matched`
 
 ## Internal Rule
 
@@ -62,3 +94,45 @@ Use the narrowest verification that matches the changed surface:
 - request specs for contract changes
 - Vitest for UI logic
 - Histoire when shared component behavior needs inspection
+
+## AI-Agent Verification Workflow
+
+For Hermes/Codex agents, testing documentation is operational documentation. Before claiming a One Link change is ready, agents should load the relevant shared skill from `/root/.hermes/shared-skills/onelink`:
+
+- `onelink-testing-matrix` — choose the automated verification layer and known repo-specific pitfalls.
+- `onelink-manual-qa-dev-ui` — manual/browser QA through `https://dev.one-link.kz`.
+- `onelink-runtime-log-triage` — live log, DB, queue, webhook, and runtime RCA.
+- `onelink-chatwoot-dev-prod-separation` — DEV/TEST/PROD boundaries and safe operations.
+
+Use this progression:
+
+1. **Code-level proof**: targeted RSpec/Vitest/ESLint/RuboCop/syntax checks for the touched surface.
+2. **Runtime proof**: service status, routes, DB/queue/log reads, and feature flag/account/role assumptions when behavior depends on environment.
+3. **DEV UI proof**: browser steps on `dev.one-link.kz` with cleared console, screenshots when visual/layout behavior matters, and exact URL/account/role evidence.
+4. **Release proof**: only after explicit PROD approval, deployment SHA/health/UI proof.
+
+Do not call a task `PASS` from code checks alone if the user asked for browser/manual verification. Also do not call an external integration `PASS` from browser/UI alone if the business promise depends on provider-side state. Use:
+
+- `CODE-SLICE DONE` when code/tests pass but live DEV UI was not checked.
+- `UI PASS` when browser-visible behavior works but server/provider depth was not required or not yet checked.
+- `UI+API+DB PASS` when DEV persistence/request evidence matches the UI behavior.
+- `LIVE PASS` when external provider/sidecar/callback/delivery proof exists.
+- `DEV UI PASS` when verified on `dev.one-link.kz` at the required depth for that row.
+- `PROD PASS` only after approved production deployment and live proof.
+
+## DEV UI Manual QA Baseline
+
+For manual QA through the interface, start from `onelink-manual-qa-dev-ui`. The baseline coverage is:
+
+- auth/login, V3 auth routes, no-account/suspended guarded states;
+- dashboard/inbox/inbox-view/conversation loading;
+- global search and notifications;
+- channel setup and QR flows;
+- Captain assistants, documents, tools, sandbox/evaluations/observability where enabled;
+- CRM: contacts, companies, deals/workflows;
+- scheduling resources/services/appointments;
+- SMM/content, help center, and campaigns/outbound;
+- settings/admin pages and permission behavior;
+- voice/telephony/call flows when relevant.
+
+Every browser QA report should include URLs, steps, console/API errors after clearing old logs, runtime evidence when state matters, created DEV entities, and explicit `PROD не трогал` unless production actions were approved.

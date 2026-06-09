@@ -21,7 +21,8 @@ The main repository is a Rails monolith with co-located frontend surfaces, a tec
 | `spec/` | Backend, enterprise, and service-level tests |
 | `app/javascript/` | All frontend entrypoints and shared JS/Vue code |
 | `docs/` | Separate documentation repository mounted as submodule |
-| `.codex/` | Versioned project-specific AI/agent assets and scripts |
+| `.codex/` | Legacy/project-specific AI assets if present; internal Hermes agents should use `/root/.hermes/shared-skills/onelink` as the operational skill source of truth |
+| `/root/.hermes/shared-skills/onelink` | Shared OneLink Hermes skills for agent workflows, QA, RCA, deployment, and documentation governance |
 
 ## App Directory Shape
 

@@ -1,0 +1,338 @@
+---
+title: Agent Skill And Documentation Coverage
+description: Internal source-of-truth map connecting OneLink project directions and product functionality to Hermes skills and documentation pages.
+---
+
+# Agent Skill And Documentation Coverage
+
+Status: current operational map for OneLink Hermes agents.
+
+Purpose: keep every major project direction and product-functional area discoverable through both:
+
+- a Hermes skill under `/root/.hermes/shared-skills/onelink`
+- a documentation page in the OneLink docs repository
+
+Use this page when an agent or engineer asks whether OneLink has current skills and docs for backend, frontend, channels, integrations, Captain, deployment, QA, or related work.
+
+## Source Of Truth
+
+- Product/runtime code: `/root/crafty/onelink/chatwoot`
+- OneLink Hermes skills: `/root/.hermes/shared-skills/onelink`
+- Docs repository: `/root/crafty/onelink/onelink-docs`
+- Internal docs index: `/internal/index`
+- Public Mintlify navigation: `docs.json`
+
+Code and runtime evidence win over docs if a claim conflicts.
+
+## Technical Direction Coverage
+
+### Cross-project / architecture
+
+- Primary skills:
+  - `onelink-builder`
+  - `onelink-ai-agent-enablement`
+  - `onelink-hermes-skill-architecture`
+- Docs:
+  - `/internal/architecture-overview`
+  - `/internal/repository-structure`
+  - `/internal/agent-skill-and-doc-coverage`
+- Use for:
+  - project-wide routing
+  - choosing the owning repo/surface
+  - deciding which specialized skill to load
+  - checking docs-vs-skills source of truth
+
+### Backend
+
+- Primary skills:
+  - `onelink-backend`
+  - `onelink-api`
+  - `onelink-runtime-log-triage`
+- Docs:
+  - `/internal/backend-architecture`
+  - `/internal/api-and-routes`
+  - `/internal/data-model-and-db`
+  - `/api-reference/introduction`
+- Code anchors:
+  - `app/controllers/`
+  - `app/models/`
+  - `app/services/`
+  - `app/jobs/`
+  - `enterprise/app/`
+- Required verification:
+  - targeted RSpec for models/services/controllers/jobs
+  - route/API proof when API behavior changes
+  - runtime/log/DB proof for live RCA only
+
+### Frontend
+
+- Primary skills:
+  - `onelink-frontend`
+  - `onelink-manual-qa-dev-ui`
+  - `onelink-testing-matrix`
+- Docs:
+  - `/internal/frontend-architecture`
+  - `/internal/testing-and-tooling`
+- Code anchors:
+  - `app/javascript/dashboard/`
+  - `app/javascript/widget/`
+  - `app/javascript/portal/`
+  - `app/javascript/survey/`
+  - `app/javascript/sdk/`
+- Required verification:
+  - targeted Vitest for changed components/stores/helpers
+  - DEV UI smoke when behavior is visible in browser
+  - do not call UI work PASS from code-only checks
+
+### API / external integrator surface
+
+- Primary skills:
+  - `onelink-api`
+  - `onelink-integrator`
+- Docs:
+  - `/api-reference/introduction`
+  - `/integrators/authentication-and-api-model`
+  - `/integrators/api-resource-map`
+  - `/integrators/integration-patterns`
+  - `/integrators/agent-skills-for-integrators`
+- Use for:
+  - Application API
+  - Platform API
+  - Client/API consumers
+  - webhook-driven integration planning
+  - OpenAPI lookup and sync
+
+### Testing / QA
+
+- Primary skills:
+  - `onelink-testing-matrix`
+  - `onelink-manual-qa-dev-ui`
+  - `chatwoot-factory-consistency-debugging`
+- Docs:
+  - `/internal/testing-and-tooling`
+  - `/internal/dev-ui-full-regression-test-plan`
+- Evidence depth labels:
+  - `UI`: browser-visible behavior verified
+  - `API`: request/response contract verified
+  - `DB`: persistence/non-persistence verified in `chatwoot_dev`
+  - `JOB/QUEUE`: background processing verified where relevant
+  - `PROVIDER/LIVE`: external channel/provider/sidecar path verified
+  - `AUTOMATED`: targeted specs/lint/build checks passed
+- Status labels:
+  - `CODE-SLICE DONE`: code/spec checks passed for the touched slice
+  - `UI PASS`: browser-visible DEV behavior verified only
+  - `UI+API+DB PASS`: UI and backend state agree on DEV
+  - `LIVE PASS`: provider/sidecar/callback/delivery path proved
+  - `DEV UI PASS`: browser QA completed at the required evidence depth
+  - `PROD PASS`: production runtime verified after approved deploy
+
+### Deployment / operations / RCA
+
+- Primary skills:
+  - `onelink-deployment`
+  - `onelink-chatwoot-production-deploy`
+  - `onelink-chatwoot-dev-prod-separation`
+  - `onelink-prod-rca`
+  - `onelink-runtime-log-triage`
+  - `onelink-infra-operations-audit`
+- Docs:
+  - `/internal/repository-structure`
+  - `/internal/testing-and-tooling`
+- Boundaries:
+  - DEV: `dev.one-link.kz`
+  - PROD: production deploy/restart requires explicit approval
+  - read-only log/DB/runtime investigation is allowed for RCA unless mutation is requested
+
+### Git / repository workflow
+
+- Primary skills:
+  - `onelink-gitops`
+  - `chatwoot-safe-commit-splitting`
+- Docs:
+  - `/internal/repository-structure`
+  - `/internal/testing-and-tooling`
+- Use for:
+  - dirty tree safety
+  - submodule boundaries
+  - branch currency audits
+  - commit splitting
+
+## Product / Functional Coverage
+
+### Channels / inboxes / conversations
+
+- Primary skills:
+  - `onelink-integrations`
+  - `chatwoot-native-channel-assessment`
+  - `chatwoot-qr-auth-artifact-rca`
+  - `onelink-runtime-log-triage`
+- Docs:
+  - `/user-guide/inboxes-and-channels`
+  - `/internal/communication-core`
+  - `/internal/api-and-routes`
+- Code anchors:
+  - `app/models/channel/`
+  - `app/models/inbox.rb`
+  - `app/models/contact_inbox.rb`
+  - `app/models/conversation.rb`
+  - `app/models/message.rb`
+  - provider webhook/controllers/services under `app/`, `enterprise/app/`, and `services/`
+- Examples covered by specialized skills:
+  - WhatsApp Web QR/auth artifact lifecycle
+  - WhatsApp Cloud templates/media/calls
+  - Weixin/native-channel QR or auth artifact RCA
+  - stuck inbox cleanup
+
+### Integrations / automations / webhooks
+
+- Primary skills:
+  - `onelink-integrations`
+  - `onelink-integrator`
+  - `onelink-api`
+- Docs:
+  - `/platform/integrations-architecture`
+  - `/internal/automation-and-integrations`
+  - `/integrators/integration-patterns`
+  - `/integrators/webhooks-and-events`
+- Code anchors:
+  - `app/models/integrations/`
+  - `app/services/integrations/`
+  - `app/models/automation_rule.rb`
+  - `app/models/macro.rb`
+  - `app/models/webhook.rb`
+- Functional rule:
+  - full external app lifecycle starts from `Integrations::App` / `Integrations::Hook`
+  - event reactions start from automation rules/webhooks
+  - AI-triggered external action starts from Captain custom/native tools
+
+### Captain / AI / copilot / tools
+
+- Primary skills:
+  - `onelink-captain`
+  - `onelink-captain-runtime-deep`
+  - `onelink-captain-tool-rca`
+  - `captain-custom-tool-test-debugging`
+  - `captain-native-tool-modernization`
+  - `onelink-captain-scheduling-tools`
+- Docs:
+  - `/platform/captain-ai`
+  - `/internal/captain-runtime`
+  - `/internal/testing-and-tooling`
+- Code anchors:
+  - `enterprise/app/models/captain/`
+  - `enterprise/app/services/captain/`
+  - `enterprise/app/jobs/captain/`
+  - Captain frontend routes/components under `app/javascript/dashboard/`
+- Current access model:
+  - built-in/public tools visible to all accounts
+  - private/internal/custom tools account-scoped
+  - agent sees tools through instructions/rules/scenarios/global prompts
+  - default tools remain checkbox-controlled
+
+### CRM / outbound / touches / campaigns
+
+- Primary skills:
+  - `onelink-crm-outbound-ai`
+  - `onelink-outbound-touch-campaign-audit`
+  - `chatwoot-crm-conversation-modal-id-resolution`
+- Docs:
+  - `/platform/crm-architecture`
+  - `/internal/crm-runtime`
+  - `/user-guide/touches-and-touch-plans`
+  - `/internal/touches-terminology`
+- Code anchors:
+  - `app/models/crm/`
+  - `app/services/crm/`
+  - CRM frontend routes/components
+
+### Voice / telephony / calls
+
+- Primary skills:
+  - `onelink-voice-operations`
+  - `onelink-voice-inbound-rca`
+  - `onelink-ai-voice-captain-tools-rca`
+  - `onelink-telephony-capability-summary`
+  - `chatwoot-whatsapp-cloud-calls-media-server`
+- Docs:
+  - internal voice/call plan and contract pages live under `/internal/` in the docs checkout when present
+  - use code/runtime evidence before treating plan docs as implemented truth
+- Code/runtime anchors:
+  - Fonoster/voice services
+  - WhatsApp Cloud Calls services
+  - call media-server sidecar
+  - ActionCable/WebRTC frontend flows
+- Verification rule:
+  - voice PASS requires live routing/audio/session/recording/finalize proof, not only a pending conversation or isolated spec pass
+
+### Scheduling / appointments
+
+- Primary skills:
+  - `onelink-captain-scheduling-tools`
+  - `onelink-backend`
+  - `onelink-frontend`
+- Docs:
+  - `/internal/scheduling-runtime`
+- Code anchors:
+  - `app/models/scheduling/`
+  - `app/services/scheduling/`
+  - scheduling frontend routes/stores/components
+
+### Documentation / agent enablement
+
+- Primary skills:
+  - `onelink-documentation`
+  - `onelink-ai-agent-enablement`
+  - `onelink-hermes-skill-architecture`
+- Docs:
+  - `/internal/index`
+  - `/internal/agent-skill-and-doc-coverage`
+  - `/integrators/agent-skills-for-integrators`
+- Rule:
+  - procedures/commands/pitfalls belong in Hermes skills
+  - product-facing explanation belongs in public docs
+  - internal architecture/navigation belongs in `internal/` docs
+
+## Coverage Status
+
+Current baseline coverage exists for:
+
+- backend
+- frontend
+- API/integrator work
+- testing/manual QA
+- deployment/runtime/RCA
+- git/submodule workflow
+- channels/inboxes/conversations
+- integrations/automation/webhooks
+- Captain/AI/copilot/tools
+- CRM/outbound/touches
+- voice/telephony/calls
+- scheduling
+- documentation/agent enablement
+
+Known maintenance risk:
+
+- Several old incident-specific skills are useful but heavy. Prefer moving deep notes into `references/` when they are next touched.
+- Internal voice/call docs include historical plan pages; classify them against current code before using them as implemented truth.
+- Public Russian docs should be periodically checked for wording quality, because internal source-of-truth pages may be clearer than the public copy.
+
+## Audit Command
+
+Use this lightweight check after changing the coverage map, docs, or shared skills:
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import yaml
+root = Path('/root/.hermes/shared-skills/onelink')
+for p in sorted(root.glob('*/SKILL.md')):
+    text = p.read_text()
+    assert text.startswith('---'), p
+    data = yaml.safe_load(text.split('---', 2)[1]) or {}
+    assert data.get('name'), p
+    assert data.get('description'), p
+print('skills ok')
+PY
+
+python3 -m json.tool /root/crafty/onelink/onelink-docs/docs.json >/dev/null
+```

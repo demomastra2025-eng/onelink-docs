@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Drawer плана касаний</title>
+  <desc id="desc">Схематичный скриншот настройки плана касаний с несколькими шагами.</desc>
+  <rect width="1200" height="720" fill="#f4f5f7"/>
+  <rect x="120" y="70" width="960" height="580" rx="30" fill="#fff" stroke="#e5e7eb"/>
+  <text x="168" y="134" fill="#111" font-family="Arial, sans-serif" font-size="34" font-weight="700">План касаний: первичная заявка</text>
+  <text x="168" y="172" fill="#667085" font-family="Arial, sans-serif" font-size="18">Применяйте к сделкам, задачам, записям или диалогам.</text>
+  <rect x="168" y="220" width="864" height="86" rx="20" fill="#f8fafc" stroke="#d0d5dd"/>
+  <circle cx="212" cy="263" r="18" fill="#111"/>
+  <text x="207" y="270" fill="#fff" font-family="Arial, sans-serif" font-size="18" font-weight="700">1</text>
+  <text x="252" y="254" fill="#111" font-family="Arial, sans-serif" font-size="22" font-weight="700">Касание сразу после создания</text>
+  <text x="252" y="282" fill="#667085" font-family="Arial, sans-serif" font-size="16">Сообщение уходит в рабочее время канала.</text>
+  <rect x="168" y="334" width="864" height="86" rx="20" fill="#f8fafc" stroke="#d0d5dd"/>
+  <circle cx="212" cy="377" r="18" fill="#111"/>
+  <text x="207" y="384" fill="#fff" font-family="Arial, sans-serif" font-size="18" font-weight="700">2</text>
+  <text x="252" y="368" fill="#111" font-family="Arial, sans-serif" font-size="22" font-weight="700">Касание через 2 дня</text>
+  <text x="252" y="396" fill="#667085" font-family="Arial, sans-serif" font-size="16">Автоотмена включена при входящем ответе клиента.</text>
+  <rect x="168" y="448" width="864" height="86" rx="20" fill="#f8fafc" stroke="#d0d5dd"/>
+  <circle cx="212" cy="491" r="18" fill="#111"/>
+  <text x="207" y="498" fill="#fff" font-family="Arial, sans-serif" font-size="18" font-weight="700">3</text>
+  <text x="252" y="482" fill="#111" font-family="Arial, sans-serif" font-size="22" font-weight="700">Касание через 5 дней</text>
+  <text x="252" y="510" fill="#667085" font-family="Arial, sans-serif" font-size="16">Финальное предложение созвона или следующего шага.</text>
+  <rect x="824" y="570" width="208" height="48" rx="14" fill="#111"/>
+  <text x="858" y="601" fill="#fff" font-family="Arial, sans-serif" font-size="18" font-weight="700">Сохранить план</text>
+</svg>

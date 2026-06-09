@@ -1,0 +1,58 @@
+---
+title: Touches Terminology
+summary: Internal source of truth for replacing old help/onboarding terms with the Russian product term «касание».
+---
+
+# Touches Terminology
+
+This page is the internal wiki note for the public-facing terminology change around outbound personal communications.
+
+## Product rule
+
+Use the Russian term `касание` for one scheduled personal outbound communication. Use `план касаний` for a reusable multi-step sequence.
+
+Do not use `дожим` as the active feature name in new FAQ, onboarding, user-guide, screenshot captions, release notes, or customer-facing help text.
+
+## Mapping
+
+| Old wording | New wording | Scope |
+| --- | --- | --- |
+| `дожим` | `план касаний` | Multi-step sequence |
+| `персональная рассылка` | `касание` | One scheduled personal message |
+| `отложенное сообщение` | `касание` | When it is outbound follow-up behavior, not generic send-later UI |
+| `напоминание клиенту` | `касание` | When One Link sends the message to the client |
+| `Reminder` / `ReminderGroup` | keep code identifier | Backend class/table/API/log context |
+
+## Exceptions to preserve
+
+Keep the old wording when it is:
+
+- a legal or contractual quote that must stay byte-for-byte compatible
+- a historical release note describing previous behavior
+- an API field, database table, class/module name, migration, queue, or log label
+- a customer quote or imported article where editorial changes require approval
+- a comparison explaining the rename itself
+
+When an exception is kept in a live help page, add a short note that active UI copy now says `касание` or `план касаний`.
+
+## Screenshot and example guidance
+
+Screenshots used in docs or onboarding must show the active labels:
+
+- `Касания`
+- `Создать касание`
+- `План касаний`
+- `Отменить касание`
+- `Касание отменено`
+
+If an old screenshot still shows `дожим`, replace it or mark it as historical. Do not mix old and new terms in the same onboarding step.
+
+## Verification checklist
+
+Before publishing help changes:
+
+1. Search public docs for `дожим`, `персональная рассылка`, `отложенное сообщение`, and `напоминание`.
+2. Confirm each remaining hit is listed as an exception or is not about outbound touches.
+3. Check FAQ, glossary, user guide, release notes, and internal wiki pages together.
+4. Verify examples use `касание` for one-off actions and `план касаний` for sequences.
+5. Keep code/API identifiers unchanged unless a separate engineering migration is approved.

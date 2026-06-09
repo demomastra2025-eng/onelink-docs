@@ -69,6 +69,7 @@
               "platform/scheduling-and-payments",
               "platform/captain-ai",
               "user-guide/automation-and-macros",
+              "user-guide/touches-and-touch-plans",
               "platform/integrations-architecture",
               "user-guide/reports-and-analytics",
               "user-guide/knowledge-base"
@@ -114,7 +115,8 @@
             "group": "Справка",
             "pages": [
               "reference/glossary",
-              "reference/faq"
+              "reference/faq",
+              "release-notes/touches-terminology"
             ]
           }
         ]
