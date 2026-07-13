@@ -67,7 +67,7 @@ Instagram, Facebook Page, and WhatsApp Cloud share a persisted diagnostic record
 - Missing subscriptions are repaired once through the provider's native subscribe operation before user action is requested.
 - `Reauthorizable#prompt_reauthorization!` claims the state transition atomically, so one authorization incident produces one notification cycle.
 
-WhatsApp Embedded Signup uses the Meta v4 code-flow contract (`extras: {}`). WABA webhook subscriptions include `account_update`; offboarding/app-removal events require reauthorization, recovery events enqueue a scoped token health check, and policy restrictions are persisted separately because reconnecting is not a policy remedy.
+WhatsApp Embedded Signup uses the Meta v4 code-flow contract (`config_id`, `response_type: 'code'`, `override_default_response_type: true`, and `extras: { setup: {} }`). WABA webhook subscriptions include `account_update`; offboarding/app-removal events require reauthorization, recovery events enqueue a scoped token health check, and policy restrictions are persisted separately because reconnecting is not a policy remedy.
 
 ## Design Rules
 
