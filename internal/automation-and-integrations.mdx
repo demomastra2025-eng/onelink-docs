@@ -55,6 +55,20 @@ Macros are a structured, user-triggered action list. They remain important for h
 
 The base webhook model handles outbound event delivery for account-level or inbox-level subscriptions.
 
+## Meta Channel Credential Lifecycle
+
+Instagram, Facebook Page, and WhatsApp Cloud share a persisted diagnostic record in `Meta::ChannelCredentialHealth`, while provider-specific probes remain isolated.
+
+- `Meta::InstagramCredentialHealthCheckJob` refreshes eligible long-lived Instagram tokens and verifies the exact Instagram asset and app subscription every six hours.
+- `Meta::FacebookPageCredentialHealthCheckJob` verifies exact Page access and app subscription every six hours.
+- `Whatsapp::TokenHealthCheckJob` keeps the existing WhatsApp token/WABA/phone-number inspection and mirrors its result into the same health table.
+- Provider HTTP 5xx, throttling, and known transient Graph errors are recorded as `transient_failure`; they do not trigger a reconnect prompt.
+- Confirmed invalid authorization, missing permissions, asset mismatch, or local token expiry transition to `action_required`.
+- Missing subscriptions are repaired once through the provider's native subscribe operation before user action is requested.
+- `Reauthorizable#prompt_reauthorization!` claims the state transition atomically, so one authorization incident produces one notification cycle.
+
+WhatsApp Embedded Signup uses the Meta v4 code-flow contract (`extras: {}`). WABA webhook subscriptions include `account_update`; offboarding/app-removal events require reauthorization, recovery events enqueue a scoped token health check, and policy restrictions are persisted separately because reconnecting is not a policy remedy.
+
 ## Design Rules
 
 1. If the need is a full external app lifecycle, start with `Integrations::App` and `Integrations::Hook`.
