@@ -108,19 +108,20 @@ Relevant files:
 
 ## Follow-up groups
 
-`Дожимы` are reusable grouped definitions for personal sends.
+`Дожимы` are reusable grouped follow-up definitions owned by Captain assistants.
 
 They are implemented through `ReminderGroup` and are used for:
 
-- manual follow-up group application
-- automation-triggered follow-up group materialization
-- future default outbound flows per entity type
+- Captain follow-up scenario authoring and application
+- runtime compatibility for existing legacy automation rules that already contain `apply_touch_plan`
 
 Important behavior:
 
 - a follow-up group expands into concrete `Reminder` records
 - changing the group later does not rewrite already-created reminders
-- the follow-up group layer is reusable content and timing logic, not the trigger engine
+- new generic automation rules cannot apply or select a follow-up group
+- a sequence in generic automation is modeled as multiple standalone `create_touch` actions
+- the follow-up group layer is reusable Captain content and timing logic, not the generic automation trigger engine
 
 Relevant files:
 
@@ -135,12 +136,16 @@ Automation remains the trigger and conditions layer.
 
 Outbound remains the action and delivery layer.
 
-The current automation actions are:
+The public generic automation touch actions are:
 
 - `create_touch`
-- `apply_touch_plan`
+- `cancel_touches`
 
-Even though the code still uses `touch` terminology internally, these actions now feed the same personal outbound runtime as the campaigns surface.
+A rule may contain multiple `create_touch` actions to schedule a sequence without introducing a follow-up group. Plan-independent `cancel_touches` only targets reminders marked with `touch_source = automation`.
+
+`apply_touch_plan` and plan-scoped `cancel_touches` remain executable while their legacy plan reference is retained unchanged. They are excluded from new-rule catalogs and backend creation, but an existing rule may migrate away from them by replacing the legacy action with standalone touch actions. Legacy plan-scoped cancellation preserves its original group-wide behavior so existing rules do not change at runtime.
+
+Even though the code still uses `touch` terminology internally, the public actions feed the same personal outbound runtime as the campaigns surface.
 
 That means:
 
