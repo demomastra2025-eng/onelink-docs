@@ -176,10 +176,10 @@ Adoption case closure requirements:
 
 - Upstream evidence: `27404b4a2` — 27404b4a2 fix: redact sensitive integration secrets from API responses (#14147).
 - Problem fixed upstream: Admin hook API can return full `resource.settings`, leaking integration credentials/secrets to the browser/API clients.
-- OneLink evidence: OneLink `_hook.json.jbuilder` still returns `json.settings settings_payload`; config has `visible_properties` but model/view do not enforce it. OneLink also adds MacroCRM webhook metadata, Kaspi Pay metadata, and Medelement schedule fields.
+- OneLink evidence: OneLink `_hook.json.jbuilder` still returns `json.settings settings_payload`; config has `visible_properties` but model/view do not enforce it. OneLink also adds MacroCRM webhook metadata and Medelement schedule fields.
 - Adoption nuance: Implement `Integrations::App#visible_properties` and filter only safe settings. Keep OneLink metadata blocks, but audit metadata methods for secret leakage. Remove `openai.api_key` and `leadsquared.access_key` from visible_properties.
 - Risk/control: UI edit forms may expect a masked value. Do not send real secret back; use placeholder/credential_configured flags if needed.
-- Verification: Hook JSON/request specs for macrocrm/kaspi_pay/medelement/openai/leadsquared; admin vs non-admin; secret_settings never present.
+- Verification: Hook JSON/request specs for macrocrm/medelement/openai/leadsquared; admin vs non-admin; secret_settings never present.
 - Local file status:
   - `app/models/integrations/app.rb` — `diverged`
   - `app/views/api/v1/models/_hook.json.jbuilder` — `diverged`

@@ -320,7 +320,6 @@ Supported modes:
   - `create_task`
   - `search_available_slots`
   - `create_appointment`
-  - `search_kaspi_pay_payments`
   - custom HTTP tools unless explicitly marked fast
 
 - `terminal_action`:
@@ -329,8 +328,6 @@ Supported modes:
   - live-call mapped `handoff`
 
 - `confirmation_required`:
-  - `create_kaspi_pay_payment`
-  - `refund_kaspi_pay_payment`
   - high-risk non-idempotent custom HTTP tools
 
 ---
@@ -784,9 +781,6 @@ Do not finish the whole phrase or sentence. Do not say a backchannel over sustai
 - Scheduling:
   - `search_scheduling_services`, `search_available_slots`, `create_appointment`, `cancel_appointment`.
 
-- Payments:
-  - `get_kaspi_pay_integration_status`, `get_kaspi_pay_payment_status`, `search_kaspi_pay_payments`.
-  - Payment creation/refund only with explicit confirmation.
 
 ---
 
