@@ -300,7 +300,18 @@ The second vertical slice is implemented, independently reviewed, and present on
 - the broader state/search matrix passed 1569 of 1571 examples; the call timeout passed 71 of 71 examples when rerun in isolation, while the inbox stale-route test reproduced its `resolveInboxes is not a function` failure on the clean parent commit and remains an unrelated baseline defect
 - this commit is source-control evidence only and does not claim DEV or production rollout
 
-Phase 5C should migrate `inboxes` as the next bounded slice. Before that cutover, restore a green inbox action-test baseline through a root-cause fix for the clean-parent stale-route failure, then preserve account-switch stale-response protection as an explicit Pinia invariant.
+#### Phase 5C Implementation Status
+
+The third vertical slice is implemented, independently reviewed, and present on `origin/aset/dev`:
+
+- commit `bdf51b4fe8` moves inbox records, UI flags, channel-specific lifecycle state, provider diagnostics, template synchronization, and the complete inbox getter/action surface from the legacy `inboxes` Vuex module to one canonical Pinia store
+- all dashboard runtime callers, including conversation reply templates and inbox report filters, now read and mutate the shared Pinia owner directly; the Vuex registration, mutation constants, module, channel action helper, and dedicated Vuex specs are removed in the same atomic cutover
+- provider invariants include per-store isolation, serialized WhatsApp Web lifecycle requests, stale-response protection, and per-store Telegram Personal and Weixin diagnostics deduplication/cache behavior
+- the dashboard boundary now rejects runtime references to the removed `inboxes/*` Vuex namespace, while report provider and ReplyBox consumer tests exercise the Pinia path without a compatibility owner
+- the final changed-spec matrix passed 371 examples, scoped ESLint passed with no errors, the production Vite build completed successfully, and the first exact-diff review findings were fixed before the follow-up review returned `GO`
+- this commit is source-control evidence only and does not claim DEV or production rollout
+
+Phase 5D should migrate the next bounded high-churn state slice without introducing shared ownership or compatibility dual writes. `conversations` remains the largest candidate and should be split only at a contract boundary that preserves realtime, pagination, selected-record, and account-switch invariants together.
 
 ### Exit Criteria
 
