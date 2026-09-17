@@ -236,7 +236,7 @@ Use Conversation creation as the first full implementation of the conflict and c
 
 #### Release A Implementation Status
 
-Release A is implemented and verified in the local `aset/dev` integration worktree, but is not yet committed, promoted to DEV, or deployed to production:
+Release A is implemented, independently reviewed, and committed locally as part of merge commit `ead8cf6b2a`; it has not been pushed, promoted to DEV, or deployed to production:
 
 - `conversations.identity_key` is introduced as nullable with a non-unique partial lookup index so rolling old writers remain compatible; the migration is resumable after a partial column/index failure
 - `Conversations::IdentityResolver` owns `primary` identity resolution for non-email realtime channels, locks the current `ContactInbox`, serializes first creation with a deterministic PostgreSQL advisory lock, claims canonical legacy records, and atomically repairs stale source references plus their transport attributes
