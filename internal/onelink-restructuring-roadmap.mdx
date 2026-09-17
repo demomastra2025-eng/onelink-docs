@@ -289,7 +289,18 @@ The first vertical slice is implemented, independently reviewed, and present on 
 - commit `c99f3f7cc2` removes orphan employee Copilot wiring restored by the runtime reconciliation merge after the referenced components and helper had already been deleted; route tests passed 4 examples and the full production Vite build completed successfully
 - neither commit is production deployment evidence; runtime promotion remains a separate controlled step
 
-Phase 5B should migrate `conversationSearch` as the next bounded slice, preserve its request-generation and stale-response protections, remove the corresponding Vuex registration only after caller parity is proven, and use the same test, build, and exact-review gates.
+#### Phase 5B Implementation Status
+
+The second vertical slice is implemented, independently reviewed, and present on `origin/aset/dev`:
+
+- commit `600a2adf96` moves quick search, full search, and paginated contact, conversation, message, and article results from the legacy `conversationSearch` Vuex module to one canonical Pinia store
+- `SearchView` reads Pinia refs and invokes Pinia actions directly; the Vuex registration, mutation constants, module, and dedicated Vuex specs are removed in the same atomic cutover
+- the store preserves one shared abort signal across a full search, generation-based stale-response rejection across new searches and clears, append semantics for load-more requests, and controller isolation between store instances
+- focused state/search verification passed 47 examples, scoped ESLint passed with one pre-existing dynamic-i18n warning, the production Vite build completed successfully, and the exact-diff review returned `GO`
+- the broader state/search matrix passed 1569 of 1571 examples; the call timeout passed 71 of 71 examples when rerun in isolation, while the inbox stale-route test reproduced its `resolveInboxes is not a function` failure on the clean parent commit and remains an unrelated baseline defect
+- this commit is source-control evidence only and does not claim DEV or production rollout
+
+Phase 5C should migrate `inboxes` as the next bounded slice. Before that cutover, restore a green inbox action-test baseline through a root-cause fix for the clean-parent stale-route failure, then preserve account-switch stale-response protection as an explicit Pinia invariant.
 
 ### Exit Criteria
 
