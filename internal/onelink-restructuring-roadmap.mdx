@@ -236,7 +236,7 @@ Use Conversation creation as the first full implementation of the conflict and c
 
 #### Release A Implementation Status
 
-Release A is implemented, independently reviewed, and committed locally as part of merge commit `ead8cf6b2a`; it has not been pushed, promoted to DEV, or deployed to production:
+Release A is implemented, independently reviewed, and present on `origin/aset/dev` as part of merge commit `ead8cf6b2a`. This status records source-control ancestry only; DEV and production rollout require separate runtime evidence and are not inferred from the branch:
 
 - `conversations.identity_key` is introduced as nullable with a non-unique partial lookup index so rolling old writers remain compatible; the migration is resumable after a partial column/index failure
 - `Conversations::IdentityResolver` owns `primary` identity resolution for non-email realtime channels, locks the current `ContactInbox`, serializes first creation with a deterministic PostgreSQL advisory lock, claims canonical legacy records, and atomically repairs stale source references plus their transport attributes
@@ -266,8 +266,10 @@ Give the dashboard one coherent state and loading model.
 
 - freeze new `Vuex` module creation
 - define `Pinia` as the destination state layer
-- keep a thin compatibility layer for legacy `Vuex` reads while migrating
+- migrate bounded vertical slices atomically; `Vuex` and `Pinia` may coexist only for distinct slices, never as dual-read or dual-write owners of the same state
 - migrate the highest-churn domains first:
+  - conversation pagination
+  - conversation search
   - inboxes
   - conversations
   - notifications
@@ -275,6 +277,19 @@ Give the dashboard one coherent state and loading model.
 - add dashboard bundle budgets in CI
 - audit route-level chunking and heavy imports
 - remove duplicated fetching patterns and mixed ownership between route, store, and component
+
+#### Phase 5A Implementation Status
+
+The first vertical slice is implemented, independently reviewed, and present on `origin/aset/dev`:
+
+- commit `a86e152426` moves conversation pagination, end-of-list state, and per-scope totals from the legacy `conversationPage` Vuex module to one canonical Pinia store
+- the dashboard entrypoint, conversation action helpers, and `ChatList` share the same Pinia instance; the old Vuex module, mutation types, dispatches, and dedicated Vuex specs are removed without a compatibility dual-write period
+- a regression guard rejects new dashboard Vuex registry imports while allowing existing legacy modules to be removed
+- the focused conversation/store matrix passed 413 examples, the final guard matrix passed 19 examples, scoped ESLint passed, and two exact-diff reviews returned `GO`
+- commit `c99f3f7cc2` removes orphan employee Copilot wiring restored by the runtime reconciliation merge after the referenced components and helper had already been deleted; route tests passed 4 examples and the full production Vite build completed successfully
+- neither commit is production deployment evidence; runtime promotion remains a separate controlled step
+
+Phase 5B should migrate `conversationSearch` as the next bounded slice, preserve its request-generation and stale-response protections, remove the corresponding Vuex registration only after caller parity is proven, and use the same test, build, and exact-review gates.
 
 ### Exit Criteria
 
