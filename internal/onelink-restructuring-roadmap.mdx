@@ -60,6 +60,23 @@ Every step in this roadmap should preserve these rules:
 - do not let low-value async work steal capacity from user-visible flows
 - do not allow frontend state to have two competing "sources of truth"
 - do not add more integration logic without idempotency and retry discipline
+- do not protect a domain invariant with application-level `find-or-create`, a queue, or a lock alone when the database can enforce it
+
+### Conflict And Concurrency Standard
+
+Any write path that may receive concurrent, duplicated, retried, or out-of-order input must use the strongest practical layered guarantee rather than relying on timing:
+
+1. define a deterministic domain identity or idempotency key before writing
+2. enforce that identity with a database unique constraint, compare-and-swap invariant, or equivalent storage-level guarantee
+3. use atomic `upsert` or `create-or-find` semantics and handle the losing concurrent writer as a normal success path
+4. serialize only the narrow per-key transaction that owns create-once side effects
+5. make retries and event replay idempotent
+6. publish external side effects after commit, using an outbox where delivery guarantees justify it
+7. migrate existing data through measured, resumable batches and build large indexes concurrently
+
+Application locks remain useful for ordering compound side effects, but they are not the final correctness boundary. Queue partitioning can reduce contention, but it does not replace storage-level uniqueness because API calls, retries, maintenance tasks, and future integrations may bypass the original queue. Exceptions to this standard must document why a storage invariant is impossible and how duplicate or conflicting state is detected and repaired.
+
+Apply this standard progressively to identity reconciliation, inbound webhook deduplication, provider event ingestion, singleton aggregate creation, outbound echo reconciliation, scheduling reservations, payment transitions, automation execution, and any other domain where two valid workers can race to create or transition the same logical record.
 
 ## What Was Worth Doing Immediately
 
@@ -131,6 +148,12 @@ Protect user-visible flows from noisy or long-running background work.
   - history sync
   - outbound echo reconciliation
   - audio transcription requeues
+- inventory race-prone write paths and record for each one:
+  - deterministic domain identity
+  - database-enforced invariant
+  - atomic conflict handling
+  - create-once side effects
+  - replay and repair strategy
 - define dead-letter handling:
   - auto-discard classes
   - operator review classes
@@ -194,13 +217,44 @@ Keep one deployable application, but make internal domains explicit and separabl
 - move external provider logic behind adapters
 - convert multi-step flows to command or orchestration services
 - keep write paths explicit and idempotent
+- route aggregate creation through domain-owned resolvers backed by database invariants
 - move "mixed concern" services out of generic folders into domain-owned namespaces
+
+### Communication Conversation Identity Reference Implementation
+
+Use Conversation creation as the first full implementation of the conflict and concurrency standard:
+
+- add an explicit deterministic Conversation identity key
+- use `primary` for the single persistent Conversation of non-email realtime channels
+- use the normalized provider/RFC email thread identity for each Email Conversation
+- enforce uniqueness for `account + inbox + contact + conversation identity key` in PostgreSQL
+- resolve concurrent creation through one domain service with atomic create-or-find behavior
+- keep calls separated by `CallSession` and voice-message identity inside the persistent telephony Conversation
+- keep create-once thread, assignment, CRM, automation, and notification side effects inside the controlled transaction boundary or after-commit delivery path
+- backfill canonical keys in batches, preserve unresolved historical duplicates as explicit legacy records, and merge or repair them only through audited maintenance workflows
+- retire `lock_to_single_conversation` as a mutable product setting after all creation paths use the identity strategy
+
+#### Release A Implementation Status
+
+Release A is implemented and verified in the local `aset/dev` integration worktree, but is not yet committed, promoted to DEV, or deployed to production:
+
+- `conversations.identity_key` is introduced as nullable with a non-unique partial lookup index so rolling old writers remain compatible; the migration is resumable after a partial column/index failure
+- `Conversations::IdentityResolver` owns `primary` identity resolution for non-email realtime channels, locks the current `ContactInbox`, serializes first creation with a deterministic PostgreSQL advisory lock, claims canonical legacy records, and atomically repairs stale source references plus their transport attributes
+- SMS, telephony, WhatsApp, Telegram, Web Widget, API/social message builders, campaigns, reminders, and lead forms route persistent Conversation creation through the resolver
+- Email remains on its existing multi-conversation thread contract during this expand phase
+- native SIP calls remain separate `CallSession` lifecycles and Twilio calls keep immutable voice-message identities inside one persistent telephony Conversation; current-call markers and call-specific conference names prevent late events from one call overwriting another
+- `ContactMergeAction` acquires the same ordered `ContactInbox` locks before moving Conversations, so a concurrent resolver resumes against the surviving Contact instead of creating a stale aggregate
+- `Conversations::IdentityAudit` and `conversations:identity:audit` provide a read-only inventory of historical conflicts and dependent records before cleanup
+- the current local artifact passed a 273-example identity/channel/provider RSpec matrix, a 434-example Voice/telephony matrix, 73 focused frontend call-lifecycle tests, scoped RuboCop/ESLint checks, and resumable migration lifecycle checks
+
+Release B remains blocked on production audit evidence and will perform the controlled historical repair/backfill, including conflicts exposed by historical Contact merges, add the final database uniqueness constraint, and activate deterministic Email thread keys. The unique constraint must not be added before unresolved historical conflicts have been classified and repaired.
 
 ### Exit Criteria
 
 - core domains are visible in code layout and service contracts
 - integration logic does not leak into unrelated core entities
 - future extraction becomes optional, not urgent
+- domain identities and conflict guarantees are explicit instead of being distributed across provider-specific builders
 
 ## Phase 5: Frontend Simplification
 
@@ -246,12 +300,14 @@ Make shared state safe under horizontal scale.
   - distributed locks
   - app cache
 - keep timeouts, queue throughput, and cache TTL policy documented and observable
+- measure database invariant migrations through batch latency, WAL volume, lock waits, dead tuples, and replica lag before increasing batch size
 
 ### Exit Criteria
 
 - horizontally scaled web nodes behave consistently
 - cache semantics are documented instead of accidental
 - Redis contention is measurable by workload type
+- concurrent writers converge on one canonical domain record without duplicate side effects
 
 ## Phase 7: Autoscaling And Platform Maturity
 
