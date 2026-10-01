@@ -25,6 +25,14 @@ flowchart TD
 
 The workspace boundary. All runtime access logic begins with account scope.
 
+### Super-admin workspace creation
+
+`GET /super_admin/accounts/new` renders an unsaved `Account`. Usage fields must handle that state: `emails_sent_today` returns zero without reading a Redis key before the account is persisted.
+
+`POST /super_admin/accounts` normalizes the form's limit-counter exclusions from the new account's permitted attributes, without resolving `requested_resource`. There is no persisted account ID at this stage. Updates instead merge exclusions into the target account's stored attributes so unrelated settings survive. A supplied top-level ID must not copy another workspace's attributes or hidden feature flags into the new workspace.
+
+Successful creation redirects to the new account's detail page. Focused request coverage includes rendering the form, creation with a blank exclusions field, creation with normalized exclusions/limits/features, loading the resulting detail page, and preservation of unrelated settings during an update.
+
 ### `AccountUser`
 
 The per-account identity record. It carries:
