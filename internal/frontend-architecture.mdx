@@ -68,6 +68,64 @@ The dashboard is in transition:
 
 Scheduling is one of the clearer newer module patterns with dedicated routes, stores, helpers, and next-generation components.
 
+### Account-Scoped Inbox List Cache
+
+The dashboard's inbox store loads through `InboxesAPI.get(true)`, using
+`CacheEnabledApiClient`.
+It compares the account's inbox cache version with IndexedDB and can return a
+nonempty saved list without requesting the inbox index again. A page reload
+does not by itself discard this saved list.
+
+Normal Inbox model changes invoke `AccountCacheRevalidator` after commit.
+The callback exits early when `Current.suppress_runtime_events` is set.
+`account.update_cache_key('inbox')` updates the account's inbox version for 72
+hours and emits `account.cache_invalidated`. The physical Redis key is
+`alfred:idb-cache-key-account-<account_id>-inbox`; the `alfred:` namespace comes
+from the application's Redis wrapper. The dashboard revalidates its cached
+list when it receives the new version.
+
+An operator recovery performed with direct SQL bypasses this callback. After
+committing an inbox visibility change, invalidate the affected account's inbox
+version and trigger frontend revalidation or a fresh client load. Changing
+only `inboxes.updated_at` leaves the browser's list version unchanged. Keep
+the invalidation step resumable if it fails after the database commit.
+
+Verify the result with the affected user's account and role. Restoring an inbox
+to the list does not establish provider authorization or message delivery;
+those require separate checks. Cache invalidation must preserve the channel,
+credentials, members, conversations, and messages.
+
+### Returning To An Open Conversation
+
+`ReconnectService` refreshes the current list with its complete first page.
+An `updatedWithin` response contains only recently changed conversations and
+must not replace the full list. Reconnect keeps the current applied filters or
+saved-folder query and its route-scoped CRM, label, team, unread, and sort
+parameters. Communication-thread routes use the thread list, detail, and
+message APIs throughout the refresh.
+
+The active route can refer to a quiet conversation outside the first page or
+current list filter. If that record is missing after refresh, fetch its detail
+through the normal permission-checked endpoint before restoring selection.
+Retain the same selected entity's loaded messages, fetch state, history-end
+flag, and first-unread cursor. Resuming the existing route does not apply the
+cursor and history resets used when opening another conversation. Reply
+drafts remain in the separate draft store.
+
+List, detail, and message responses carry an expected route `fullPath` through
+the relevant store actions. Recheck it after each network response and before
+committing, so a delayed response cannot restore data after a conversation,
+filter, or account switch. Match both entity ID and conversation type: a
+communication thread and a legacy conversation can have the same numeric ID.
+Permission failure must not reinsert the cached active record.
+
+Regression coverage uses the real Vuex conversation actions and mutations
+with mocked network APIs. It exercises a quiet selected conversation omitted
+from page one, a saved-folder thread route, and a delayed detail response after
+an account switch, plus denial of the active detail request. Mobile browser
+resume and visual scroll-position checks
+still belong in release verification.
+
 ## Build And Tooling Model
 
 `vite.config.mts` drives the JS build. The app uses:
