@@ -184,6 +184,8 @@ Before handoff, recheck `pending?` and handler availability for the current conv
 
 Recheck handler availability and pending status under the Conversation-to-CommunicationThread owner lock before transitioning. Apply normal status-transition side effects and assignments. Only the current conversation changes status. Assistant links remain unchanged. Conversations within one CommunicationThread share its control generation; qualifying activity in an orphan conversation fences stale AI work for that logical thread without changing sibling conversation statuses or assistant links.
 
+The orphan status transition runs in the Message after-create-commit phase, before message-created and first-reply listeners. Existing linked-Captain public-reply cancellation and control capture remain before message creation. Reuse that activation only when its captured owner identity and generation still match the locked current owner; otherwise advance the current owner generation. Resolve the current owner from the account-scoped thread link at handoff without replacing the caller's cached associations. Message persistence and the orphan handoff are separate transactions: a handoff failure does not roll back an already persisted message.
+
 Run fences can prevent a response from being persisted when the handoff wins first. Provider delivery is a separate queued step: do not treat the handoff as recall of an AI message that was already persisted unless a separate delivery guard explicitly provides that behavior.
 
 ## Design Rules
