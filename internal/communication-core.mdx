@@ -85,6 +85,22 @@ Messages use:
 - `read`
 - `failed`
 
+## Shared Unread State
+
+Staff unread state uses the shared `Conversation.agent_last_seen_at` cursor. Existing `conversation_user_read_states` records are retained, but no longer control staff unread counts, filters, first-unread positions or read broadcasts. Personal assignment and mention notifications remain separate.
+
+Reads and manual unread actions update the shared cursor and broadcast state to authorized recipients. A communication thread aggregates only the conversation links visible to its recipient; reading accessible links must not clear unread state in inaccessible inboxes. Account, inbox and team policies still constrain list results and realtime payloads.
+
+## Official WhatsApp Usage
+
+The account-admin usage endpoint reports UTC calendar months, not inferred Meta billing periods. An idempotent delivery ledger records provider delivery timestamps and a minimal pricing allowlist for matching public outgoing Cloud API messages. App-origin echoes, history imports, incoming/private/failed messages and duplicate delivery callbacks do not add usage. Ledger entries survive message deletion.
+
+`pricing.billable` is authoritative. The service subtotal is explicit billable service deliveries multiplied by the owner-selected approximate rate of KZT 8; never subtract the 1,000 allowance again. Meta applies that allowance per business phone in the messaging account timezone. Templates and unknown pricing are excluded from this subtotal and exposed separately. Missing historical delivery timestamps and collector activation after a month begins make coverage incomplete; do not reconstruct delivery time from message creation or last update.
+
+The compact banner is limited to account administrators with official Cloud phones, clears stale data on account/access changes, and persists dismissal in browser local storage by account and UTC month. It refreshes while visible and reappears in a new UTC month.
+
+Primary sources verified on 2 October 2026: [Meta WhatsApp pricing](https://developers.facebook.com/documentation/business-messaging/whatsapp/pricing/) and [business-app coexistence](https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/onboarding-business-app-users/). The published Kazakhstan service rate from 1 October 2026 is USD 0.018, so KZT 8 is an estimate rather than a fixed Meta KZT tariff.
+
 ## Side Effects
 
 The communication core triggers many downstream reactions:
