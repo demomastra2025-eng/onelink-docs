@@ -182,7 +182,7 @@ The incoming trigger is a new public message from a Contact in a non-API inbox. 
 
 Before handoff, recheck `pending?` and handler availability for the current conversation. An active inbox bot, an assigned AgentBot, active inbox Dialogflow, or an eligible linked CaptainInbox schedule/quota path keeps its normal behavior. Do not infer handler absence from the account-level Captain feature flag alone.
 
-Recheck handler availability and pending status under the Conversation-to-CommunicationThread owner lock before transitioning. Apply normal status-transition side effects and assignments. Only the current conversation changes status or assistant linkage. Conversations within one CommunicationThread share its control generation; qualifying activity in an orphan conversation fences stale AI work for that logical thread without changing sibling conversation statuses or assistant links.
+Recheck handler availability and pending status under the Conversation-to-CommunicationThread owner lock before transitioning. Apply normal status-transition side effects and assignments. Only the current conversation changes status. Assistant links remain unchanged. Conversations within one CommunicationThread share its control generation; qualifying activity in an orphan conversation fences stale AI work for that logical thread without changing sibling conversation statuses or assistant links.
 
 Run fences can prevent a response from being persisted when the handoff wins first. Provider delivery is a separate queued step: do not treat the handoff as recall of an AI message that was already persisted unless a separate delivery guard explicitly provides that behavior.
 
