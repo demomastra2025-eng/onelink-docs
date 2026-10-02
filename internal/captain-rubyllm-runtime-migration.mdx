@@ -117,9 +117,9 @@ Today the v2 assistant uses `ai-agents` for:
 
 Relevant code:
 
-- [agent_runner_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/assistant/agent_runner_service.rb)
-- [agentable.rb](/root/crafty/onelink/chatwoot/enterprise/app/models/concerns/agentable.rb)
-- [base_public_tool.rb](/root/crafty/onelink/chatwoot/enterprise/lib/captain/tools/base_public_tool.rb)
+- [agent_runner_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/services/captain/assistant/agent_runner_service.rb)
+- [agentable.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/models/concerns/agentable.rb)
+- [base_public_tool.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/lib/captain/tools/base_public_tool.rb)
 
 ### Copilot
 
@@ -127,9 +127,9 @@ Copilot does not use the same runtime. It currently uses direct `ruby_llm` chat 
 
 Relevant code:
 
-- [chat_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/copilot/chat_service.rb)
-- [tool_catalog.rb](/root/crafty/onelink/chatwoot/enterprise/lib/captain/copilot/tool_catalog.rb)
-- [base_tool.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/tools/base_tool.rb)
+- [chat_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/services/captain/copilot/chat_service.rb)
+- [tool_catalog.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/lib/captain/copilot/tool_catalog.rb)
+- [base_tool.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/services/captain/tools/base_tool.rb)
 
 ### Task Helpers
 
@@ -137,16 +137,16 @@ Captain tasks already use `ruby_llm`, but with a separate prompt path and separa
 
 Relevant code:
 
-- [base_task_service.rb](/root/crafty/onelink/chatwoot/lib/captain/base_task_service.rb)
-- [rewrite_service.rb](/root/crafty/onelink/chatwoot/lib/captain/rewrite_service.rb)
-- [summary_service.rb](/root/crafty/onelink/chatwoot/lib/captain/summary_service.rb)
+- [base_task_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/lib/captain/base_task_service.rb)
+- [rewrite_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/lib/captain/rewrite_service.rb)
+- [summary_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/lib/captain/summary_service.rb)
 
 ### Prompt Sources Today
 
 Prompt logic is currently split across three families:
 
 - Captain v2 Liquid prompts under `enterprise/lib/captain/prompts`
-- Ruby string builders in [system_prompts_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/llm/system_prompts_service.rb)
+- Ruby string builders in [system_prompts_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/services/captain/llm/system_prompts_service.rb)
 - task prompt files under `lib/integrations/openai/openai_prompts`
 
 This is the main transparency problem in the current stack.
@@ -308,7 +308,7 @@ The customer-facing assistant remains multi-agent:
 
 Implementation note:
 
-The public contract of [response_builder_job.rb](/root/crafty/onelink/chatwoot/enterprise/app/jobs/captain/conversation/response_builder_job.rb) was kept stable while the internals moved from `Agents::Runner` to `Captain::Runtime::Runner`.
+The public contract of [response_builder_job.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/jobs/captain/conversation/response_builder_job.rb) was kept stable while the internals moved from `Agents::Runner` to `Captain::Runtime::Runner`.
 
 ### Scenarios
 
@@ -511,7 +511,7 @@ Acceptance:
 
 ### Phase 3: Move Customer-Facing v2 Off `ai-agents`
 
-- switch [agent_runner_service.rb](/root/crafty/onelink/chatwoot/enterprise/app/services/captain/assistant/agent_runner_service.rb) to `Captain::Runtime::Runner`
+- switch [agent_runner_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/services/captain/assistant/agent_runner_service.rb) to `Captain::Runtime::Runner`
 - remove `Agents::*` from the customer path
 
 Acceptance:
