@@ -87,7 +87,7 @@ Operational meaning:
 
 - `undefined local variable or method 'system_api_key'`
 
-Current code now defines `system_api_key` in [base_task_service.rb](/root/crafty/onelink/chatwoot/lib/captain/base_task_service.rb#L148), and `ConversationCompletionService` calls it in [conversation_completion_service.rb](/root/crafty/onelink/chatwoot/enterprise/lib/captain/conversation_completion_service.rb#L52).
+Current code now defines `system_api_key` in [base_task_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/lib/captain/base_task_service.rb#L243), and `ConversationCompletionService` calls it in [conversation_completion_service.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/lib/captain/conversation_completion_service.rb).
 
 Inference:
 
@@ -101,7 +101,7 @@ Inference:
 - `Errno::ECONNREFUSED`
 - `Failed to open TCP connection to :80`
 
-This points to a broken outbound endpoint resolution path during article search term generation in [article.rb](/root/crafty/onelink/chatwoot/enterprise/app/models/enterprise/concerns/article.rb#L47).
+This points to a broken outbound endpoint resolution path during article search term generation in [article.rb](https://github.com/demomastra2025-eng/chatwoot/blob/36ec7a4178390c2185f1f34c85e1882b2ab2d057/enterprise/app/models/enterprise/concerns/article.rb#L48).
 
 Operational meaning:
 
