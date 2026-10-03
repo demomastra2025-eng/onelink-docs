@@ -20,7 +20,7 @@ The current codebase is primarily:
 - a Rails monolith with a Vue 3/Vite frontend split into dashboard, widget, portal, survey, and SDK entrypoints
 - a shared communication core around `Account`, `Inbox`, `ContactInbox`, `Conversation`, and `Message`
 - an inherited `enterprise/` technical split under `enterprise/`; in Onelink this is an implementation layer, not a separate product/paywall boundary, because enterprise capabilities are currently opened for the project
-- a set of CRM-adjacent primitives such as `Contact`, `Company`, `Note`, `Label`, and `CustomAttributeDefinition`
+- a first-class, account-scoped CRM subsystem with deals, pipelines, stages, tasks, field definitions, events, and comments, built around shared records such as `Contact`, `Company`, `Note`, and `Label`
 - a native shared scheduling and kassa capability under `app/models/scheduling`, `app/services/scheduling`, and `app/javascript/dashboard/routes/dashboard/scheduling`
 - an event-driven application with listeners, jobs, hooks, reporting, automations, and AI/Captain features around the conversation core
 
@@ -48,8 +48,8 @@ Beyond runtime code, the working project currently includes:
 
 - the main application repository under `onelink`
 - the docs repository mounted as the `docs/` git submodule
-- the versioned project skill source under `onelink/.codex/skills`
-- the local Codex skill library under `$CODEX_HOME/skills`
+- shared OneLink Hermes skills outside the application repository under `/root/.hermes/shared-skills/onelink`, loaded through Hermes `skills.external_dirs`
+- the external `onelink-integrator` Claude Code bundle under `.claude/skills/onelink-integrator`
 
 Use [Repository Map](/platform/repository-map) when the task depends on knowing which repo or directory should own the change.
 
@@ -154,7 +154,15 @@ Key behavior:
 - it provides assistant, copilot, document, tool, and scenario flows
 - it extends the support platform rather than replacing core entities
 
-### CRM-Adjacent Layer
+The assistant form keeps the existing `external_agent` and `internal_assistant` usage modes and groups controls for customer context, tools, and voice. `AssistantBasicSettingsForm.vue` and `AssistantUsageModeSelector.vue` present these existing settings; `toolAccessDefaults.js` supplies defaults for the supported usage modes. The headings are display groupings backed by `Captain::Assistant` configuration:
+
+- Customer context: FAQ and memory settings use `feature_faq` and `feature_memory`.
+- Tools: citations and web access use `feature_citation` and `feature_web`; `tool_access` keeps separate `agent` and `assistant` scopes for notes, web search and page reading, FAQ lookup, and human handoff.
+- Voice: external-agent audio transcription uses `use_audio_transcriptions` when that capability is available.
+
+Internal-assistant mode uses its existing `assistant` tool-access scope. The form hides external-agent-only customer-context, web, FAQ-lookup, handoff, and voice controls in that mode. These controls do not add Captain models or permission roles.
+
+### CRM
 
 Implemented today:
 
@@ -164,10 +172,13 @@ Implemented today:
 - `Label`
 - `CustomAttributeDefinition`
 
-Important limit:
+- `Crm::Deal`, `Crm::Pipeline`, and `Crm::Stage`
+- `Crm::Task` and `Crm::TaskStatus`
+- `Crm::FieldDefinition`, `Crm::Event`, and `Crm::Comment`
 
-- this is not yet a full shared CRM engine
-- `Deal`, `Task`, `Pipeline`, `Stage`, and normalized `Activity` are not implemented as first-class runtime entities
+The CRM is a first-class, account-scoped subsystem, not only a layer adjacent to contacts and companies. The dashboard provides deal and task workspaces. Tasks have list, calendar, and due-date planning-board presentations. The board uses rolling local-time boundaries: overdue, today, tomorrow, through the start of the day eight days after today, through the same calendar date next month (clamped to that month's last day), later, and unscheduled. It hides completed and archived tasks. The list and calendar presentations remain available.
+
+Pipeline settings support ordered stages, default-stage configuration, and transition or closing reasons. The stage editor keeps terminal won/lost stages fixed and stores edits, additions, deletions, and reordering in one local draft; Cancel discards the whole draft. Save sends the complete ordered open-stage list, terminal-stage names and closing reasons, and deleted stage IDs in one account-scoped request. See [CRM Architecture](/platform/crm-architecture) for the current model and behavior details.
 
 ### Scheduling And Kassa
 
@@ -247,13 +258,21 @@ When adding features, check these before introducing new models:
 - `Scheduling::Resource`
 - `Scheduling::Service`
 - `Scheduling::Appointment`
+- `Crm::Deal`
+- `Crm::Task`
+- `Crm::TaskStatus`
+- `Crm::Pipeline`
+- `Crm::Stage`
+- `Crm::FieldDefinition`
+- `Crm::Event`
+- `Crm::Comment`
 
 ## Not Implemented Yet
 
 These appear in planning docs but should not be treated as existing runtime layers unless code is added:
 
 - dedicated `generic`, `healthcare`, and `construction` runtime zones
-- shared CRM entities such as `Deal`, `Task`, `Pipeline`, `Stage`, and normalized `Activity`
+- a normalized cross-entity `Activity` model that replaces or unifies the existing CRM task, event, comment, and scheduling records
 - a fully separated domain architecture beyond the current shared code plus inherited `enterprise/` technical split
 
 ## How To Use This Page

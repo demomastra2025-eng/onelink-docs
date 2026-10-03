@@ -76,6 +76,23 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
 
 ### Route-Level Page Pattern
 
+CRM deal and task workspaces:
+app/javascript/dashboard/routes/dashboard/crm/pages/
+
+CRM pipeline and task settings:
+app/javascript/dashboard/routes/dashboard/settings/crm/
+
+Selected-pipeline stage-card draft, full-payload save, and cancel behavior:
+`app/javascript/dashboard/routes/dashboard/settings/crm/Index.vue`
+
+CRM settings can open the new-stage drawer for a selected pipeline through the existing route action `?action=create-stage&pipelineId=<id>`.
+
+Account-scoped stage-draft API and pipeline-locked transactional update:
+`app/javascript/dashboard/api/crm/pipelines.js`
+`app/javascript/dashboard/stores/crm/references.js`
+`app/controllers/api/v1/accounts/crm/stages_controller.rb`
+`app/services/crm/stages/batch_update_service.rb`
+
 - companies index page:
   `app/javascript/dashboard/routes/dashboard/companies/pages/CompaniesIndex.vue`
 - contacts index and detail flow:
@@ -89,6 +106,13 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
 
 ### Feature Component Pattern
 
+CRM deal, task board, and calendar components:
+app/javascript/dashboard/components-next/CRM/
+
+Task due-date grouping and list sorting:
+`app/javascript/dashboard/routes/dashboard/crm/taskTimeBuckets.js`
+`app/javascript/dashboard/routes/dashboard/crm/listSort.js`
+
 - companies feature UI:
   `app/javascript/dashboard/components-next/Companies/`
 - contacts feature UI:
@@ -101,6 +125,14 @@ Point agents to real files in `onelink` that demonstrate common backend and fron
   `app/javascript/dashboard/components-next/Scheduling/`
 
 ### Form And Validation Pattern
+
+Captain assistant basic settings and grouped supported capabilities:
+app/javascript/dashboard/components-next/captain/pageComponents/assistant/settings/AssistantBasicSettingsForm.vue
+
+Assistant usage-mode tool-access defaults and scope handling:
+app/javascript/dashboard/components-next/captain/pageComponents/assistant/toolAccessDefaults.js
+
+The visible customer-context, tools, and voice groups are settings for existing Captain::Assistant config keys and tool_access scopes. They are not separate models or permission roles.
 
 - company and contact feature forms:
   `app/javascript/dashboard/components-next/Companies/CompanyForm/`

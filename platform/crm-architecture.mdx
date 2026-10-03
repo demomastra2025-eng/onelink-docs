@@ -1,140 +1,55 @@
 ---
-title: CRM Architecture
-description: Current CRM-adjacent implementation and target shared CRM direction for Onelink.
-sidebarTitle: CRM Architecture
+title: Архитектура CRM
+description: Текущие account-scoped CRM-модели и экраны, а также дальнейшее развитие общей платформы.
+sidebarTitle: Архитектура CRM
 ---
 
-# CRM Architecture
+# Архитектура CRM
 
-## Status
+## Статус
 
-- document type: current state plus target direction
-- source of truth for current implementation: code
-- source of truth for future shape: planning direction
+- Здесь описаны текущие сущности и пользовательские экраны CRM.
+- Источник сведений о работающем поведении — код приложения.
+- Будущее развитие общей платформы отдельно обозначено как направление.
 
-## Current Implemented State
+## Текущая реализация
 
-The current codebase does not yet implement a full shared CRM engine.
+В коде есть общая account-scoped CRM-основа. Это не только контакты и компании, связанные с CRM: сделки, воронки, этапы, задачи и связанные записи представлены отдельными моделями.
 
-What exists today:
+Основные модели:
 
-- `Contact` as the person-level record
-- `Company` as the organization-level record
-- `Note` for internal contact notes
-- `Label` for lightweight classification
-- `CustomAttributeDefinition` plus JSONB values for `Contact` and `Conversation`
-- conversation history, search, reporting, and help center around the support platform
+- Crm::Deal связан с аккаунтом, воронкой и этапом; при необходимости — с компанией, контактами, ответственным, командой и исходным диалогом или веткой коммуникаций.
+- Crm::Pipeline и Crm::Stage задают воронку, порядок открытых этапов, терминальные этапы won/lost, этап по умолчанию и правила причин перехода или закрытия.
+- Crm::Task и Crm::TaskStatus существуют отдельно от сделки. Задача может быть самостоятельной или связанной со сделкой; у неё могут быть ответственный, команда, срок, тип активности, приоритет и результат.
+- Crm::FieldDefinition хранит настраиваемые поля для сделок, задач и записей расписания.
+- Crm::Event и Crm::Comment хранят события CRM и комментарии.
 
-What does not yet exist as first-class shared CRM runtime entities:
+В интерфейсе доступны рабочие пространства сделок и задач. Для задач доступны список, календарь и доска планирования по срокам. Доска группирует задачи по локальному времени: просроченные, на сегодня, на завтра, затем до начала дня через восемь дней от сегодняшней полуночи, далее до той же календарной даты следующего месяца, затем на более поздний срок и без срока. Для границы месяца используется та же календарная дата следующего месяца; если такой даты нет, берётся последний день этого месяца. Это скользящие границы, а не календарная неделя или остаток текущего месяца. Задачи без срока остаются отдельной группой; завершённые и архивные задачи доска скрывает.
 
-- `Deal`
-- `Task`
-- `Pipeline`
-- `Stage`
-- normalized `Activity`
+Настройки воронок позволяют редактировать их свойства и этапы. Выбранная воронка открывает локальный черновик: для открытых этапов можно менять название, цвет, активность, этап по умолчанию и варианты или обязательность причины перехода, а также добавлять, удалять и переставлять этапы. Терминальные won/lost остаются на своих местах; их можно переименовать и настроить варианты и обязательность причины закрытия. Интерфейс показывает бейдж этапа по умолчанию и пометки обязательных причин. Отмена целиком отбрасывает изменения выбранной воронки.
 
-## Current CRM-Adjacent Model
+Сохранение отправляет весь черновик выбранной воронки одним account-scoped запросом: полный упорядоченный список открытых этапов, изменения имён и причин терминальных этапов, а также ID удаляемых открытых этапов. Сервер блокирует выбранную воронку и применяет этот запрос в одной транзакции; неполный или повторный ID, чужой этап, недопустимые настройки причин и отсутствие активного этапа по умолчанию приводят к откату всего запроса. Терминальные этапы нельзя удалить или переставить, а этап с привязанными сделками нельзя удалить. Если удаляют или отключают этап по умолчанию, сервер выбирает другой активный открытый этап; если такого этапа нет, запрос отклоняется.
 
-```mermaid
-flowchart LR
-    A[Account] --> B[Contact]
-    A --> C[Company]
-    B --> D[Conversation]
-    B --> E[Note]
-    B --> F[Labels]
-    B --> G[Custom Attributes]
-    D --> H[Messages]
-    C --> B
-```
+API и настройки используют account-scoped запросы и проверки доступа. Эта страница описывает существующие модели и интерфейс; дальнейшее развитие отчётности и сценариев между предметными областями остаётся отдельным направлением.
 
-## Core Principle
+## Связи CRM
 
-- build one shared CRM engine, not separate CRM products for each vertical
-- keep current support-platform primitives reusable while CRM grows
-- treat target CRM entities as roadmap until implemented in code
+Account содержит Pipeline, а Pipeline содержит Stage. Сделка связана с воронкой и этапом, а задача имеет отдельный статус и может быть связана со сделкой. Сделки могут быть связаны с контактами и компанией. События и комментарии относятся к записям CRM. Настраиваемые поля могут применяться к сделкам и задачам.
 
-## Target Shared CRM Model
+## Направление развития платформы (будущее)
 
-Onelink should implement one shared CRM engine on top of the current person, organization, and communication layers.
+Существующие модели дают основу для общей CRM. Дальнейшие изменения могут развивать отчётность, совместимые контракты активности и сценарии работы с клиентами и компаниями. Это направление развития, а не утверждение о готовых специальных интерфейсах для каждой отрасли.
 
-## Shared CRM Model
+Сохраняйте общую CRM-основу для универсальных задач, здравоохранения и строительства. Отраслевые поля и процессы следует строить поверх общих записей, а не копировать сущности сделок, задач, воронок и этапов.
 
-```mermaid
-flowchart LR
-    A[CRM Core] --> B[Deal]
-    A --> C[Task]
-    A --> D[Pipeline]
-    A --> E[Stage]
-    A --> F[Activity]
-    A --> G[Labels]
-    A --> H[Permissions]
-    A --> I[Custom Attributes]
-```
+## Настраиваемые атрибуты
 
-## Domain Extension Model
+Используйте настраиваемые атрибуты для метаданных аккаунта или предметной области. Основные связи, ответственных, состояние, воронку и этап храните в стандартных полях и ассоциациях.
 
-```mermaid
-flowchart TD
-    A[CRM Core] --> B[Generic Profile]
-    A --> C[Healthcare Profile]
-    A --> D[Construction Profile]
+## Правило проектирования
 
-    C --> E[Medical fields]
-    C --> F[Medical workflows]
-    C --> G[Medical screens]
+- Общее бизнес-состояние храните в полях и связях основных моделей.
+- Переменные для аккаунта или предметной области храните в настраиваемых полях.
+- Отраслевые экраны стройте поверх общих CRM-записей.
 
-    D --> H[Project fields]
-    D --> I[Construction workflows]
-    D --> J[Construction screens]
-```
-
-## Entity Guidance
-
-### Shared Core Entities
-
-Current shared CRM-adjacent entities:
-
-- `Contact`
-- `Company`
-- `Note`
-- `Label`
-- `CustomAttributeDefinition`
-
-Planned shared CRM entities:
-
-- `Deal`
-- `Task`
-- `Pipeline`
-- `Stage`
-- `Activity`
-
-`Deal` and `Task` should remain separate business entities because they have different lifecycle, reporting, permissions, and UX when CRM work is implemented.
-
-### Custom Attributes
-
-Use custom attributes for:
-
-- domain-specific fields
-- tenant-specific fields
-- experimental or configurable fields
-
-Do not use custom attributes to replace:
-
-- core relationships
-- ownership
-- primary status/state
-- pipeline and stage logic
-
-## Design Rule
-
-- stable shared business state => first-class model fields and associations
-- variable domain/tenant metadata => custom attributes
-
-## Recommended Build Order
-
-1. keep reusing `Contact`, `Company`, `Conversation`, `Note`, `Label`, and `CustomAttributeDefinition`
-2. add shared CRM entities only when the lifecycle is stable across multiple domains
-3. keep `Deal` and `Task` separate when they are introduced
-4. add domain-specific screens, workflows, and validations only after the shared entity model is clear
-
-For delivery sequencing, use [Implementation Roadmap](/platform/implementation-roadmap).
+Порядок дальнейшей реализации описан в [дорожной карте](/platform/implementation-roadmap).
