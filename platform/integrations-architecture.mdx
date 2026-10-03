@@ -158,3 +158,5 @@ The reporting window is the UTC calendar month. The observed free-service count 
 The estimate uses the versioned Meta USD base-rate catalog effective 1 October 2026, selected by recipient market and category, and converts billable deliveries with an immutable NBK USD/KZT snapshot requested for the first day of the same UTC month. Template deliveries use their Meta category rates; there is no flat KZT 8 template rate. The estimate excludes volume discounts, taxes, and provider markup, and is not an invoice total. Missing rate, recipient market, category, or exchange-rate data leaves the affected amount unavailable or incomplete rather than zero; do not extrapolate rates beyond their effective period.
 
 This describes the prepared implementation; availability is determined by the deployed application revision.
+
+The usage banner dismissal is browser- and account-scoped, expires at the next UTC day boundary, and ignores legacy monthly dismissals.
