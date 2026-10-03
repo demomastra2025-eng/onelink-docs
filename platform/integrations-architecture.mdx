@@ -146,3 +146,15 @@ Instead:
 2. If the need is an AI-callable external action, start with `Captain::CustomTool`.
 3. If the need is domain-specific but the mechanics are still generic, keep the infrastructure shared and move only the configuration into the domain zone.
 4. Only add a new domain-specific integration model if the shared installation and hook model is no longer correct.
+
+## WhatsApp Cloud Usage Reporting
+
+The prepared monthly usage response adds `category_breakdown` alongside the existing totals and estimate. It returns rows in this fixed order: `service`, `utility`, `marketing`, `authentication`, `authentication-international`, `referral_conversion`, and `unknown`. Every deduplicated delivery contributes to one row; each row reports `delivered_count`, `chargeable_count`, `free_count`, and `unknown_billable_count`. The rows sum to the overall delivered count. Meta's actual `pricing.billable` value is authoritative: `true` is chargeable, `false` is free, and a missing or invalid value is unknown. Missing or unrecognized categories map to `unknown`.
+
+Reporting combines the delivery ledger with eligible message history and deduplicates by canonical business phone number and provider message ID. A ledger delivery timestamp determines its UTC reporting month. When a legacy outgoing or template message created during the current UTC month is already confirmed as delivered or read but has no exact delivery timestamp, it may be counted for that month with coverage marked incomplete. Never infer or store an exact delivery time from a message's creation or update time. In coexistence, messages sent from the WhatsApp Business app and supported linked WhatsApp Web remain free and are excluded from OneLink Cloud API counts and estimates.
+
+The reporting window is the UTC calendar month. The observed free-service count includes only deliveries with `pricing.category=service`, `pricing.type=free_customer_service`, and `pricing.billable=false`; the allowance is 1,000 per connected business phone. `free_entry_point` is not included. Meta's allowance period follows the WhatsApp Business Account timezone, so the UTC observation cannot establish the exact remaining Meta quota. The estimate follows Meta's billability flag and does not subtract the free-service allowance a second time.
+
+The estimate uses the versioned Meta USD base-rate catalog effective 1 October 2026, selected by recipient market and category, and converts billable deliveries with an immutable NBK USD/KZT snapshot requested for the first day of the same UTC month. Template deliveries use their Meta category rates; there is no flat KZT 8 template rate. The estimate excludes volume discounts, taxes, and provider markup, and is not an invoice total. Missing rate, recipient market, category, or exchange-rate data leaves the affected amount unavailable or incomplete rather than zero; do not extrapolate rates beyond their effective period.
+
+This describes the prepared implementation; availability is determined by the deployed application revision.

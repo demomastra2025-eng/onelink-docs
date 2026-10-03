@@ -141,6 +141,20 @@ Once you've completed all steps, you'll see the success screen. Your WhatsApp Bu
 - **Real-time progress tracking**: Visual feedback during the signup process
 - **Comprehensive error handling**: Clear error messages and guidance
 
+## WhatsApp Cloud Usage Banner
+
+The prepared OneLink Cloud usage banner is limited to account administrators with an official WhatsApp Cloud phone. It shows outgoing OneLink Cloud API deliveries for the current UTC calendar month, an estimated cost in KZT, and the observed free service deliveries alongside the allowance of 1,000 per phone. The compact banner has a pale-red background and can be dismissed.
+
+Hover over or focus the banner details, or activate them by clicking or touch, to open the inline breakdown. It shows delivered counts for `service`, `utility`, and `marketing`, plus other categories when present. Each category separates chargeable, free, and unknown billability using Meta's delivery pricing status. The free count in this breakdown is separate from the free service allowance count.
+
+The allowance figure covers only service deliveries Meta identifies as free customer-service messages. Meta applies its allowance period in the WhatsApp Business Account's timezone, which can differ from OneLink's UTC reporting month; the observed count is not a remaining-quota calculation. Meta's billability status determines the estimate, so the allowance is not subtracted from the estimated cost again. Dismissal is remembered in the browser for the current account and UTC month, and the banner returns for a new month. The banner identifies incomplete history when earlier deliveries cannot be fully confirmed.
+
+In coexistence, messages sent from the WhatsApp Business app and supported linked WhatsApp Web remain free and are excluded from OneLink Cloud API usage counts and estimates.
+
+<Note>
+Available after deploying the WhatsApp usage-banner update; older releases may show a simpler banner.
+</Note>
+
 ## Commerce Policy Compliance
 
 Meta will review your business to ensure it complies with WhatsApp's Commerce Policy and will reach out within 24 hours if there's an issue.
