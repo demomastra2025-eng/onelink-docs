@@ -2879,6 +2879,180 @@
         }
       }
     },
+    "/api/v1/accounts/{account_id}/crm/pipelines/{id}/reorder_stages": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/account_id"
+        },
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "patch": {
+        "tags": [
+          "CRM"
+        ],
+        "operationId": "reorder-crm-pipeline-stages",
+        "summary": "Reorder movable CRM pipeline stages",
+        "description": "Reorders every movable open stage in the selected pipeline. System and terminal stages are ordered by the server. Requires CRM settings management access.",
+        "security": [
+          {
+            "userApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "stage_ids"
+                ],
+                "properties": {
+                  "stage_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pipeline with the persisted stage order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "description": "Serialized CRM pipeline and its stages"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CRM settings management access is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "code"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "VALIDATION_ERROR",
+                        "FEATURE_DISABLED",
+                        "DUPLICATE_EXTERNAL_REF",
+                        "DUPLICATE_IDEMPOTENCY_KEY",
+                        "NOT_FOUND",
+                        "STALE_RECORD"
+                      ]
+                    },
+                    "details": {
+                      "type": "object",
+                      "nullable": true,
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pipeline not found in this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "code"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "VALIDATION_ERROR",
+                        "FEATURE_DISABLED",
+                        "DUPLICATE_EXTERNAL_REF",
+                        "DUPLICATE_IDEMPOTENCY_KEY",
+                        "NOT_FOUND",
+                        "STALE_RECORD"
+                      ]
+                    },
+                    "details": {
+                      "type": "object",
+                      "nullable": true,
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Stage IDs must include every movable stage exactly once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "code"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "VALIDATION_ERROR",
+                        "FEATURE_DISABLED",
+                        "DUPLICATE_EXTERNAL_REF",
+                        "DUPLICATE_IDEMPOTENCY_KEY",
+                        "NOT_FOUND",
+                        "STALE_RECORD"
+                      ]
+                    },
+                    "details": {
+                      "type": "object",
+                      "nullable": true,
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/accounts/{account_id}/crm/field_definitions": {
       "parameters": [
         {
