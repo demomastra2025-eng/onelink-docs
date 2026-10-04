@@ -1,0 +1,38 @@
+---
+title: Captain AI Runtime
+description: Current per-assistant model, tool, follow-up, outcome-reason, and usage-mode configuration.
+sidebarTitle: Captain AI Runtime
+---
+
+# Captain AI Runtime
+
+## Assistant modes and model selection
+
+`Captain::Assistant` is account-scoped and supports `external_agent` and `internal_assistant` usage modes. The model is selected per assistant in its `config.model`; the server validates the value against the model catalog available to the assistant at that time. The API contract does not promise a fixed model list or pricing.
+
+An assistant configuration may include FAQ, memory, citation, web, document-reading, and image-understanding features; handoff and completion behavior; audio transcription; context access; and voice settings. Response guidelines and guardrails are assistant fields. These settings remain separate by assistant and account.
+
+## Tool access
+
+Tool access is stored with each assistant. The external-agent and internal-assistant modes use distinct `agent` and `assistant` tool scopes, respectively. A tool's availability follows the configured scope and its current server definition. This does not create a new account permission role or a broad access-role matrix.
+
+## Follow-ups and outcomes
+
+Follow-up steps are configured in the assistant's existing `config.follow_up_settings` object. Each step uses either a static message or an AI-generated message objective and may include a non-negative delay in seconds. The model validates the configured step array without a fixed maximum number of steps; supported message and objective lengths are still validated.
+
+Scheduled follow-ups use the native Reminder model and transport. Disabling follow-ups cancels that assistant's open follow-up reminders. Follow-up settings are changed through the same assistant update operation as model and tool settings; there are no separate public follow-up routes.
+
+Outcome reason configuration is also per assistant, under `config.outcome_reason_settings`, and is normalized by the server. It shares the assistant update operation rather than introducing a dedicated endpoint.
+
+## Existing account API
+
+The account-scoped Captain assistant resource supports listing, reading, creating, updating, and deleting assistants. Update model selection, tool access, follow-up settings, and outcome reason settings through `PATCH /api/v1/accounts/{account_id}/captain/assistants/{id}` in the existing `assistant.config` object. The [Application APIs](/api-reference/introduction) list this operation under the `Captain Assistants` tag.
+
+The API remains governed by the existing account authorization. This page records implemented configuration and runtime behavior; it does not imply a new customer portal, automation editor, access-role model, or public activation workflow.
+
+## Source paths
+
+- `enterprise/app/models/captain/assistant.rb`
+- `enterprise/app/controllers/api/v1/accounts/captain/assistants_controller.rb`
+- `enterprise/lib/captain/tool_access.rb`
+- `app/models/reminder.rb`

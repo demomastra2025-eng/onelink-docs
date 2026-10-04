@@ -20,7 +20,8 @@ The current codebase is primarily:
 - a Rails monolith with a Vue 3/Vite frontend split into dashboard, widget, portal, survey, and SDK entrypoints
 - a shared communication core around `Account`, `Inbox`, `ContactInbox`, `Conversation`, and `Message`
 - an inherited `enterprise/` technical split under `enterprise/`; in Onelink this is an implementation layer, not a separate product/paywall boundary, because enterprise capabilities are currently opened for the project
-- a first-class, account-scoped CRM subsystem with deals, pipelines, stages, tasks, field definitions, events, and comments, built around shared records such as `Contact`, `Company`, `Note`, and `Label`
+- a first-class, account-scoped CRM subsystem with deals, pipelines, stages, task catalogs, field definitions, events, and comments, built around shared records such as `Contact`, `Company`, `Note`, and `Label`
+- account-scoped storage accounting and administrator cleanup workflows, with local call recording compression and retention
 - a native shared scheduling and kassa capability under `app/models/scheduling`, `app/services/scheduling`, and `app/javascript/dashboard/routes/dashboard/scheduling`
 - an event-driven application with listeners, jobs, hooks, reporting, automations, and AI/Captain features around the conversation core
 
@@ -39,6 +40,7 @@ The implemented frontend shape today is:
 - `Histoire` and `Vitest` already available for component development and verification
 
 Use [Frontend Implementation Guide](/platform/frontend-implementation) when the task is specifically about frontend structure, component sourcing, state management, or library choices.
+Use [Account Storage And Recording Lifecycle](/platform/account-storage-and-audio), [Captain AI Runtime](/platform/captain-ai-runtime), and [Managed Account Trials](/platform/managed-trials) for the current operational behavior in those areas.
 Use [Backend Agent Playbook](/contributing-guide/backend-agent-playbook) when the task is a backend implementation task and the agent needs an execution workflow rather than only architecture context.
 Use [Implementation Examples Map](/contributing-guide/implementation-examples-map) when the task needs concrete code references for an existing pattern.
 
@@ -48,7 +50,7 @@ Beyond runtime code, the working project currently includes:
 
 - the main application repository under `onelink`
 - the docs repository mounted as the `docs/` git submodule
-- shared OneLink Hermes skills outside the application repository under `/root/.hermes/shared-skills/onelink`, loaded through Hermes `skills.external_dirs`
+- shared OneLink Hermes skill definitions are loaded from the runtime skill directory outside the application repository; they are not versioned under `.codex/skills`
 - the external `onelink-integrator` Claude Code bundle under `.claude/skills/onelink-integrator`
 
 Use [Repository Map](/platform/repository-map) when the task depends on knowing which repo or directory should own the change.
@@ -150,9 +152,13 @@ Core records:
 
 Key behavior:
 
-- Captain is a real implemented subsystem
-- it provides assistant, copilot, document, tool, and scenario flows
-- it extends the support platform rather than replacing core entities
+- Captain provides assistant, copilot, document, tool, and scenario flows around the conversation core.
+- Assistant configuration is per account and per assistant. The selected model is stored in the assistant config and validated against the supported assistant model catalog.
+- The existing `external_agent` and `internal_assistant` modes use separate `agent` and `assistant` tool-access scopes. The mode is configuration on the current assistant model, not a new account role.
+- Follow-up configuration supports a list of static-message or AI-objective steps and uses the native Reminder model for delivery. Outcome reason settings use the same assistant config.
+- Model, tool, follow-up, and outcome reason changes share the existing account-scoped assistant update API. See [Captain AI Runtime](/platform/captain-ai-runtime) for the implemented fields and limits.
+
+This describes current code and API behavior; it does not declare a separate internal-assistant activation workflow.
 
 The assistant form keeps the existing `external_agent` and `internal_assistant` usage modes and groups controls for customer context, tools, and voice. `AssistantBasicSettingsForm.vue` and `AssistantUsageModeSelector.vue` present these existing settings; `toolAccessDefaults.js` supplies defaults for the supported usage modes. The headings are display groupings backed by `Captain::Assistant` configuration:
 
@@ -178,7 +184,7 @@ Implemented today:
 
 The CRM is a first-class, account-scoped subsystem, not only a layer adjacent to contacts and companies. The dashboard provides deal and task workspaces. Tasks have list, calendar, and due-date planning-board presentations. The board uses rolling local-time boundaries: overdue, today, tomorrow, through the start of the day eight days after today, through the same calendar date next month (clamped to that month's last day), later, and unscheduled. It hides completed and archived tasks. The list and calendar presentations remain available.
 
-Pipeline settings support ordered stages, default-stage configuration, and transition or closing reasons. The stage editor keeps terminal won/lost stages fixed and stores edits, additions, deletions, and reordering in one local draft; Cancel discards the whole draft. Save sends the complete ordered open-stage list, terminal-stage names and closing reasons, and deleted stage IDs in one account-scoped request. See [CRM Architecture](/platform/crm-architecture) for the current model and behavior details.
+Pipeline settings support ordered stages, default-stage configuration, transition and closing reasons, and atomic stage-list updates. The current CRM reports screen is under Settings → Reports, with Activity as one section of the deal reporting page. Its component is `CRMActivityReports.vue`; it reads the report rows from `data.payload.rows`. See [CRM Architecture](/platform/crm-architecture) for report semantics, legacy data behavior, and the current API contract.
 
 ### Scheduling And Kassa
 

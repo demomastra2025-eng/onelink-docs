@@ -18,6 +18,12 @@ The platform currently exposes three main API categories:
 
 Application APIs are designed for interacting with an account from an agent/admin perspective. Use them to build internal tools, automate workflows, or perform bulk operations like data import/export.
 
+The current Application API reference also includes account-scoped CRM resources and reports, Captain assistant configuration, and administrator-only account storage operations. Existing account authorization and policy scopes apply to CRM and Captain resources; storage operations require account administrator access. Internal Super Admin trial controls are web-administration actions and are not part of the public REST reference.
+
+- [CRM architecture and report behavior](/platform/crm-architecture)
+- [Captain assistant model, tool, and follow-up configuration](/platform/captain-ai-runtime)
+- [Account storage and recording lifecycle](/platform/account-storage-and-audio)
+
 - **Authentication**: Requires a user `access_token`, which can be generated from **Profile Settings** after logging into your OneLink account.
 - **Availability**: Supported for the application surface used by the fork.
 - **Example**: [Google Cloud Functions Demo](https://github.com/chatwoot/google-cloud-functions-demo)

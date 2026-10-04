@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.4",
+  "openapi": "3.1.0",
   "info": {
     "title": "Onelink",
     "description": "This is the API documentation for the Onelink server.",
@@ -833,6 +833,925 @@
           }
         }
       },
+      "crm_error": {
+        "type": "object",
+        "required": [
+          "error",
+          "code"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "crm_field_requirement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "field_key": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "validation": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "role_exemptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "crm_stage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "pipeline_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "open",
+              "won",
+              "lost"
+            ]
+          },
+          "system": {
+            "type": "boolean"
+          },
+          "position_locked": {
+            "type": "boolean"
+          },
+          "closing_reason_options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "closing_reason_required": {
+            "type": "boolean"
+          },
+          "transition_reason_options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "transition_reason_required": {
+            "type": "boolean"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "field_requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/crm_field_requirement"
+            }
+          },
+          "deal_count": {
+            "type": "integer"
+          },
+          "dialog_deal_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "crm_pipeline": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "auto_create_deal_on_channel_contact": {
+            "type": "boolean"
+          },
+          "restrict_stage_skipping": {
+            "type": "boolean"
+          },
+          "restrict_backward_move": {
+            "type": "boolean"
+          },
+          "allow_stage_rule_override": {
+            "type": "boolean"
+          },
+          "deal_count": {
+            "type": "integer"
+          },
+          "dialog_deal_count": {
+            "type": "integer"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/crm_stage"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "crm_task_status": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "crm_task_outcome": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "task_type_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "requires_note": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "crm_task_type": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/crm_task_outcome"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "crm_deal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "pipeline_id": {
+            "type": "integer"
+          },
+          "stage_id": {
+            "type": "integer"
+          },
+          "owner_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "creator_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "team_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "company_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "originating_conversation_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "originating_conversation_display_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "originating_communication_thread_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "originating_communication_thread_display_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "dialog_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "dialog_display_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "dialog_kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "dialog_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "nullable": true
+          },
+          "amount_minor": {
+            "type": "integer",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "expected_close_on": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "waiting_until": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "waiting_reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "waiting_started_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "waiting_set_by_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "next_action": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "closing_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "position": {
+            "type": "integer"
+          },
+          "win_probability": {
+            "type": "number",
+            "nullable": true
+          },
+          "external_ref": {
+            "type": "string",
+            "nullable": true
+          },
+          "idempotency_key": {
+            "type": "string",
+            "nullable": true
+          },
+          "lock_version": {
+            "type": "integer"
+          },
+          "custom_attributes": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "archived_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "company": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "deal_contacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "contact_id": {
+                  "type": "integer"
+                },
+                "primary": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "primary_contact": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "primary_contact_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "crm_task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "context_kind": {
+            "type": "string"
+          },
+          "deal_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "status_id": {
+            "type": "integer"
+          },
+          "task_type_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "task_outcome_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "assignee_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "creator_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "completed_by_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "cancelled_by_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "team_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "originating_conversation_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "activity_type": {
+            "type": "string",
+            "nullable": true,
+            "description": "Compatibility projection for legacy tasks without a catalog task type."
+          },
+          "outcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "outcome_note": {
+            "type": "string",
+            "nullable": true
+          },
+          "priority": {
+            "type": "string",
+            "nullable": true
+          },
+          "all_day": {
+            "type": "boolean"
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "schedule_timezone": {
+            "type": "string",
+            "nullable": true
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelled_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancellation_reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "reschedule_count": {
+            "type": "integer"
+          },
+          "task_type": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "task_outcome": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "position": {
+            "type": "integer"
+          },
+          "external_ref": {
+            "type": "string",
+            "nullable": true
+          },
+          "idempotency_key": {
+            "type": "string",
+            "nullable": true
+          },
+          "lock_version": {
+            "type": "integer"
+          },
+          "custom_attributes": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "archived_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "crm_report_meta": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "per_page": {
+            "type": "integer"
+          },
+          "total_count": {
+            "type": "integer"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "metric_kind": {
+            "type": "string"
+          },
+          "reliability": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "generated_at_local": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "query_fingerprint": {
+            "type": "string"
+          },
+          "metric_definition": {
+            "type": "string"
+          },
+          "temporal_definition": {
+            "type": "string"
+          }
+        }
+      },
+      "crm_report_rows_response": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/crm_report_meta"
+          }
+        }
+      },
+      "crm_storage_summary": {
+        "type": "object",
+        "properties": {
+          "total_limit_bytes": {
+            "type": "integer"
+          },
+          "consumed_bytes": {
+            "type": "integer"
+          },
+          "available_bytes": {
+            "type": "integer"
+          },
+          "unlimited": {
+            "type": "boolean"
+          },
+          "usage_percent": {
+            "type": "number"
+          },
+          "breakdown": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "last_updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "crm_storage_file": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "file_type": {
+            "type": "string"
+          },
+          "byte_size": {
+            "type": "integer"
+          },
+          "human_size": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inbox_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "inbox_name": {
+            "type": "string"
+          },
+          "conversation_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "download_url": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "crm_storage_trash_item": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "item_type": {
+            "type": "string",
+            "enum": [
+              "recording",
+              "attachment"
+            ]
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "file_type": {
+            "type": "string"
+          },
+          "byte_size": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inbox_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "inbox_name": {
+            "type": "string"
+          },
+          "trashed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "captain_assistant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "usage_mode": {
+            "type": "string",
+            "enum": [
+              "external_agent",
+              "internal_assistant"
+            ]
+          },
+          "response_guidelines": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "guardrails": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "config": {
+            "type": "object",
+            "description": "Assistant configuration is updated through the existing assistant endpoint. Model, tool access, follow-up settings, and outcome reason settings are account-scoped per assistant.",
+            "properties": {
+              "model": {
+                "type": "string"
+              },
+              "tool_access": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "follow_up_settings": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "outcome_reason_settings": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "context_access": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "voice_settings": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "captain_assistant"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix timestamp in seconds"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix timestamp in seconds"
+          }
+        }
+      },
       "generic_id": {
         "type": "object",
         "properties": {
@@ -972,17 +1891,34 @@
           },
           "event_name": {
             "type": "string",
-            "description": "Automation Rule event, on which we call the actions(conversation_created, conversation_updated, message_created)",
+            "description": "Automation Rule event, on which we call the actions",
             "enum": [
               "conversation_created",
               "conversation_updated",
-              "message_created"
+              "conversation_resolved",
+              "conversation_opened",
+              "conversation_pending",
+              "message_created",
+              "appointment_created",
+              "appointment_updated",
+              "appointment_cancelled",
+              "appointment_completed",
+              "deal_created",
+              "deal_updated",
+              "deal_stage_changed",
+              "deal_archived",
+              "deal_unarchived",
+              "task_created",
+              "task_updated",
+              "task_status_changed",
+              "task_archived",
+              "task_unarchived"
             ],
             "example": "message_created"
           },
           "conditions": {
             "type": "array",
-            "description": "Array of conditions on which conversation/message filter would work",
+            "description": "Array of conditions on which conversation/message filter would work.\nAppointment automations use `status`, `payment_status`, `appointment_type`, `source`,\nand active managed appointment custom field keys.\nDeal automations use standard CRM deal fields and active managed deal custom field keys.\nTask automations use standard CRM task fields and active managed task custom field keys.\n",
             "items": {
               "type": "object",
               "properties": {
@@ -993,7 +1929,8 @@
                   }
                 },
                 "attribute_key": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Condition attribute key."
                 },
                 "query_operator": {
                   "type": "string"
@@ -1003,10 +1940,10 @@
                 }
               },
               "example": {
-                "attribute_key": "content",
-                "filter_operator": "contains",
+                "attribute_key": "status",
+                "filter_operator": "equal_to",
                 "values": [
-                  "help"
+                  "confirmed"
                 ],
                 "query_operator": "and"
               }
@@ -1014,25 +1951,26 @@
           },
           "actions": {
             "type": "array",
-            "description": "Array of actions which we perform when condition matches",
+            "description": "Array of actions which we perform when condition matches.\nAppointment automations support `send_webhook_event`, `change_appointment_status`, and,\nwhen `scheduling_finance` is enabled for the account, `cancel_appointment_payment`.\nDeal automations support `send_webhook_event`, `change_deal_stage`, `assign_deal_owner`,\n`assign_deal_team`, `archive_deal`, and `unarchive_deal`.\nTask automations support `send_webhook_event`, `change_task_status`, `assign_task_assignee`,\n`assign_task_team`, `change_task_priority`, `archive_task`, and `unarchive_task`.\n",
             "items": {
               "type": "object",
               "properties": {
                 "action_name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Action identifier."
                 },
                 "action_params": {
                   "type": "array",
+                  "description": "Action params. `cancel_appointment_payment` uses an empty array.",
                   "items": {
                     "type": "string"
                   }
                 }
               },
               "example": {
-                "action_name": "add_label",
+                "action_name": "change_appointment_status",
                 "action_params": [
-                  "support",
-                  "sales"
+                  "confirmed"
                 ]
               }
             }
@@ -1134,18 +2072,24 @@
             "description": "Total number of articles"
           },
           "archived_articles_count": {
-            "type": "integer",
-            "nullable": true,
+            "type": [
+              "integer",
+              "null"
+            ],
             "description": "Number of archived articles"
           },
           "published_count": {
-            "type": "integer",
-            "nullable": true,
+            "type": [
+              "integer",
+              "null"
+            ],
             "description": "Number of published articles"
           },
           "draft_articles_count": {
-            "type": "integer",
-            "nullable": true,
+            "type": [
+              "integer",
+              "null"
+            ],
             "description": "Number of draft articles"
           },
           "categories_count": {
@@ -1439,7 +2383,10 @@
             "description": "Whether the conversation is muted"
           },
           "snoozed_until": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "The time at which the conversation will be unmuted"
           },
           "status": {
@@ -1460,11 +2407,14 @@
             "description": "The time at which conversation was updated"
           },
           "timestamp": {
-            "type": "string",
+            "type": "number",
             "description": "The time at which conversation was created"
           },
           "first_reply_created_at": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "The time at which the first reply was created"
           },
           "unread_count": {
@@ -1472,22 +2422,39 @@
             "description": "The number of unread messages"
           },
           "last_non_activity_message": {
-            "$ref": "#/components/schemas/message"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/message"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last non activity message"
           },
           "last_activity_at": {
             "type": "number",
             "description": "The last activity at of the conversation"
           },
           "priority": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "The priority of the conversation"
           },
           "waiting_since": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "The time at which the conversation was waiting"
           },
           "sla_policy_id": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "The ID of the SLA policy"
           },
           "applied_sla": {
@@ -1531,7 +2498,8 @@
             "enum": [
               0,
               1,
-              2
+              2,
+              3
             ],
             "description": "The type of the message"
           },
@@ -1540,7 +2508,10 @@
             "description": "The time at which message was created"
           },
           "updated_at": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "string"
+            ],
             "description": "The time at which message was updated"
           },
           "private": {
@@ -1548,26 +2519,46 @@
             "description": "The flags which shows whether the message is private or not"
           },
           "status": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "sent",
               "delivered",
               "read",
-              "failed"
+              "failed",
+              null
             ],
             "description": "The status of the message"
           },
           "source_id": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "The source ID of the message"
           },
           "content_type": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "text",
+              "input_text",
+              "input_textarea",
+              "input_email",
               "input_select",
               "cards",
-              "form"
+              "form",
+              "article",
+              "incoming_email",
+              "input_csat",
+              "integrations",
+              "sticker",
+              "voice_call",
+              null
             ],
             "description": "The type of the template message"
           },
@@ -1576,16 +2567,24 @@
             "description": "The content attributes for each content_type"
           },
           "sender_type": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
-              "contact",
-              "agent",
-              "agent_bot"
+              "Contact",
+              "User",
+              "AgentBot",
+              "Captain::Assistant",
+              null
             ],
             "description": "The type of the sender"
           },
           "sender_id": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "The ID of the sender"
           },
           "external_source_ids": {
@@ -1597,19 +2596,31 @@
             "description": "The additional attributes of the message"
           },
           "processed_message_content": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "The processed message content"
           },
           "sentiment": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "description": "The sentiment of the message"
           },
           "conversation": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "description": "The conversation object"
           },
           "attachment": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "description": "The file object attached to the image"
           },
           "sender": {
@@ -1640,12 +2651,16 @@
             "type": "boolean"
           },
           "display_name": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "message_signature": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "email": {
             "type": "string"
@@ -1654,7 +2669,10 @@
             "type": "string"
           },
           "inviter_id": {
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "name": {
             "type": "string"
@@ -1679,8 +2697,10 @@
             "type": "string"
           },
           "type": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "custom_attributes": {
             "type": "object",
@@ -1701,7 +2721,10 @@
                   "type": "string"
                 },
                 "active_at": {
-                  "type": "string",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
                   "format": "date-time"
                 },
                 "role": {
@@ -1727,12 +2750,16 @@
                   "type": "boolean"
                 },
                 "custom_role_id": {
-                  "type": "number",
-                  "nullable": true
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "custom_role": {
-                  "type": "object",
-                  "nullable": true
+                  "type": [
+                    "object",
+                    "null"
+                  ]
                 }
               }
             }
@@ -1790,7 +2817,10 @@
             "description": "The thumbnail of the agent"
           },
           "custom_role_id": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "description": "The custom role id of the agent"
           }
         }
@@ -1835,11 +2865,17 @@
             "description": "Script used to load the website widget"
           },
           "welcome_title": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Welcome title to be displayed on the widget"
           },
           "welcome_tagline": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Welcome tagline to be displayed on the widget"
           },
           "greeting_enabled": {
@@ -1847,7 +2883,10 @@
             "description": "The flag which shows whether greeting is enabled"
           },
           "greeting_message": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "A greeting message when the user starts the conversation"
           },
           "channel_id": {
@@ -1871,7 +2910,10 @@
             "description": "Configuration settings for auto assignment"
           },
           "out_of_office_message": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Message to show when agents are out of office"
           },
           "working_hours": {
@@ -1889,19 +2931,31 @@
                   "description": "Whether the inbox is closed for the entire day"
                 },
                 "open_hour": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "description": "Hour when inbox opens (0-23)"
                 },
                 "open_minutes": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "description": "Minutes of the hour when inbox opens (0-59)"
                 },
                 "close_hour": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "description": "Hour when inbox closes (0-23)"
                 },
                 "close_minutes": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "description": "Minutes of the hour when inbox closes (0-59)"
                 },
                 "open_all_day": {
@@ -1916,7 +2970,10 @@
             "description": "Timezone configuration for the inbox"
           },
           "callback_webhook_url": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Webhook URL for callbacks"
           },
           "allow_messages_after_resolved": {
@@ -1932,7 +2989,10 @@
             "description": "Type of sender name to display (e.g., friendly)"
           },
           "business_name": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Business name associated with the inbox"
           },
           "hmac_mandatory": {
@@ -1940,28 +3000,86 @@
             "description": "Whether HMAC verification is mandatory"
           },
           "selected_feature_flags": {
-            "type": "object",
-            "description": "Selected feature flags for the inbox"
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Selected feature flags for the inbox",
+            "items": {
+              "type": "string"
+            }
           },
           "reply_time": {
             "type": "string",
             "description": "Expected reply time"
           },
           "messaging_service_sid": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Messaging service SID for SMS providers"
           },
           "phone_number": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Phone number associated with the inbox"
+          },
+          "conversation_pending": {
+            "type": "boolean",
+            "description": "Whether new live inbound WhatsApp Web conversations start in pending"
+          },
+          "history_lookback_days": {
+            "type": "integer",
+            "description": "Number of days imported during the first WhatsApp Web history sync"
+          },
+          "ignore_jids": {
+            "type": "array",
+            "description": "WhatsApp JIDs ignored by the native WhatsApp Web channel",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sign_messages": {
+            "type": "boolean",
+            "description": "Whether outgoing WhatsApp Web messages are signed with the agent name"
+          },
+          "sign_delimiter": {
+            "type": "string",
+            "description": "Delimiter used between the agent signature and message body for WhatsApp Web"
+          },
+          "import_contacts": {
+            "type": "boolean",
+            "description": "Whether WhatsApp Web address book contacts are imported"
+          },
+          "import_messages": {
+            "type": "boolean",
+            "description": "Whether WhatsApp Web history messages are imported"
+          },
+          "sync_labels": {
+            "type": "boolean",
+            "description": "Whether WhatsApp labels are synced into Onelink labels"
           },
           "medium": {
             "type": "string",
             "description": "Medium of communication (e.g., sms, email)"
           },
           "provider": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Provider of the channel"
+          },
+          "provider_config": {
+            "type": "object",
+            "description": "Provider-specific configuration returned for administrator users on supported channels"
+          },
+          "additional_attributes": {
+            "type": "object",
+            "description": "Channel-specific additional attributes, including WhatsApp Web runtime state"
           }
         }
       },
@@ -2019,11 +3137,7 @@
           },
           "bot_type": {
             "type": "string",
-            "description": "The type of the bot"
-          },
-          "bot_config": {
-            "type": "object",
-            "description": "The configuration of the bot"
+            "description": "Always `webhook`; incoming calls use the access token and outgoing events use `outgoing_url`."
           },
           "account_id": {
             "type": "number",
@@ -2058,8 +3172,39 @@
             "type": "string",
             "description": "Contact Inbox Source Id"
           },
+          "contact_inbox_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Existing contact inbox identity to reuse when creating a conversation"
+          },
           "inbox": {
             "$ref": "#/components/schemas/inbox"
+          },
+          "active_conversation_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Display ID of the latest unresolved conversation for this contact inbox"
+          },
+          "reply_window_open": {
+            "type": "boolean",
+            "description": "Whether free-text WhatsApp messages are currently allowed"
+          },
+          "reply_window_closes_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "WhatsApp reply-window deadline"
+          },
+          "allowed_content_kinds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "free_text",
+                "channel_template"
+              ]
+            },
+            "description": "Outbound content kinds allowed for this contact inbox"
           }
         }
       },
@@ -2195,10 +3340,7 @@
             "description": "Cache keys for the account"
           },
           "features": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "type": "object",
             "description": "Enabled features for the account"
           },
           "settings": {
@@ -2224,19 +3366,31 @@
             "description": "Custom attributes of the account",
             "properties": {
               "plan_name": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "Subscription plan name"
               },
               "subscribed_quantity": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "description": "Subscribed quantity"
               },
               "subscription_status": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "Subscription status"
               },
               "subscription_ends_on": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "format": "date",
                 "description": "Subscription end date"
               },
@@ -2282,7 +3436,10 @@
             "type": "object",
             "properties": {
               "latest_chatwoot_version": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "Latest version of Onelink available",
                 "example": "3.0.0"
               },
@@ -2343,7 +3500,10 @@
             "description": "The name of the team"
           },
           "description": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "The description about the team"
           },
           "allow_auto_assign": {
@@ -2357,6 +3517,31 @@
           "is_member": {
             "type": "boolean",
             "description": "This field shows whether the current user is a part of the team"
+          }
+        }
+      },
+      "label": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The ID of the label"
+          },
+          "title": {
+            "type": "string",
+            "description": "The title of the label"
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the label"
+          },
+          "color": {
+            "type": "string",
+            "description": "Hex color code for the label"
+          },
+          "show_on_sidebar": {
+            "type": "boolean",
+            "description": "Whether the label should appear in the sidebar"
           }
         }
       },
@@ -2486,8 +3671,10 @@
             "description": "Version number of the audit log entry"
           },
           "comment": {
-            "type": "string",
-            "nullable": true,
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Optional comment associated with the audit log entry"
           },
           "request_uuid": {
@@ -2499,8 +3686,10 @@
             "description": "Unix timestamp when the audit log entry was created"
           },
           "remote_address": {
-            "type": "string",
-            "nullable": true,
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "IP address from which the action was performed"
           }
         }
@@ -2517,16 +3706,160 @@
             "description": "The session identifier of the contact"
           },
           "name": {
-            "type": "string",
-            "description": "Name of the contact"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the contact when available"
           },
           "email": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Email of the contact"
+          },
+          "phone_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Phone number of the contact"
           },
           "pubsub_token": {
             "type": "string",
             "description": "The token to be used to connect to chatwoot websocket"
+          }
+        }
+      },
+      "public_contact_record": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Full serialized contact record returned when the public API renders a Contact model directly.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Id of the contact"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the contact when available"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Email of the contact"
+          },
+          "phone_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Phone number of the contact"
+          },
+          "identifier": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Identifier of the contact"
+          },
+          "blocked": {
+            "type": "boolean",
+            "description": "Whether the contact is blocked"
+          },
+          "additional_attributes": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Additional attributes of the contact when present"
+          },
+          "custom_attributes": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Custom attributes of the contact when present"
+          },
+          "contact_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Contact type of the contact when available"
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Country code of the contact"
+          },
+          "last_activity_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Last activity timestamp of the contact in ISO 8601 format"
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Created timestamp of the contact in ISO 8601 format"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Updated timestamp of the contact in ISO 8601 format"
+          },
+          "last_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Last name of the contact"
+          },
+          "middle_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Middle name of the contact"
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Location of the contact"
+          },
+          "account_id": {
+            "type": "integer",
+            "description": "Account id of the contact"
+          },
+          "company_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Company id of the contact"
+          },
+          "label_list": {
+            "type": "array",
+            "description": "Labels applied to the contact",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -2537,20 +3870,41 @@
             "type": "integer",
             "description": "Id of the conversation"
           },
-          "inbox_id": {
+          "uuid": {
             "type": "string",
+            "description": "UUID of the conversation"
+          },
+          "inbox_id": {
+            "type": "integer",
             "description": "The inbox id of the conversation"
+          },
+          "contact_last_seen_at": {
+            "type": "integer",
+            "description": "Timestamp of when the contact last seen the conversation (Unix timestamp)"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved",
+              "pending",
+              "snoozed"
+            ],
+            "description": "The status of the conversation"
+          },
+          "agent_last_seen_at": {
+            "type": "integer",
+            "description": "Timestamp of when the agent last seen the conversation (Unix timestamp)"
           },
           "messages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/message"
+              "$ref": "#/components/schemas/public_message"
             },
             "description": "Messages in the conversation"
           },
           "contact": {
-            "type": "object",
-            "description": "The contact information associated to the conversation"
+            "$ref": "#/components/schemas/public_contact_record"
           }
         }
       },
@@ -2558,43 +3912,262 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
+            "type": "integer",
             "description": "Id of the message"
           },
           "content": {
-            "type": "string",
-            "description": "Text content of the message"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Text content of the message. Can be null for attachment-only messages."
           },
           "message_type": {
-            "type": "string",
-            "description": "Denotes the message type"
+            "type": "integer",
+            "description": "Denotes the message type. Possible values: 0 (incoming), 1 (outgoing), 2 (activity), 3 (template)"
           },
           "content_type": {
             "type": "string",
             "description": "Content type of the message"
           },
           "content_attributes": {
-            "type": "string",
+            "type": "object",
             "description": "Additional content attributes of the message"
           },
           "created_at": {
-            "type": "string",
-            "description": "Created at time stamp of the message"
+            "type": "integer",
+            "description": "Created at Unix timestamp of the message"
           },
           "conversation_id": {
+            "type": "integer",
+            "description": "Display Id of the conversation the message belongs to"
+          },
+          "source_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "External source identifier of the message"
+          },
+          "status": {
             "type": "string",
-            "description": "Conversation Id of the message"
+            "enum": [
+              "sent",
+              "delivered",
+              "read",
+              "failed"
+            ],
+            "description": "Delivery status of the message"
           },
           "attachments": {
             "type": "array",
+            "description": "Attachments if any",
             "items": {
-              "type": "object"
-            },
-            "description": "Attachments if any"
+              "$ref": "#/components/schemas/public_message_attachment"
+            }
           },
           "sender": {
+            "$ref": "#/components/schemas/public_message_sender"
+          }
+        }
+      },
+      "public_message_attachment": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Attachment payload. Available fields vary by attachment file_type.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Id of the attachment"
+          },
+          "message_id": {
+            "type": "integer",
+            "description": "Id of the parent message"
+          },
+          "file_type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "audio",
+              "video",
+              "file",
+              "location",
+              "fallback",
+              "share",
+              "story_mention",
+              "contact",
+              "ig_reel",
+              "ig_post",
+              "ig_story",
+              "embed"
+            ],
+            "description": "Type of the attached file"
+          },
+          "account_id": {
+            "type": "integer",
+            "description": "Id of the account"
+          },
+          "extension": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "File extension"
+          },
+          "data_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URL of the file. Can be null when an attachment variant has no external URL."
+          },
+          "thumb_url": {
+            "type": "string",
+            "description": "URL of the file thumbnail"
+          },
+          "file_size": {
+            "type": "integer",
+            "description": "File size in bytes"
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Width of the attachment when available"
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Height of the attachment when available"
+          },
+          "coordinates_lat": {
+            "type": "number",
+            "description": "Latitude for location attachments"
+          },
+          "coordinates_long": {
+            "type": "number",
+            "description": "Longitude for location attachments"
+          },
+          "fallback_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Fallback title for location, fallback, and contact attachments when available"
+          },
+          "meta": {
             "type": "object",
-            "description": "Details of the sender"
+            "description": "Metadata for contact attachments"
+          },
+          "transcribed_text": {
+            "type": "string",
+            "description": "Transcribed text for audio attachments"
+          }
+        }
+      },
+      "public_message_sender": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Polymorphic sender payload returned by push_event_data. Available fields vary by sender type.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Id of the sender"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the sender when available"
+          },
+          "avatar_url": {
+            "type": "string",
+            "description": "Avatar URL of the sender. Present for senders of type user, agent_bot, and captain_assistant. Not present for contact senders (use thumbnail instead)."
+          },
+          "thumbnail": {
+            "type": "string",
+            "description": "Avatar/thumbnail URL of the sender. Contact senders use this field; user senders may also include it."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "contact",
+              "user",
+              "agent_bot",
+              "captain_assistant"
+            ],
+            "description": "Type of the sender"
+          },
+          "available_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Display name for user senders"
+          },
+          "availability_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Availability status for user senders"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Email of the sender when the sender is a contact"
+          },
+          "phone_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Phone number of the sender when the sender is a contact"
+          },
+          "identifier": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Identifier of the sender when the sender is a contact"
+          },
+          "blocked": {
+            "type": "boolean",
+            "description": "Whether the sender is blocked when the sender is a contact"
+          },
+          "additional_attributes": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Additional attributes when the sender is a contact and available"
+          },
+          "custom_attributes": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Custom attributes when the sender is a contact and available"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Description when the sender is a captain assistant"
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Created timestamp in ISO 8601 format when the sender is a captain assistant"
           }
         }
       },
@@ -2736,22 +4309,28 @@
             "example": "support@example.com"
           },
           "auto_resolve_after": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 10,
             "maximum": 1439856,
-            "nullable": true,
             "description": "Auto resolve conversations after specified minutes",
             "example": 1440
           },
           "auto_resolve_message": {
-            "type": "string",
-            "nullable": true,
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Message to send when auto resolving",
             "example": "This conversation has been automatically resolved due to inactivity"
           },
           "auto_resolve_ignore_waiting": {
-            "type": "boolean",
-            "nullable": true,
+            "type": [
+              "boolean",
+              "null"
+            ],
             "description": "Whether to ignore waiting conversations for auto resolve",
             "example": false
           },
@@ -2853,16 +4432,6 @@
             "type": "string",
             "description": "The url to a jpeg, png file for the agent bot avatar",
             "example": "https://example.com/avatar.png"
-          },
-          "bot_type": {
-            "type": "integer",
-            "description": "The type of the bot (0 for webhook)",
-            "example": 0
-          },
-          "bot_config": {
-            "type": "object",
-            "description": "The configuration for the bot",
-            "example": {}
           }
         }
       },
@@ -3155,8 +4724,7 @@
       "conversation_create_payload": {
         "type": "object",
         "required": [
-          "source_id",
-          "inbox_id"
+          "source_id"
         ],
         "properties": {
           "source_id": {
@@ -3499,6 +5067,7 @@
                 "enum": [
                   "web_widget",
                   "api",
+                  "whatsapp_web",
                   "email",
                   "line",
                   "telegram",
@@ -3526,6 +5095,60 @@
                 "type": "string",
                 "description": "A Hex-color string used to customize the widget",
                 "example": "#FF5733"
+              },
+              "phone_number": {
+                "type": "string",
+                "description": "E.164 phone number for SMS or WhatsApp Web channels",
+                "example": "+15551234567"
+              },
+              "conversation_pending": {
+                "type": "boolean",
+                "description": "Start new live inbound WhatsApp Web conversations as pending",
+                "example": false
+              },
+              "history_lookback_days": {
+                "type": "integer",
+                "description": "Number of days to import during the initial WhatsApp Web history sync",
+                "example": 365
+              },
+              "ignore_jids": {
+                "type": "array",
+                "description": "WhatsApp JIDs that should be ignored by the native WhatsApp Web channel",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "15550001111@s.whatsapp.net"
+                ]
+              },
+              "sign_messages": {
+                "type": "boolean",
+                "description": "Prefix outgoing WhatsApp Web message bodies with the agent name",
+                "example": false
+              },
+              "sign_delimiter": {
+                "type": "string",
+                "description": "Delimiter inserted between the agent signature and the message body. Use \\\\n for a newline.",
+                "example": "\\\\n"
+              },
+              "import_contacts": {
+                "type": "boolean",
+                "description": "Enable address book import for WhatsApp Web contact sync",
+                "example": true
+              },
+              "import_messages": {
+                "type": "boolean",
+                "description": "Enable history import for WhatsApp Web message sync",
+                "example": true
+              },
+              "sync_labels": {
+                "type": "boolean",
+                "description": "Sync WhatsApp labels into Onelink conversation labels",
+                "example": true
+              },
+              "provider_config": {
+                "type": "object",
+                "description": "Provider-specific configuration for channels that support it"
               }
             }
           }
@@ -3660,6 +5283,31 @@
           }
         }
       },
+      "label_create_update_payload": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The label title",
+            "example": "support"
+          },
+          "description": {
+            "type": "string",
+            "description": "A short description for the label",
+            "example": "Conversations that need support follow-up"
+          },
+          "color": {
+            "type": "string",
+            "description": "Hex color code for the label",
+            "example": "#1f93ff"
+          },
+          "show_on_sidebar": {
+            "type": "boolean",
+            "description": "Whether the label should appear in the sidebar",
+            "example": true
+          }
+        }
+      },
       "custom_filter_create_update_payload": {
         "type": "object",
         "properties": {
@@ -3789,7 +5437,23 @@
               "conversation_created",
               "conversation_updated",
               "conversation_resolved",
-              "message_created"
+              "conversation_opened",
+              "conversation_pending",
+              "message_created",
+              "appointment_created",
+              "appointment_updated",
+              "appointment_cancelled",
+              "appointment_completed",
+              "deal_created",
+              "deal_updated",
+              "deal_stage_changed",
+              "deal_archived",
+              "deal_unarchived",
+              "task_created",
+              "task_updated",
+              "task_status_changed",
+              "task_archived",
+              "task_unarchived"
             ],
             "example": "message_created",
             "description": "The event when you want to execute the automation actions"
@@ -3800,28 +5464,93 @@
           },
           "actions": {
             "type": "array",
-            "description": "Array of actions which you want to perform when condition matches, e.g add label support if message contains content help.",
+            "description": "Array of actions which you want to perform when condition matches.\nFor appointment events the native actions are `send_webhook_event`, `change_appointment_status`, and,\nwhen `scheduling_finance` is enabled for the account, `cancel_appointment_payment`.\nDeal events support `send_webhook_event`, `change_deal_stage`, `assign_deal_owner`,\n`assign_deal_team`, `archive_deal`, and `unarchive_deal`.\nTask events support `send_webhook_event`, `change_task_status`, `assign_task_assignee`,\n`assign_task_team`, `change_task_priority`, `archive_task`, and `unarchive_task`.\n",
             "items": {
               "type": "object",
+              "properties": {
+                "action_name": {
+                  "type": "string",
+                  "description": "Action identifier. Supported values depend on the selected event family.",
+                  "enum": [
+                    "send_message",
+                    "add_label",
+                    "remove_label",
+                    "send_email_to_team",
+                    "assign_team",
+                    "assign_agent",
+                    "send_webhook_event",
+                    "mute_conversation",
+                    "send_attachment",
+                    "change_status",
+                    "resolve_conversation",
+                    "open_conversation",
+                    "pending_conversation",
+                    "snooze_conversation",
+                    "change_priority",
+                    "send_email_transcript",
+                    "add_private_note",
+                    "change_appointment_status",
+                    "cancel_appointment_payment",
+                    "change_deal_stage",
+                    "assign_deal_owner",
+                    "assign_deal_team",
+                    "archive_deal",
+                    "unarchive_deal",
+                    "change_task_status",
+                    "assign_task_assignee",
+                    "assign_task_team",
+                    "change_task_priority",
+                    "archive_task",
+                    "unarchive_task"
+                  ]
+                },
+                "action_params": {
+                  "type": "array",
+                  "description": "Action parameters. `change_appointment_status` expects one status value such as `confirmed` or `cancelled`.\n`cancel_appointment_payment` does not require params.\n`change_deal_stage` expects a stage id. `assign_deal_owner`, `assign_deal_team`,\n`assign_task_assignee`, and `assign_task_team` expect an account-scoped user or team id, or `nil`.\n`change_task_status` expects a task status id. `change_task_priority` expects a supported task priority.\n",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
               "example": {
-                "action_name": "add_label",
+                "action_name": "change_appointment_status",
                 "action_params": [
-                  "support"
+                  "confirmed"
                 ]
               }
             }
           },
           "conditions": {
             "type": "array",
-            "description": "Array of conditions on which conversation filter would work, e.g message content contains text help.",
+            "description": "Array of conditions on which automation filter would work.\nAppointment automations support native fields `status`, `payment_status`, `appointment_type`, `source`\nand active managed appointment custom field keys.\nDeal automations support standard CRM deal fields such as `pipeline_id`, `stage_id`, `owner_id`, `team_id`,\n`title`, `description`, `currency`, `external_ref`, `amount_minor`, `win_probability`,\n`expected_close_on`, `closed_at`, `archived_at`, plus active managed deal custom field keys.\nTask automations support standard CRM task fields such as `status_id`, `assignee_id`, `team_id`,\n`priority`, `title`, `description`, `external_ref`, `start_at`, `due_at`, `completed_at`, `archived_at`,\nplus active managed task custom field keys.\n",
             "items": {
               "type": "object",
+              "properties": {
+                "attribute_key": {
+                  "type": "string",
+                  "description": "Condition attribute key. Supported keys depend on the selected event family and can include conversation, appointment, deal, or task fields."
+                },
+                "filter_operator": {
+                  "type": "string",
+                  "description": "Filter operator. Supported operators depend on the selected field type."
+                },
+                "query_operator": {
+                  "type": "string",
+                  "description": "Logical operator between conditions."
+                },
+                "values": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
               "example": {
-                "attribute_key": "content",
-                "filter_operator": "contains",
+                "attribute_key": "status",
+                "filter_operator": "equal_to",
                 "query_operator": "OR",
                 "values": [
-                  "help"
+                  "confirmed"
                 ]
               }
             }
@@ -3998,6 +5727,11 @@
       "public_contact_create_update_payload": {
         "type": "object",
         "properties": {
+          "source_id": {
+            "type": "string",
+            "description": "Stable external contact identifier used during creation. Reusing it makes contact creation idempotent.",
+            "example": "salebot-contact-123"
+          },
           "identifier": {
             "type": "string",
             "description": "External identifier of the contact",
@@ -4047,6 +5781,11 @@
             "type": "string",
             "description": "Temporary identifier which will be passed back via websockets",
             "example": "1234567890"
+          },
+          "source_id": {
+            "type": "string",
+            "description": "Stable external message identifier. Reusing it in the same conversation returns the existing message.",
+            "example": "salebot-message-123"
           }
         }
       },
@@ -4173,7 +5912,10 @@
                           "description": "The availability status of the sender"
                         },
                         "email": {
-                          "type": "string",
+                          "type": [
+                            "string",
+                            "null"
+                          ],
                           "description": "The email of the sender"
                         },
                         "id": {
@@ -4185,7 +5927,10 @@
                           "description": "The name of the sender"
                         },
                         "phone_number": {
-                          "type": "string",
+                          "type": [
+                            "string",
+                            "null"
+                          ],
                           "description": "The phone number of the sender"
                         },
                         "blocked": {
@@ -4193,11 +5938,17 @@
                           "description": "Whether the sender is blocked"
                         },
                         "identifier": {
-                          "type": "string",
+                          "type": [
+                            "string",
+                            "null"
+                          ],
                           "description": "The identifier of the sender"
                         },
                         "thumbnail": {
-                          "type": "string",
+                          "type": [
+                            "string",
+                            "null"
+                          ],
                           "description": "Avatar URL of the contact"
                         },
                         "custom_attributes": {
@@ -4304,7 +6055,10 @@
                                   "description": "The availability status of the sender"
                                 },
                                 "email": {
-                                  "type": "string",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
                                   "description": "The email of the sender"
                                 },
                                 "id": {
@@ -4316,7 +6070,10 @@
                                   "description": "The name of the sender"
                                 },
                                 "phone_number": {
-                                  "type": "string",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
                                   "description": "The phone number of the sender"
                                 },
                                 "blocked": {
@@ -4324,11 +6081,17 @@
                                   "description": "Whether the sender is blocked"
                                 },
                                 "identifier": {
-                                  "type": "string",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
                                   "description": "The identifier of the sender"
                                 },
                                 "thumbnail": {
-                                  "type": "string",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
                                   "description": "Avatar URL of the contact"
                                 },
                                 "custom_attributes": {
@@ -4391,7 +6154,10 @@
                         "description": "The availability status of the sender"
                       },
                       "email": {
-                        "type": "string",
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "description": "The email of the sender"
                       },
                       "id": {
@@ -4403,7 +6169,10 @@
                         "description": "The name of the sender"
                       },
                       "phone_number": {
-                        "type": "string",
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "description": "The phone number of the sender"
                       },
                       "blocked": {
@@ -4411,11 +6180,17 @@
                         "description": "Whether the sender is blocked"
                       },
                       "identifier": {
-                        "type": "string",
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "description": "The identifier of the sender"
                       },
                       "thumbnail": {
-                        "type": "string",
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "description": "Avatar URL of the contact"
                       },
                       "custom_attributes": {
@@ -4796,18 +6571,24 @@
               "description": "Number of conversations resolved in the inbox during the date range"
             },
             "avg_resolution_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) to resolve conversations. Null if no data available."
             },
             "avg_first_response_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) for the first response. Null if no data available."
             },
             "avg_reply_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) between replies. Null if no data available."
             }
           }
@@ -4850,18 +6631,24 @@
               "description": "Number of conversations resolved by the agent during the date range"
             },
             "avg_resolution_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) to resolve conversations. Null if no data available."
             },
             "avg_first_response_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) for the first response. Null if no data available."
             },
             "avg_reply_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) between replies. Null if no data available."
             }
           }
@@ -4904,18 +6691,24 @@
               "description": "Number of conversations resolved by the team during the date range"
             },
             "avg_resolution_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) to resolve conversations. Null if no data available."
             },
             "avg_first_response_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) for the first response. Null if no data available."
             },
             "avg_reply_time": {
-              "type": "number",
-              "nullable": true,
+              "type": [
+                "number",
+                "null"
+              ],
               "description": "Average time (in seconds) between replies. Null if no data available."
             }
           }
@@ -4955,7 +6748,10 @@
                 "description": "Country of the contact"
               },
               "country_code": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "Country code of the contact"
               },
               "created_at_ip": {
@@ -4977,18 +6773,22 @@
             "description": "The ID of the contact"
           },
           "identifier": {
-            "type": "string",
-            "description": "The identifier of the contact",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The identifier of the contact"
           },
           "name": {
             "type": "string",
             "description": "The name of the contact"
           },
           "phone_number": {
-            "type": "string",
-            "description": "The phone number of the contact",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The phone number of the contact"
           },
           "thumbnail": {
             "type": "string",
@@ -5040,10 +6840,18 @@
             "type": "string",
             "enum": [
               "text",
+              "input_text",
+              "input_textarea",
+              "input_email",
               "input_select",
               "cards",
               "form",
-              "input_csat"
+              "article",
+              "incoming_email",
+              "input_csat",
+              "integrations",
+              "sticker",
+              "voice_call"
             ],
             "description": "The type of the message content"
           },
@@ -5062,11 +6870,20 @@
             "description": "The content attributes for each content_type",
             "properties": {
               "in_reply_to": {
-                "type": "string",
-                "description": "ID of the message this is replying to",
-                "nullable": true
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ID of the message this is replying to"
               }
             }
+          },
+          "echo_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The echo ID of the message, used for deduplication"
           },
           "created_at": {
             "type": "integer",
@@ -5077,12 +6894,63 @@
             "description": "The flag which shows whether the message is private or not"
           },
           "source_id": {
-            "type": "string",
-            "description": "The source ID of the message",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The source ID of the message"
           },
           "sender": {
             "$ref": "#/components/schemas/contact_detail"
+          },
+          "attachments": {
+            "type": "array",
+            "description": "The list of attachments associated with the message",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number",
+                  "description": "The ID of the attachment"
+                },
+                "message_id": {
+                  "type": "number",
+                  "description": "The ID of the message"
+                },
+                "file_type": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "video",
+                    "audio",
+                    "file",
+                    "location",
+                    "fallback",
+                    "share",
+                    "story_mention",
+                    "contact",
+                    "ig_reel"
+                  ],
+                  "description": "The type of the attached file"
+                },
+                "account_id": {
+                  "type": "number",
+                  "description": "The ID of the account"
+                },
+                "data_url": {
+                  "type": "string",
+                  "description": "The URL of the attached file"
+                },
+                "thumb_url": {
+                  "type": "string",
+                  "description": "The thumbnail URL of the attached file"
+                },
+                "file_size": {
+                  "type": "number",
+                  "description": "The size of the attached file in bytes"
+                }
+              }
+            }
           }
         }
       },
@@ -5151,15 +7019,28 @@
           "contact": {
             "$ref": "#/components/schemas/contact_detail"
           },
-          "agent_last_seen_at": {
-            "type": "string",
-            "description": "Timestamp when the agent last saw the conversation",
+          "assignee": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/agent"
+              }
+            ],
+            "description": "The agent assigned to the conversation",
             "nullable": true
           },
+          "agent_last_seen_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Timestamp when the agent last saw the conversation"
+          },
           "assignee_last_seen_at": {
-            "type": "string",
-            "description": "Timestamp when the assignee last saw the conversation",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Timestamp when the assignee last saw the conversation"
           }
         }
       },
@@ -5186,7 +7067,10 @@
             "description": "Total number of contacts"
           },
           "current_page": {
-            "type": "string",
+            "type": [
+              "string",
+              "integer"
+            ],
             "description": "Current page number"
           }
         }
@@ -5222,9 +7106,11 @@
                 "description": "Type of channel"
               },
               "provider": {
-                "type": "string",
-                "description": "Provider of the inbox",
-                "nullable": true
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Provider of the inbox"
               }
             }
           }
@@ -5246,7 +7132,10 @@
                 "description": "Country of the contact"
               },
               "country_code": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "Country code of the contact"
               },
               "created_at_ip": {
@@ -5264,9 +7153,11 @@
             ]
           },
           "email": {
-            "type": "string",
-            "description": "The email address of the contact",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The email address of the contact"
           },
           "id": {
             "type": "integer",
@@ -5277,18 +7168,22 @@
             "description": "The name of the contact"
           },
           "phone_number": {
-            "type": "string",
-            "description": "The phone number of the contact",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The phone number of the contact"
           },
           "blocked": {
             "type": "boolean",
             "description": "Whether the contact is blocked"
           },
           "identifier": {
-            "type": "string",
-            "description": "The identifier of the contact",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The identifier of the contact"
           },
           "thumbnail": {
             "type": "string",
@@ -5299,9 +7194,11 @@
             "description": "The custom attributes of the contact"
           },
           "last_activity_at": {
-            "type": "integer",
-            "description": "Timestamp of last activity",
-            "nullable": true
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Timestamp of last activity"
           },
           "created_at": {
             "type": "integer",
@@ -5383,9 +7280,11 @@
             "description": "Status of the message"
           },
           "source_id": {
-            "type": "string",
-            "description": "Source ID of the message",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Source ID of the message"
           },
           "content_type": {
             "type": "string",
@@ -5396,14 +7295,18 @@
             "description": "Attributes of the content"
           },
           "sender_type": {
-            "type": "string",
-            "description": "Type of the sender",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Type of the sender"
           },
           "sender_id": {
-            "type": "integer",
-            "description": "ID of the sender",
-            "nullable": true
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "ID of the sender"
           },
           "external_source_ids": {
             "type": "object",
@@ -5414,9 +7317,11 @@
             "description": "Additional attributes of the message"
           },
           "processed_message_content": {
-            "type": "string",
-            "description": "Processed message content",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Processed message content"
           },
           "sentiment": {
             "type": "object",
@@ -5427,9 +7332,11 @@
             "description": "Conversation details",
             "properties": {
               "assignee_id": {
-                "type": "integer",
-                "description": "ID of the assignee",
-                "nullable": true
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "ID of the assignee"
               },
               "unread_count": {
                 "type": "integer",
@@ -5515,7 +7422,10 @@
                               "description": "The availability status of the sender"
                             },
                             "email": {
-                              "type": "string",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
                               "description": "The email of the sender"
                             },
                             "id": {
@@ -5527,7 +7437,10 @@
                               "description": "The name of the sender"
                             },
                             "phone_number": {
-                              "type": "string",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
                               "description": "The phone number of the sender"
                             },
                             "blocked": {
@@ -5535,11 +7448,17 @@
                               "description": "Whether the sender is blocked"
                             },
                             "identifier": {
-                              "type": "string",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
                               "description": "The identifier of the sender"
                             },
                             "thumbnail": {
-                              "type": "string",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
                               "description": "Avatar URL of the contact"
                             },
                             "custom_attributes": {
@@ -5583,7 +7502,7 @@
           "payload": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/contact_inbox"
+              "$ref": "#/components/schemas/contactable_inboxes"
             },
             "description": "List of contactable inboxes for the contact"
           }
@@ -5625,18 +7544,24 @@
             "description": "ID of the account"
           },
           "conversation_id": {
-            "type": "number",
-            "nullable": true,
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "ID of the conversation"
           },
           "inbox_id": {
-            "type": "number",
-            "nullable": true,
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "ID of the inbox"
           },
           "user_id": {
-            "type": "number",
-            "nullable": true,
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "ID of the user/agent"
           },
           "created_at": {
@@ -5680,6 +7605,300 @@
               "$ref": "#/components/schemas/reporting_event"
             },
             "description": "List of reporting events"
+          }
+        }
+      },
+      "captain_assistants_response": {
+        "type": "object",
+        "required": [
+          "payload",
+          "meta"
+        ],
+        "properties": {
+          "payload": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/captain_assistant"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "total_count": {
+                "type": "integer"
+              },
+              "page": {
+                "type": "integer",
+                "description": "Pagination structure is reserved; current response reports page 1."
+              }
+            }
+          }
+        }
+      },
+      "captain_assistant_payload": {
+        "type": "object",
+        "required": [
+          "assistant"
+        ],
+        "properties": {
+          "assistant": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "nullable": true
+              },
+              "usage_mode": {
+                "type": "string",
+                "enum": [
+                  "external_agent",
+                  "internal_assistant"
+                ]
+              },
+              "response_guidelines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "guardrails": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string"
+                  },
+                  "tool_access": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "follow_up_settings": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "outcome_reason_settings": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "context_access": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "voice_settings": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "crm_task_lifecycle_snapshot": {
+        "type": "object",
+        "description": "State captured before or after a CRM task lifecycle command in its timeline event.",
+        "properties": {
+          "status_id": {
+            "type": "integer"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "task_type_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "task_outcome_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "outcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "outcome_note": {
+            "type": "string",
+            "nullable": true
+          },
+          "assignee_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "team_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "all_day": {
+            "type": "boolean"
+          },
+          "schedule_timezone": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completed_by_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "cancelled_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelled_by_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "cancellation_reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "reschedule_count": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "crm_task_timeline_event": {
+        "type": "object",
+        "description": "CRM event attached to the task timeline. Lifecycle command events carry state snapshots in before_data and after_data.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "integer"
+          },
+          "eventable_type": {
+            "type": "string"
+          },
+          "eventable_id": {
+            "type": "integer"
+          },
+          "actor_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "actor_kind": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "nullable": true
+          },
+          "before_data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/crm_task_lifecycle_snapshot"
+              }
+            ],
+            "nullable": true
+          },
+          "after_data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/crm_task_lifecycle_snapshot"
+              }
+            ],
+            "nullable": true
+          },
+          "correlation_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "causation_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "schema_version": {
+            "type": "integer"
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true
+      },
+      "crm_task_timeline_entry": {
+        "type": "object",
+        "properties": {
+          "item_type": {
+            "type": "string",
+            "enum": [
+              "event",
+              "comment",
+              "conversation"
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/crm_task_timeline_event"
+          }
+        }
+      },
+      "crm_task_timeline_response": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/crm_task_timeline_entry"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "next_cursor": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
           }
         }
       }
@@ -5949,9 +8168,14 @@
         "Custom Filters",
         "Inboxes",
         "Integrations",
+        "Labels",
         "Messages",
         "Profile",
         "Reports",
+        "CRM",
+        "CRM Reports",
+        "Account Storage",
+        "Captain Assistants",
         "Scheduling",
         "Teams",
         "Webhooks",

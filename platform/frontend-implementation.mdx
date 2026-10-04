@@ -198,6 +198,18 @@ Reference paths:
 
 Use this module as the first concrete example when building new native platform capabilities with standalone pages, drawers, filters, and journals.
 
+## Current CRM Activity Reports Surface
+
+CRM reports are part of the Settings → Reports screen. The Activity section is rendered by `CRMActivityReports.vue` inside the existing deal-report page; it is not a deal-detail subpage. The current component fetches stage-duration aggregates, task lifecycle results, and deals without a next action through `dashboard/api/crm/reports.js` and reads the corresponding response rows from `data.payload.rows`.
+
+Reference paths:
+
+- page composition: `app/javascript/dashboard/routes/dashboard/settings/reports/DealReports.vue`
+- activity section: `app/javascript/dashboard/routes/dashboard/settings/reports/components/CRMActivityReports.vue`
+- report API client: `app/javascript/dashboard/api/crm/reports.js`
+
+Keep the Settings Reports composition and the account-scoped CRM client contract aligned when changing this surface.
+
 ### Specialist Libraries
 
 Specialist libraries such as calendar, scheduler, kanban, or drag-and-drop packages may be used when the feature genuinely needs them, but they should be treated as feature-local dependencies unless they prove reusable across multiple product surfaces.
