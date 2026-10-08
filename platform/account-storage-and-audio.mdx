@@ -10,6 +10,12 @@ sidebarTitle: Account Storage And Audio
 
 Storage is measured per account. The physical usage summary deduplicates Active Storage blobs within that tenant and includes locally stored call recordings. Provider-hosted recording URLs and stale recording size metadata do not count as local disk usage. Shared Active Storage files are counted once for the account that owns them.
 
+The overview serves the last background measurement. A first calculation is shown as pending, rather than as a completed zero-byte measurement. Refresh distinguishes newly queued work, existing work, and enqueue failure. The last measured figures remain visible while a refresh is pending; a failed refresh does not replace them with zero.
+
+Routine recording accounting uses current ingestion/compression sizes and saved physical measurements. A shared daily reconciliation measures tenant files, including legacy files, retained originals, trash, and files not linked to a call session. Hard links are counted once. File changes made outside OneLink may remain reflected in the previous measurement until that reconciliation; `recordings_reconciled_at` identifies its audit time. Overview, quota, large-file listing, trash listing, and ordinary administrator usage reads do not traverse recording directories.
+
+Large-recording filters apply to the account's current call sessions before sorting and limiting, so a recording can be found even when it is outside the account's largest 200 files. Playback links use the current recording reference. Missing legacy size metadata is shown as an incomplete calculation; query failures are not reported as an empty list. The page refreshes pending results and reloads visible lists after cleanup and restore actions.
+
 The displayed account allowance is informational. The current `AccountLimits::StorageUsageService#within_limit?` returns true, so uploads, imports, messages, and attachments remain available above the displayed allowance. The summary reports usage; it does not enforce an intake, outbound-message, or upload stop.
 
 Account administrators can use the account storage API to show or refresh the usage breakdown, list large files, preview cleanup, move the exact previewed set to trash, inspect trash, restore items, or permanently purge trash. These are account-scoped operations. The Super Admin interface and its internal routes are outside the public REST contract.
@@ -17,6 +23,8 @@ Account administrators can use the account storage API to show or refresh the us
 ## Cleanup and trash
 
 Cleanup starts with a read-only preview. It defaults to files older than six months and returns counts, byte totals, samples, and a short-lived confirmation token bound to the account, acting administrator, and exact manifest. Moving files to trash requires confirmation and that matching token; a stale or changed preview must be generated again.
+
+Unlike the overview and large-file list, the signed cleanup preview still resolves and checks the selected physical files. This preserves the exact confirmation manifest used by the existing cleanup workflow.
 
 Trash is retained for 30 days. Trashed attachments and recordings still count toward physical usage until they are permanently purged. Administrators may restore one item or restore the full trash. Permanent purge requires explicit confirmation and either names one item or, when no item is named, empties the trash. The daily housekeeping job purges expired trash; there is no active-file age job that removes files merely because they are old.
 

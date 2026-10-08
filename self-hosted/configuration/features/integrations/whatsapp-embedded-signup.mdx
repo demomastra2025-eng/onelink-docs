@@ -168,6 +168,14 @@ For more technical details about WhatsApp Embedded Signup, refer to the official
 
 ## Troubleshooting
 
+### Returning from Meta on a phone
+
+Meta may open in another browser tab. After completing its flow, return to the OneLink tab. OneLink checks the saved attempt belonging to that administrator and workspace, including after the tab resumes or reloads.
+
+If an interrupted attempt already created the same active WhatsApp channel, a freshly verified repeat attempt opens that existing channel. It preserves saved credentials, registration recovery data, and conversation history. This recovery requires the same workspace, WhatsApp account, business phone, and connection type; a conflicting or deleting channel is not adopted. There is no need to delete the number or disconnect it in Meta to recover this exact interrupted attempt.
+
+New channels automatically include the employees already in the workspace. A newly added employee also joins its active channels. These defaults do not change employee roles, re-add a member on ordinary updates, or backfill older channels.
+
 ### Common Issues
 
 1. **"WhatsApp Embedded Signup not available"**
