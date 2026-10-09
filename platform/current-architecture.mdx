@@ -91,6 +91,8 @@ Key behavior:
 - inbox membership and policies drive most day-to-day visibility
 - custom roles from the inherited `enterprise/` tree narrow conversation visibility further in active Onelink code paths
 
+New ordinary inboxes include the workspace's existing employees, and new workspace employees join existing active ordinary inboxes. Voice inboxes are excluded from this default membership behavior because membership grants access to a phone line. Existing memberships and manually restricted inboxes are not backfilled by these changes.
+
 ### Communication Core
 
 Core records:
@@ -108,6 +110,10 @@ Key behavior:
 - all inbound channels normalize into the same conversation model
 - `Conversation` is the main operational aggregate
 - `Message` creation fans out to replies, notifications, reporting, automations, and hooks
+
+Workspace assignment is configured under Settings → Conversations in `Account.settings.conversation_assignment_policy_id`. An enabled policy belonging to that account becomes the effective policy for its inboxes. Until an administrator saves a workspace policy, legacy inbox policy links retain their behavior. An unavailable selected policy is shown as unavailable and must not silently switch assignment to a different policy. The per-inbox policy selector is removed from the channel form; explicit Voice line membership remains separate.
+
+Conversation status changes request an immediate refresh of the current filtered counters. Existing request coalescing remains in place for ordinary edits and background events. Conversation settings render their independent sections without waiting for Captain settings to finish loading; failed Captain loads have a local retry state.
 
 ### Automation And Eventing
 

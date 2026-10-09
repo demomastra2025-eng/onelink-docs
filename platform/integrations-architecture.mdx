@@ -147,6 +147,14 @@ Instead:
 3. If the need is domain-specific but the mechanics are still generic, keep the infrastructure shared and move only the configuration into the domain zone.
 4. Only add a new domain-specific integration model if the shared installation and hook model is no longer correct.
 
+## Calendar Display And MedElement Availability
+
+The calendar grid currently displays OneLink work rules, breaks, holidays, overrides, time off, and appointments. Importing or refreshing MedElement schedule data does not automatically rewrite those local rules. The displayed working hours therefore are not a promise that every visible slot is bookable in MedElement.
+
+For a specialist linked to MedElement, slot search additionally checks the provider's working windows and cabinet occupancy. Explicit local work rules and day overrides restrict those provider windows; local breaks, blocks, and occupied appointments also restrict the result. A seeded default work template can be replaced by the provider's working windows when no explicit local override exists. An unavailable provider check must not be presented as confirmed free time.
+
+Provider schedule summaries in resource settings are a separate view with a check timestamp and a confirmation state. They do not make the calendar grid a live mirror of the MedElement schedule. This distinction follows `Scheduling::CalendarViewService`, `Scheduling::ResourceScheduleService`, `Scheduling::AvailableSlotSearchService`, `Scheduling::AvailabilityService`, and `Integrations::MedElement::ResourceAvailabilityService`.
+
 ## MedElement Sync Recovery
 
 MedElement sync recovery distinguishes queued work from an abandoned execution. Cron requests can merge additional phases without advancing the worker activity timestamp. Worker heartbeats and execution identity are kept separately; private worker identity is excluded from public sync summaries.

@@ -24,6 +24,30 @@ Scheduled follow-ups use the native Reminder model and transport. Disabling foll
 
 Outcome reason configuration is also per assistant, under `config.outcome_reason_settings`, and is normalized by the server. It shares the assistant update operation rather than introducing a dedicated endpoint.
 
+## Profile safety settings
+
+The assistant profile accepts `config.safety_settings` with three optional settings:
+
+- `moderation_enabled`: `true`, `false`, or `null` to inherit the workspace default.
+- `prompt_injection_action`: `disabled`, `flag`, `block`, or `null` to inherit.
+- `sensitive_info_action`: `disabled`, `flag`, `block`, or `null` to inherit.
+
+Explicit profile values override the corresponding workspace preference. Leaving values unset preserves the existing workspace policy. The merged preferences are used by assistant and copilot input/output checks and by instrumented tool argument/result checks, including documentation search. A partial update merges safety fields with the saved object. This configuration uses the existing assistant update endpoint and does not add a separate safety API.
+
+## Playground controls and measurements
+
+The external-agent playground supports request-only `test_model`, `test_temperature`, and `test_thinking_effort` fields on the existing playground endpoint. Model selection is checked against the assistant's account model catalog; temperature must be finite, between 0 and 1, and supported by the selected model. Reasoning effort follows the model's supported capabilities. These controls do not save the live assistant configuration. Internal-assistant playground requests reject these overrides.
+
+Changing assistants resets playground messages and temporary controls and reloads the new assistant metadata. Replies or configuration responses from an earlier assistant request cannot update the current session.
+
+`response_latency_ms` is elapsed server response time measured with a monotonic clock. Provider-reported reasoning token usage is optional. It does not establish a separate duration or speed for hidden reasoning, so the interface does not invent those values.
+
+## Workspace editor controls
+
+Text improvement and label suggestion are workspace controls under Settings → Conversations. The old AI Settings page redirects there. Search, page reading, document reading, and safety settings are configured in the assistant profile. Existing workspace runtime preferences and APIs remain available for compatibility.
+
+Instruction editors use wrapping that preserves entered text and explicit line breaks. Saving a description does not trim its edge whitespace; existing live instruction normalization is unchanged.
+
 ## Existing account API
 
 The account-scoped Captain assistant resource supports listing, reading, creating, updating, and deleting assistants. Update model selection, tool access, follow-up settings, and outcome reason settings through `PATCH /api/v1/accounts/{account_id}/captain/assistants/{id}` in the existing `assistant.config` object. The [Application APIs](/api-reference/introduction) list this operation under the `Captain Assistants` tag.

@@ -210,6 +210,24 @@ Reference paths:
 
 Keep the Settings Reports composition and the account-scoped CRM client contract aligned when changing this surface.
 
+### Calls and leads reports
+
+Settings → Reports also provides `CallReports.vue` and `LeadReports.vue`. They use the account-scoped `dashboard/api/standaloneReports.js` client and shared report header, metric-card, chart, and date-range components. They are separate from the CRM feature gate and use the existing report permission: administrator or `report_manage` where custom roles apply.
+
+`GET /api/v1/accounts/{account_id}/reports/calls` and `/reports/leads` accept inclusive `from_date` and `to_date` in `YYYY-MM-DD`. The server uses the workspace reporting timezone, defaults to the trailing 30 days through the workspace's current date, and accepts at most 90 days. Invalid dates, reversed ranges, or an invalid timezone return 422. Date controls initialize from server metadata rather than the browser's UTC date.
+
+The call report counts logical calls, including transfer legs grouped by the native telephony query. Each group belongs to the local date of its earliest leg. An answer requires a recorded `answered_at`; a completed status alone does not establish an answer. Duration is counted once from the representative answered leg. Aggregates are capped at 1,000 logical calls and the recent table at 100 rows; metadata and the interface indicate incomplete coverage when the cap is reached.
+
+The lead report distinguishes stored referral events from unique linked contacts and from submitted forms. Advertising attribution requires an explicit click-to-WhatsApp, Messenger, or Instagram ad source. Missing attribution remains unknown. It reports unique CTWA click identifiers separately, retains events without contacts, and discloses omitted events in capped source breakdowns. Submission creation cohorts and processing totals are separate measurements. It does not infer advertising spend or acquisition cost.
+
+The deal report reuses the shared report header and metric-card styling and keeps all six existing sections and exports.
+
+### Calendar and compact settings
+
+The calendar's Today control uses the workspace's civil date and preserves the selected view and resource filters. Sticky weekday, resource, and all-day headers cover the time column while its hours scroll below them. Scheduling's dropdown header uses shared page toolbar spacing.
+
+Task, scheduling, and sidebar settings avoid repeated descriptions of the same configuration. The completion-settings page hides general status-reason controls; assistant outcome reasons and saved reason data remain available. WhatsApp templates use compact rows with a full-content preview. Channel logo tiles keep their size beside long names. Storage surfaces use shared theme tokens in light and dark modes.
+
 ### Specialist Libraries
 
 Specialist libraries such as calendar, scheduler, kanban, or drag-and-drop packages may be used when the feature genuinely needs them, but they should be treated as feature-local dependencies unless they prove reusable across multiple product surfaces.
