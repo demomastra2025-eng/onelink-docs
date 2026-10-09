@@ -248,6 +248,8 @@ The existing progress endpoint and a request-key lookup provide bounded read-onl
 
 Account-scoped deletion events update other authorized employees independently of the initiating employee's progress display. Safe cleanup thread identifiers are committed with the deletion receipt so a retry can finish housekeeping after a crash, including redelivery of an otherwise terminal operation. Replaying housekeeping never repeats a committed conversation destruction or stores a conversation snapshot in the progress payload.
 
+Deletion confirmation captures the initiating account, employee, operation type and exact target IDs before opening the dialog. A context change abandons that confirmation, and late callbacks preserve a newer dialog. Tracked thread cleanup uses the same contact advisory lock as incoming thread resolution and checks current membership before destroying an empty thread. Audit and housekeeping warnings remain available in safe backend receipts; the current success display refers to the committed conversation deletion.
+
 ### Dashboard recovery after a release
 
 The production image build retains manifest-referenced static files from up to two previous successful production revisions. Each source image must pass signature and provenance verification before its files are inspected. Current manifests remain authoritative; old HTML, service workers, and manifests are excluded. Retention is bounded, and a path collision with different bytes stops the build. This lets an already open dashboard load an older lazy route after deployment without making old application pages current.
