@@ -50,7 +50,10 @@
               "platform/current-architecture",
               "platform/repository-map",
               "platform/frontend-implementation",
-              "platform/integrations-architecture"
+              "platform/integrations-architecture",
+            "platform/account-storage-and-audio",
+            "platform/captain-ai-runtime",
+              "platform/managed-trials"
             ]
           },
           {
@@ -110,6 +113,10 @@
               "Messages",
               "Profile",
               "Reports",
+              "CRM",
+              "CRM Reports",
+              "Account Storage",
+              "Captain Assistants",
               "Teams",
               "Webhooks"
             ],

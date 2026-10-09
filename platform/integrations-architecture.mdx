@@ -147,6 +147,22 @@ Instead:
 3. If the need is domain-specific but the mechanics are still generic, keep the infrastructure shared and move only the configuration into the domain zone.
 4. Only add a new domain-specific integration model if the shared installation and hook model is no longer correct.
 
+## Calendar Display And MedElement Availability
+
+The calendar grid currently displays OneLink work rules, breaks, holidays, overrides, time off, and appointments. Importing or refreshing MedElement schedule data does not automatically rewrite those local rules. The displayed working hours therefore are not a promise that every visible slot is bookable in MedElement.
+
+For a specialist linked to MedElement, slot search additionally checks the provider's working windows and cabinet occupancy. Explicit local work rules and day overrides restrict those provider windows; local breaks, blocks, and occupied appointments also restrict the result. A seeded default work template can be replaced by the provider's working windows when no explicit local override exists. An unavailable provider check must not be presented as confirmed free time.
+
+Provider schedule summaries in resource settings are a separate view with a check timestamp and a confirmation state. They do not make the calendar grid a live mirror of the MedElement schedule. This distinction follows `Scheduling::CalendarViewService`, `Scheduling::ResourceScheduleService`, `Scheduling::AvailableSlotSearchService`, `Scheduling::AvailabilityService`, and `Integrations::MedElement::ResourceAvailabilityService`.
+
+## MedElement Sync Recovery
+
+MedElement sync recovery distinguishes queued work from an abandoned execution. Cron requests can merge additional phases without advancing the worker activity timestamp. Worker heartbeats and execution identity are kept separately; private worker identity is excluded from public sync summaries.
+
+A known execution becomes eligible for recovery after ten minutes without worker activity only when its process is absent, no matching job is in a queue, schedule, retry set, or active work, and the account mutex can be acquired. Runs with incomplete legacy identity retain the forty-five-minute threshold. A surviving thirty-minute mutex lease can delay recovery. A live owner process or present job prevents this recovery, even when the run is old.
+
+Recovery rechecks state while holding the hook/run locks, renews its own mutex token, and preserves remaining and merged phases for continuation. Token-checked release does not remove another worker's mutex. This mechanism does not activate unavailable specialists or change appointments in MedElement.
+
 ## WhatsApp Cloud Usage Reporting
 
 The prepared monthly usage response adds `category_breakdown` alongside the existing totals and estimate. It returns rows in this fixed order: `service`, `utility`, `marketing`, `authentication`, `authentication-international`, `referral_conversion`, and `unknown`. Every deduplicated delivery contributes to one row; each row reports `delivered_count`, `chargeable_count`, `free_count`, and `unknown_billable_count`. The rows sum to the overall delivered count. Meta's actual `pricing.billable` value is authoritative: `true` is chargeable, `false` is free, and a missing or invalid value is unknown. Missing or unrecognized categories map to `unknown`.

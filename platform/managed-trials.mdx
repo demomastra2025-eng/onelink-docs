@@ -1,0 +1,31 @@
+---
+title: Managed Account Trials
+description: Current trial defaults, reversible feature snapshots, administrator controls, and scheduled expiry.
+sidebarTitle: Managed Trials
+---
+
+# Managed Account Trials
+
+## Trial defaults
+
+A newly created account assigned the `trial` plan receives a three-day expiry when no expiry is already set. Trial activation records the account's prior feature and agent/inbox limit state so expiry can restore it. The first snapshot remains the recovery baseline if an administrator extends the trial.
+
+The trial flow does not replace a paid or manually assigned plan. Scheduled expiry only processes managed, snapshot-backed trial accounts, and it rechecks the account under a lock before applying changes. It restores the saved pre-trial feature and limit values rather than rewriting an arbitrary plan.
+
+## Administrator controls
+
+Authorized administrators can start, extend, or expire a managed trial through the existing Super Admin account-management interface. Extending an active trial adds three days from its current expiry (or from now if it already ended); a snapshot-backed expired trial can be reopened. Expiring early uses the same restoration path as scheduled expiry. Actions are audited.
+
+These controls are internal web administration. Their internal routes are deliberately not included in the public application OpenAPI contract.
+
+## Expiry and notifications
+
+The configured `Accounts::ExpireTrialsJob` runs hourly and expires eligible trials after their stored expiry. Trial expiry is not an active-file-age cleanup: it changes the account's saved feature/limit state and does not delete account records or uploaded files.
+
+Automated email and Telegram trial reminders are not implemented in this flow. No plan price, tariff, or arbitrary quota values are part of this page; those depend on account configuration.
+
+## Source paths
+
+- `app/models/account.rb` contains the trial snapshot, activation, extension, and expiry logic.
+- `app/controllers/super_admin/accounts_controller.rb` contains the administrator actions.
+- `config/schedule.yml` configures `Accounts::ExpireTrialsJob`.

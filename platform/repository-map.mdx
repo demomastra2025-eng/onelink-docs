@@ -9,28 +9,24 @@ sidebarTitle: Repository Map
 ## Status
 
 - document type: current state
-- source of truth: the checked-out `onelink` application repository plus the `docs/` submodule and local Codex skill library
+- source of truth: the checked-out `onelink` application repository, the separate docs repository, and runtime-managed shared skills outside the app checkout
 - use this page when the question is "where does this thing live?" or "which repo should I edit?"
 
 ## Repository Set
 
-OneLink currently operates across four local knowledge and change surfaces:
+OneLink currently operates across three code and documentation surfaces:
 
 1. `onelink`
    - the main Rails/Vue application repository
 2. `onelink/docs`
    - the Mintlify documentation repository mounted into the app repo as a git submodule
-3. `onelink/.codex/skills`
-   - the versioned project copy of the OneLink skill family
-4. `$CODEX_HOME/skills`
-   - the installed local Codex skill library used by the runtime agent in this workspace
+3. Shared OneLink skills loaded by the Hermes runtime from outside the application repository; this is environment configuration, not an app-repository source directory.
 
 Practical rule:
 
 - product code, migrations, routes, jobs, services, and tests belong to `onelink`
 - docs content, docs navigation, Mintlify config, and local OpenAPI docs belong to `onelink/docs`
-- versioned Codex skill definitions belong to `onelink/.codex/skills`
-- installed Codex runtime skills belong to `$CODEX_HOME/skills`
+- shared skill definitions are maintained outside the application checkout and loaded by the runtime agent
 
 ## Main Application Repository
 
@@ -135,62 +131,11 @@ Key parts:
 
 Use [Docs Repository Workflow](/contributing-guide/docs-repository-workflow) for commit and sync rules.
 
-## Project Skill Source
+## Shared Skill Source
 
-The versioned project copy of the OneLink skill family lives under:
+The runtime loads OneLink-specific skill families from its managed shared-skill directory outside the application repository. There is no versioned project copy under `onelink/.codex/skills`, and skill definitions are not part of ordinary application or docs changes.
 
-- `onelink/.codex/skills`
-
-This copy should be committed with the project when skill behavior changes.
-
-Current skill families stored there are:
-
-- `onelink-builder`
-- `onelink-backend`
-- `onelink-frontend`
-- `onelink-api`
-- `onelink-integrations`
-- `onelink-captain`
-- `onelink-documentation`
-- `onelink-deployment`
-
-## Installed Skill Library
-
-The local Codex skill library currently lives under:
-
-- `$CODEX_HOME/skills`
-- typically `~/.codex/skills` if `CODEX_HOME` is not customized
-
-OneLink-specific skills are split into:
-
-- `onelink-builder`
-  - top-level coordinator skill
-- `onelink-backend`
-  - Rails/backend implementation surface
-- `onelink-frontend`
-  - Vue/dashboard/widget/portal/survey/sdk surface
-- `onelink-api`
-  - API contracts and Swagger/OpenAPI surface
-- `onelink-integrations`
-  - channels, providers, hooks, and external integrations
-- `onelink-captain`
-  - Captain/copilot/documents/custom tools/AI surface
-- `onelink-documentation`
-  - Mintlify docs, docs structure, docs repo workflow
-- `onelink-deployment`
-  - self-hosted deployment and runtime operations
-- `onelink-gitops`
-  - GitHub flow, submodule updates, skill sync, and upstream sync
-
-Use [Skill Map](/contributing-guide/skill-map) for when to invoke each skill.
-
-### Skill Sync Rule
-
-Use the project script:
-
-- `./.codex/scripts/sync-skills.sh to-codex-home`
-
-to copy the versioned project skills into the installed Codex skill directory.
+Use [Skill Map](/contributing-guide/skill-map) to identify the relevant skill family and its current instructions. Do not treat an old path in a local note as a checked-in source location.
 
 ## Where To Edit By Task
 
@@ -226,7 +171,7 @@ Edit mostly in:
 - controllers and builders/serializers
 - request specs
 - `swagger/`
-- `onelink/docs/openapi/` after sync
+- `docs/openapi/` after the generated app Swagger files are synchronized
 
 ### Docs Change
 
