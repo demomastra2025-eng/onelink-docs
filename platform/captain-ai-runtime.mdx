@@ -40,7 +40,9 @@ Explicit profile values override the corresponding workspace preference. Leaving
 
 The external-agent playground supports request-only `test_model`, `test_temperature`, and `test_thinking_effort` fields on the existing playground endpoint. Model selection is checked against the assistant's account model catalog; temperature must be finite, between 0 and 1, and supported by the selected model. Reasoning effort follows the model's supported capabilities. These controls do not save the live assistant configuration. Internal-assistant playground requests reject these overrides.
 
-Changing assistants resets playground messages and temporary controls and reloads the new assistant metadata. Replies or configuration responses from an earlier assistant request cannot update the current session.
+Changing accounts or assistants resets playground messages and temporary controls and reloads the new assistant metadata. Replies or configuration responses from an earlier account, assistant, or reset cannot update the current session.
+
+The prepared playground correction returns account-scoped `playground_model` metadata when reading an external assistant. This identifies the assistant's resolved saved model even when it is absent from the curated selection list; it does not add that model to other assistants' selectable models. Supported reasoning efforts come from the model catalog. The `none` test option is offered only when the provider metadata permits disabling reasoning, and an explicit playground override is carried to the native provider request. A zero temperature remains zero. Existing workspace reasoning preferences and the live assistant configuration are unchanged. Deployment and verification of this correction are tracked separately.
 
 `response_latency_ms` is elapsed server response time measured with a monotonic clock. Provider-reported reasoning token usage is optional. It does not establish a separate duration or speed for hidden reasoning, so the interface does not invent those values.
 

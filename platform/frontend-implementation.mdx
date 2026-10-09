@@ -228,6 +228,22 @@ The calendar's Today control uses the workspace's civil date and preserves the s
 
 Task, scheduling, and sidebar settings avoid repeated descriptions of the same configuration. The completion-settings page hides general status-reason controls; assistant outcome reasons and saved reason data remain available. WhatsApp templates use compact rows with a full-content preview. Channel logo tiles keep their size beside long names. Storage surfaces use shared theme tokens in light and dark modes.
 
+### Conversation patient context
+
+The prepared scheduling sidebar has a patient selector independent of the conversation sender. It changes patient details, notes, additional fields, appointment history and the booking form while preserving the conversation header, message history, channel and recipient. Selection is scoped to the account, employee and conversation type/identity. Browser persistence stores selection IDs only; patient data and clinical drafts stay in memory.
+
+Each booking draft belongs to its selected patient. Asynchronous reads and saves check the account, conversation and patient context before applying their result. Opening an appointment's conversation from the calendar selects that appointment's patient only after the authorized patient list has been refreshed and validated. A database ID is not treated as a public conversation identifier, and a chat is not guessed from a phone number.
+
+Provider-supplied clinical identity is displayed independently from the chat label. Recorded MedElement patient identity is read-only in the patient panel and calendar inline editor, with a source hint directing identity corrections to MedElement. Local patient edits send only changed fields and reload the authorized patient projection. They do not replace that projection with the generic contact response or implicitly overwrite the communicating contact's name. Booking forms use recorded clinical fields while preserving the chat sender's raw name and identity.
+
+### Tracked conversation deletion
+
+The prepared conversation-deletion flow treats HTTP 202 as acceptance, not completed deletion. Single-conversation and selected communication-thread-channel deletion capture exact public conversation IDs and a request UUID. They enroll an account- and actor-scoped `BulkActionRun`; the response contains `operation_id`, `accepted_conversation_ids`, and a progress payload. Reusing that UUID recovers the same operation before looking up targets that may already be gone. A different selection under the same UUID is rejected.
+
+The worker rechecks staff permissions and the captured target membership. Conversation destruction and its per-target receipt commit together; communication-thread housekeeping happens afterward. A housekeeping failure cannot change a committed deletion into a failed target or trigger another destruction. Transient database failures retry the same pending targets while preserving completed receipts.
+
+The existing progress endpoint and a request-key lookup provide bounded read-only reconciliation after a lost response or a return to the list. Pending results remain visibly pending. Browser persistence contains operation and target identities and states, never conversation snapshots. Native list and realtime updates filter only pending or confirmed-deleted conversation IDs, retaining unrelated new conversations and surviving thread channels. Failed or partial outcomes reload canonical server rows; they do not restore an old browser snapshot. Account, employee, and list-generation checks discard responses from a previous scope. Deployment and verification of this flow are tracked separately.
+
 ### Dashboard recovery after a release
 
 The production image build retains manifest-referenced static files from up to two previous successful production revisions. Each source image must pass signature and provenance verification before its files are inspected. Current manifests remain authoritative; old HTML, service workers, and manifests are excluded. Retention is bounded, and a path collision with different bytes stops the build. This lets an already open dashboard load an older lazy route after deployment without making old application pages current.

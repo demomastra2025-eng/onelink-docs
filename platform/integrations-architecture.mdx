@@ -159,6 +159,18 @@ Provider schedule summaries in resource settings are a separate view with a chec
 
 Saving a local appointment and confirming a provider command do not by themselves establish that MedElement created a reception. Provider commands track that operation separately. If the patient has no verified provider identity, the operation can pause for explicit patient selection, patient creation confirmation, or phone refresh confirmation before any reception write. A single search candidate still requires selection when strong identity is missing. The interface must distinguish this pending state from provider success and preserve the local appointment for continuation.
 
+### Shared-phone patient selection
+
+The prepared patient-selection implementation keeps the communicating contact and the appointment patient separate. A shared family phone can carry one conversation while each patient retains their own card and medical identity. An existing communicating contact can itself be the verified patient; this does not require a duplicate card or moving its medical profile to another contact. Matching a phone alone does not establish patient identity.
+
+Authorized staff can list the patients connected to a conversation contact and explicitly create a local patient card. Listing or switching patients does not create a card or a provider reception. Creating a card requires a stable request key; repeating that same request returns its existing result. Appointment creation and filtering accept the selected patient separately from the contact used to communicate.
+
+When staff explicitly select a MedElement candidate for an operation that has not started a provider write, continuation verifies the original booking, confirmation, provider instance and patient identity. Any admitted change retains the original snapshot and confirmation, creates a fresh confirmation for the new patient snapshot, and updates the command result binding consistently. Operations with a provider write or incompatible identities retain their safeguards. Reusing a verified communicating contact does not save or rename that contact, change its phones, or rewrite older appointments and receipts.
+
+The selector projects server-recorded clinical names, identity and birth information for booking. The communicating contact's chat label remains independent. Details supplied by MedElement are shown as provider information; generic contact editing must not write that projected profile over the chat contact.
+
+These paragraphs describe the prepared implementation. Availability depends on the deployed application revision and its completed verification; they do not authorize automatic patient selection or retrying a real reception creation.
+
 MedElement sync recovery distinguishes queued work from an abandoned execution. Cron requests can merge additional phases without advancing the worker activity timestamp. Worker heartbeats and execution identity are kept separately; private worker identity is excluded from public sync summaries.
 
 A known execution becomes eligible for recovery after ten minutes without worker activity only when its process is absent, no matching job is in a queue, schedule, retry set, or active work, and the account mutex can be acquired. Runs with incomplete legacy identity retain the forty-five-minute threshold. A surviving thirty-minute mutex lease can delay recovery. A live owner process or present job prevents this recovery, even when the run is old.
