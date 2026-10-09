@@ -95,6 +95,8 @@ New ordinary inboxes include the workspace's existing employees, and new workspa
 
 ### Communication Core
 
+Conversation-list searches retain the existing recent-message pass and historical fallback. Historical transcription candidates use separate trigram indexes for normalized message text fields and attachment transcripts. Candidate lookup is a superset: the exact per-field matching predicate and the original account, inbox, role, date, and message-type scope are applied before ordering and limiting results. Concatenated fields do not create cross-field matches. Legacy JSON objects and encoded JSON strings are normalized consistently with the runtime predicate.
+
 Core records:
 
 - `Inbox`
