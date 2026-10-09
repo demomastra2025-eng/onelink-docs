@@ -157,11 +157,17 @@ Provider schedule summaries in resource settings are a separate view with a chec
 
 ## MedElement Sync Recovery
 
+Saving a local appointment and confirming a provider command do not by themselves establish that MedElement created a reception. Provider commands track that operation separately. If the patient has no verified provider identity, the operation can pause for explicit patient selection, patient creation confirmation, or phone refresh confirmation before any reception write. A single search candidate still requires selection when strong identity is missing. The interface must distinguish this pending state from provider success and preserve the local appointment for continuation.
+
 MedElement sync recovery distinguishes queued work from an abandoned execution. Cron requests can merge additional phases without advancing the worker activity timestamp. Worker heartbeats and execution identity are kept separately; private worker identity is excluded from public sync summaries.
 
 A known execution becomes eligible for recovery after ten minutes without worker activity only when its process is absent, no matching job is in a queue, schedule, retry set, or active work, and the account mutex can be acquired. Runs with incomplete legacy identity retain the forty-five-minute threshold. A surviving thirty-minute mutex lease can delay recovery. A live owner process or present job prevents this recovery, even when the run is old.
 
 Recovery rechecks state while holding the hook/run locks, renews its own mutex token, and preserves remaining and merged phases for continuation. Token-checked release does not remove another worker's mutex. This mechanism does not activate unavailable specialists or change appointments in MedElement.
+
+Scheduling appointments, services, and resource slot durations accept 5 through 1,440 minutes. A valid long appointment imported from MedElement uses the same range as a manually created appointment. An end time at or before the start remains invalid; OneLink does not invent a replacement time. The calendar's five-minute search step is independent of the permitted appointment duration.
+
+An existing invalid-reception conflict remains open when detail retrieval is deferred, omitted, or yields a stale snapshot. A successful reception phase does not by itself establish that each deferred reception was imported. Only a later processed result or confirmed absence allows that reception's earlier conflict to resolve. Deferred receptions retain their external references during absence reconciliation, so deferral does not delete their appointments.
 
 ## WhatsApp Cloud Usage Reporting
 

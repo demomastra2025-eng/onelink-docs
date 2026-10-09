@@ -228,6 +228,14 @@ The calendar's Today control uses the workspace's civil date and preserves the s
 
 Task, scheduling, and sidebar settings avoid repeated descriptions of the same configuration. The completion-settings page hides general status-reason controls; assistant outcome reasons and saved reason data remain available. WhatsApp templates use compact rows with a full-content preview. Channel logo tiles keep their size beside long names. Storage surfaces use shared theme tokens in light and dark modes.
 
+### Dashboard recovery after a release
+
+The production image build retains manifest-referenced static files from up to two previous successful production revisions. Each source image must pass signature and provenance verification before its files are inspected. Current manifests remain authoritative; old HTML, service workers, and manifests are excluded. Retention is bounded, and a path collision with different bytes stops the build. This lets an already open dashboard load an older lazy route after deployment without making old application pages current.
+
+A Vite preload failure shows an explicit refresh action in the existing dashboard notification surface. It does not automatically reload an open form. The notice asks the user to save other changes before refreshing; the current route and query remain in the URL. On the explicit refresh action, ReplyBox synchronously saves the current composed reply through the existing draft store. Editing a sent message does not overwrite that composed draft. This recovery applies to the dashboard, not the embedded website widget.
+
+When an attachment preview or download fails, the dashboard can recheck that chat's attachment metadata through the existing authorized API. A 404, a missing response row, or a failed metadata request does not establish that a file was deleted. The deleted-file state requires an explicit `file_purged` marker on the matching attachment. Rechecks are bounded and their results are guarded by account, route, chat type, and chat identity; a response from a previous chat cannot overwrite the current attachment list.
+
 ### Specialist Libraries
 
 Specialist libraries such as calendar, scheduler, kanban, or drag-and-drop packages may be used when the feature genuinely needs them, but they should be treated as feature-local dependencies unless they prove reusable across multiple product surfaces.

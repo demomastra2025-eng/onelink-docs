@@ -22,6 +22,8 @@ Follow-up steps are configured in the assistant's existing `config.follow_up_set
 
 Scheduled follow-ups use the native Reminder model and transport. Disabling follow-ups cancels that assistant's open follow-up reminders. Follow-up settings are changed through the same assistant update operation as model and tool settings; there are no separate public follow-up routes.
 
+Automation retries may reuse a colliding open reminder only when the originating rule, action, trigger message, content, schedule, and delivery policies match. A manual reminder or a different automation intent remains separate and is not silently merged. Duplicate validation retains its user-facing message and has a distinct machine-readable diagnostic code. Diagnostic logging failures cannot replace the reminder operation's original result or exception.
+
 Outcome reason configuration is also per assistant, under `config.outcome_reason_settings`, and is normalized by the server. It shares the assistant update operation rather than introducing a dedicated endpoint.
 
 ## Profile safety settings
