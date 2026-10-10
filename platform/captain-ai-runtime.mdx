@@ -54,6 +54,8 @@ Live requires an account administrator and uses a dedicated native test contact 
 
 External delivery is disabled by default. Explicit controlled-number delivery uses a signed run policy bound to the account, assistant, session, native caller and channel. That policy follows delayed jobs, provider commands, appointment events, reminders and staff notification paths. An invalid or expired persisted policy continues to block delivery; it does not become an ordinary live action. A later ordinary appointment operation uses its own policy instead of retaining an old playground suppression forever. Queued actions keep the policy of the run that created them.
 
+Playground runs block custom HTTP tools, MCP connections and skill scripts because their external recipients cannot be verified against the controlled test number. This also applies to a delayed run restored from the test caller. The tool returns an explicit unsupported result with `delivered: false`; normal agent runs retain their configured integrations, and Live's native booking and CRM actions use their ordinary services.
+
 External-agent requests use server-owned session history. `playground_action: session` reads or edits a scenario, `reset` starts a fresh session, and a normal request sends `message_content` with the session ID. Trial can edit synthetic business data; Live only accepts caller-profile synthesis. Temporary model, temperature and reasoning controls remain per request. A queued native reply is reported as queued, not delivered.
 
 ## Booking for a specifically identified patient
