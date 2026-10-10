@@ -129,6 +129,12 @@ Verification should match the touched surface:
 
 Do not claim verification that was not run.
 
+### Prepared October 10 runtime verification
+
+The isolated hotfix gate must cover provider receipt success without immediate readback, retained occupancy after local cancellation, operation-specific confirmations, structured scheduling errors, independent incoming-message fences and a two-connection row-lock race for obsolete handoffs. Delayed create-receipt verification is read-only, bounded to six attempts and uses the existing reconciliation job; it must not replay creation or downgrade the acknowledged operation.
+
+Synthetic playground verification uses temporary session JSON, shared scheduling validation and native tool schemas. Real writes require reads plus approval of the exact tool, target, payload and record snapshot. Verify revocation and reset races at the final provider write gate, not only the UI toggle. Unsupported transports return an explicit denial. Native Ruby checks require isolated PostgreSQL, pgvector and Redis; component tests alone do not verify these boundaries. Do not use customer databases, send customer messages or invoke live provider mutations for the gate.
+
 ## Skill Selection
 
 The main coordinator skill is:

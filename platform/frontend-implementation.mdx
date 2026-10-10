@@ -276,6 +276,18 @@ Specialist libraries such as calendar, scheduler, kanban, or drag-and-drop packa
 - use `FormKit` only where schema-driven or integration-generated forms clearly benefit from it
 - keep validation logic close to the form or feature composable
 
+## Prepared scheduling and shared-read hotfix
+
+The October 10 follow-up is prepared separately from the deployed release. The conversation booking panel reuses the calendar's Kazakhstan IIN validator and decoder when creating a new patient: a valid IIN can fill birth date and gender in that new draft. Editing that draft does not rewrite the communicating contact. Structured first, last and middle names remain separate; invalid or incomplete IIN input cannot enable patient creation.
+
+Available start times use a responsive grid of buttons, each showing only `HH:mm`. Each returned start must fit the entire selected duration. Changing doctor, service, cabinet or duration invalidates the old selection. Staff can still enter start time and duration manually, subject to the same free-interval verification when saving.
+
+A new calendar draft defaults to the selected service duration, or the sum for multiple services, until the employee explicitly edits its start, end or duration. A range selected by dragging and an existing appointment preserve their authored interval. Updating the service default does not bypass the full-free-interval check.
+
+An empty confirmed day may offer a button for the next confirmed date within a bounded 31-day search. The search uses saved confirmed schedules, has a separate eight-second browser budget, and never changes the appointment's start or end automatically. Unknown schedules and provider failures stay distinct from a confirmed empty day. When some earlier days are unknown, the result is described as the next confirmed time, not proof that no earlier time exists.
+
+The dashboard opts into `response_format: compact` on the existing authenticated conversation `update_last_seen` endpoint. The response contains only `id` (conversation display ID) and `agent_last_seen_at` (Unix seconds or null); the default response remains the full conversation for existing API callers. Shared cursor writes and aggregate thread refreshes retry only rolled-back deadlocked database work, at most three attempts. Provider read receipts and realtime delivery are outside those retries. Captured unread receipts are passed to the provider before aggregate refresh and synchronous read events, so those later failures cannot suppress the captured receipt or cause it to replay within the transaction retry.
+
 ## Stories, Testing, And Verification
 
 - add or update `Histoire` stories for reusable primitives and visually complex feature components

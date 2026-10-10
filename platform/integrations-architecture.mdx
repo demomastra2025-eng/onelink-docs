@@ -159,7 +159,7 @@ The prepared October 10 implementation permits entering start, end and whole-min
 
 ## MedElement Sync Recovery
 
-Saving a local appointment and confirming a provider command do not by themselves establish that MedElement created a reception. Provider commands track that operation separately. If the patient has no verified provider identity, the operation can pause for explicit patient selection, patient creation confirmation, or phone refresh confirmation before any reception write. A single search candidate still requires selection when strong identity is missing. The interface must distinguish this pending state from provider success and preserve the local appointment for continuation.
+Saving a local appointment or approving a provider command does not by itself establish that MedElement created a reception. The prepared October 10 correction treats a successful MedElement creation response containing a valid reception ID as success. Delayed visibility in MedElement's read API is checked separately inside the integration; it does not turn that receipt into a refusal or authorize another creation. If the patient has no verified provider identity, the operation can pause for explicit patient selection, patient creation confirmation, or phone refresh confirmation before any reception write. A single search candidate still requires selection when strong identity is missing. The interface must distinguish this pending state from provider success and preserve the local appointment for continuation.
 
 ### Shared-phone patient selection
 
@@ -182,6 +182,16 @@ Recovery rechecks state while holding the hook/run locks, renews its own mutex t
 Scheduling appointments, services, and resource slot durations accept 5 through 1,440 minutes. A valid long appointment imported from MedElement uses the same range as a manually created appointment. An end time at or before the start remains invalid; OneLink does not invent a replacement time. The calendar's five-minute search step is independent of the permitted appointment duration.
 
 An existing invalid-reception conflict remains open when detail retrieval is deferred, omitted, or yields a stale snapshot. A successful reception phase does not by itself establish that each deferred reception was imported. Only a later processed result or confirmed absence allows that reception's earlier conflict to resolve. Deferred receptions retain their external references during absence reconciliation, so deferral does not delete their appointments.
+
+## Prepared confirmed-calendar follow-up
+
+Cancellation only in OneLink leaves an active MedElement reception occupying its interval. Time becomes available only after confirmed provider removal or an authoritative synchronization result establishing that it has been freed. Enabling removal in the integration settings does not itself free a previously occupied interval. Provider confirmation identifies the particular creation, move or cancellation and where it occurred; a prior successful move cannot confirm a later local cancellation.
+
+A newly acknowledged creation is protected from absence reconciliation until its exact reception and patient have been observed by the provider read path or native import. Empty snapshots and exhausted read attempts alone do not cancel that appointment. Explicit provider removal remains authoritative. This protection is bound to the current creation receipt; it does not change absence handling for older read-confirmed appointments.
+
+The October 10 bulk-calendar follow-up is prepared separately from the deployed release. The display uses saved confirmed provider schedules instead of sequential live MedElement schedule and reception requests for each specialist. A missing or expired confirmation produces an unknown schedule; it does not make the day free. Existing appointment rows remain visible. Single-resource availability and booking retain their live verification path, and a provider command must still confirm a booking result.
+
+The existing availability endpoint accepts `confirmed_only=true` for a bounded search over saved schedules. This disables live provider requests for that search. Partial or unknown ranges can expose verified windows without claiming that unconfirmed days are empty. The booking panel keeps the doctor, service, cabinet and full duration filters when looking ahead.
 
 ## WhatsApp Cloud Usage Reporting
 

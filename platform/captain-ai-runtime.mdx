@@ -46,17 +46,39 @@ The prepared playground correction returns account-scoped `playground_model` met
 
 `response_latency_ms` is elapsed server response time measured with a monotonic clock. Provider-reported reasoning token usage is optional. It does not establish a separate duration or speed for hidden reasoning, so the interface does not invent those values.
 
-## Trial and Live playground sessions
+## Prepared synthetic workspace correction
 
-The prepared October 10 implementation uses one playground window with `trial` and `live` modes. Trial stores synthetic contact, deal and appointment state in a server-owned session. Supported tools operate on that state; an unsupported tool fails explicitly rather than falling through to clinic records or an external service.
+The next October 10 correction is being implemented and verified separately from the deployed revision. It replaces the Trial/Live selector with one playground. Caller, contact, patient and added scenario records always remain synthetic. A server-owned Redis JSON session expires after 24 hours; it does not insert those records into the clinic's contact, conversation, appointment or deal tables. Synthetic record IDs belong to that session and cannot be promoted into real IDs.
 
-Live requires an account administrator and uses a dedicated native test contact and conversation. The caller profile is synthetic; the clinic's other business records and permitted operations are real. The interface keeps the warning “Боевой режим: данные клиента тестовые, действия в выбранной клинике — реальные.” visible. Switching modes does not grant additional tools, clinic access or identity verification.
+“Чтение реальных данных” and “Изменение реальных данных” are separate switches. Both start disabled. Changes require reads; disabling reads disables changes and invalidates pending confirmations. The synthetic caller remains synthetic when real access is enabled. Account membership, the current agent's selected tools and the operator's record permissions still apply.
 
-External delivery is disabled by default. Explicit controlled-number delivery uses a signed run policy bound to the account, assistant, session, native caller and channel. That policy follows delayed jobs, provider commands, appointment events, reminders and staff notification paths. An invalid or expired persisted policy continues to block delivery; it does not become an ordinary live action. A later ordinary appointment operation uses its own policy instead of retaining an old playground suppression forever. Queued actions keep the policy of the run that created them.
+Each real change has its own server-generated preview and explicit confirmation. Approval is bound to the account, operator, assistant, session, tool, exact arguments and record snapshot. Changed targets, expired previews, reset sessions and disabled permissions require a new preview. Replaying a confirmation cannot repeat an executing or completed action. A tool response that requests confirmation is not a completed business operation.
 
-Playground runs block custom HTTP tools, MCP connections and skill scripts because their external recipients cannot be verified against the controlled test number. This also applies to a delayed run restored from the test caller. The tool returns an explicit unsupported result with `delivered: false`; normal agent runs retain their configured integrations, and Live's native booking and CRM actions use their ordinary services.
+Synthetic tools retain the production schemas and use shared domain validation where available. For example, scheduling snapshots adapt the production availability engine, and custom-field definitions use the production field catalog without copying customer values. Unsupported operations return an explicit error rather than falling through to the database or an external service. The support matrix and its parity tests must be checked at the prepared revision before deployment.
 
-External-agent requests use server-owned session history. `playground_action: session` reads or edits a scenario, `reset` starts a fresh session, and a normal request sends `message_content` with the session ID. Trial can edit synthetic business data; Live only accepts caller-profile synthesis. Temporary model, temperature and reasoning controls remain per request. A queued native reply is reported as queued, not delivered.
+External message delivery, opaque custom HTTP tools, MCP connections and skill scripts remain blocked in this playground. Signed run policies also govern delayed provider commands. A revoked approval cannot authorize a new MedElement write; already sent legacy commands retain their reconciliation path without a second send. Normal production agent operations retain their own policy.
+
+External-agent requests use server-owned history. `playground_action: session` reads or edits a scenario, `reset` starts a fresh session, `permissions` controls real access, and `confirm` approves the exact pending action. A normal request sends `message_content` with the session ID. Temporary model overrides remain per request. Profile and playground controls are grouped under the settings gear; parameters without confirmed model support are neither shown nor sent.
+
+## Prepared compact related-record summaries
+
+`appointment.summary` and `deal.summary` share a versioned envelope containing record scope, counts, groups, selection rules, sorting and `shown`/`total` values. This is a bounded summary, not a complete record history or an automatically selected main deal.
+
+Deal summaries contain at most eight active and four closed or archived rows. Active deals sort by `updated_at` descending, then ID descending. History sorts by its recorded close/archive event descending, with an explicit `created_at` fallback when that event is unavailable. Unused group capacity is not transferred to another group: five active and 295 historical deals show nine of 300.
+
+Appointment summaries contain at most six ongoing or upcoming, three past and three cancelled rows. Ongoing visits precede future visits, which sort by start ascending. Past visits sort by end descending. Cancelled visits sort by their planned start descending, not an inferred cancellation time. Each group and the whole summary report how many rows were shown out of the matching total.
+
+Each row contains its own ID and identifying details. A scoped tool can fetch that exact full record, or page through a filtered list. The agent must select a row explicitly before changing a deal; an ordinary conversation does not imply a current deal. Old scalar deal fields remain available in an explicit validated CRM event context, while obsolete references are hidden from new field insertion and remain compatible with existing templates.
+
+The customer agent's unusable `get_appointment_provider_status` tool is removed by the prepared correction. Internal provider reconciliation and the internal assistant's status lookup remain separate and are preserved.
+
+## Prepared booking replies and FAQ correction
+
+An occupied booking time produces one public explanation that the booking or move could not be completed, together with the staff handoff. A newer request or human takeover still prevents an obsolete reply. Incoming requests in separate conversations of the same contact do not cancel one another's replies; shared history and human takeover remain governed by their existing policies.
+
+Scheduling tools distinguish invalid dates, invalid ranges, unknown services, unavailable provider checks and internal failures. Input errors give the agent a concrete correction; an unavailable check must not be described as free time or trigger a repeat of an uncertain provider write.
+
+FAQ retrieval retains its existing strong semantic threshold. A short or misspelled question below that threshold can be accepted only when the leading result's question independently matches its meaningful terms and competing matches are sufficiently distinct. An ambiguous or different-intent question remains unmatched. English word-form corroboration is limited to plural suffixes; it does not equate a changed topic such as account and accounting. This additional decision does not turn its lower semantic score into a strong match and is not reused through the semantic answer cache. Positive and negative corpus checks are required before deployment.
 
 ## Booking for a specifically identified patient
 
