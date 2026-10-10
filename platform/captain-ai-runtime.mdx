@@ -46,6 +46,26 @@ The prepared playground correction returns account-scoped `playground_model` met
 
 `response_latency_ms` is elapsed server response time measured with a monotonic clock. Provider-reported reasoning token usage is optional. It does not establish a separate duration or speed for hidden reasoning, so the interface does not invent those values.
 
+## Trial and Live playground sessions
+
+The prepared October 10 implementation uses one playground window with `trial` and `live` modes. Trial stores synthetic contact, deal and appointment state in a server-owned session. Supported tools operate on that state; an unsupported tool fails explicitly rather than falling through to clinic records or an external service.
+
+Live requires an account administrator and uses a dedicated native test contact and conversation. The caller profile is synthetic; the clinic's other business records and permitted operations are real. The interface keeps the warning “Боевой режим: данные клиента тестовые, действия в выбранной клинике — реальные.” visible. Switching modes does not grant additional tools, clinic access or identity verification.
+
+External delivery is disabled by default. Explicit controlled-number delivery uses a signed run policy bound to the account, assistant, session, native caller and channel. That policy follows delayed jobs, provider commands, appointment events, reminders and staff notification paths. An invalid or expired persisted policy continues to block delivery; it does not become an ordinary live action. A later ordinary appointment operation uses its own policy instead of retaining an old playground suppression forever. Queued actions keep the policy of the run that created them.
+
+External-agent requests use server-owned session history. `playground_action: session` reads or edits a scenario, `reset` starts a fresh session, and a normal request sends `message_content` with the session ID. Trial can edit synthetic business data; Live only accepts caller-profile synthesis. Temporary model, temperature and reasoning controls remain per request. A queued native reply is reported as queued, not delivered.
+
+## Booking for a specifically identified patient
+
+The existing `create_appointment` tool accepts an optional `patient` object with first and last names, IIN, birth date, gender and phone. It resolves or creates a separate clinical card while preserving the communication contact and conversation. An existing recorded IIN cannot be adopted from arbitrary public contact data, and booking does not rewrite an existing patient's identity or phone.
+
+The existing appointment search can locate a specific other patient's task by exact IIN, or by exact full name plus doctor and appointment date. It returns minimal appointment information and an opaque task token. Update and cancellation require confirmation of the particular patient and change. The token binds the account, assistant, original conversation and exact appointment snapshot; mutation rechecks it under the appointment lock. This permits the requested task without granting access to that patient's other conversations or full appointment history.
+
+Booking and changes distinguish a confirmed provider result, a pending operation and a local-only cancellation. An AI must not describe a queued MedElement move or removal as completed. Manual start time and duration use the same full-free-interval check as staff booking.
+
+Availability of the prepared implementation depends on the deployed revision and its completed verification.
+
 ## Workspace editor controls
 
 Text improvement and label suggestion are workspace controls under Settings → Conversations. The old AI Settings page redirects there. Search, page reading, document reading, and safety settings are configured in the assistant profile. Existing workspace runtime preferences and APIs remain available for compatibility.
