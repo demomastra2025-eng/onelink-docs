@@ -10,7 +10,7 @@ sidebarTitle: Captain AI Runtime
 
 `Captain::Assistant` is account-scoped and supports `external_agent` and `internal_assistant` usage modes. The model is selected per assistant in its `config.model`; the server validates the value against the model catalog available to the assistant at that time. The API contract does not promise a fixed model list or pricing.
 
-An assistant configuration may include FAQ, memory, citation, web, document-reading, and image-understanding features; handoff and completion behavior; audio transcription; context access; and voice settings. Response guidelines and guardrails are assistant fields. These settings remain separate by assistant and account.
+An assistant configuration may include FAQ, memory, citation, web, document-reading, and image-understanding features; handoff and completion behavior; audio transcription; context access; and voice settings. These settings remain separate by assistant and account. The prepared October 11 changes consolidate separate user rules into the agent's instructions as described below.
 
 ## Tool access
 
@@ -28,13 +28,34 @@ Outcome reason configuration is also per assistant, under `config.outcome_reason
 
 ## Profile safety settings
 
-The assistant profile accepts `config.safety_settings` with three optional settings:
+Provider and platform controls in the assistant's `config.safety_settings` include:
 
 - `moderation_enabled`: `true`, `false`, or `null` to inherit the workspace default.
 - `prompt_injection_action`: `disabled`, `flag`, `block`, or `null` to inherit.
 - `sensitive_info_action`: `disabled`, `flag`, `block`, or `null` to inherit.
 
 Explicit profile values override the corresponding workspace preference. Leaving values unset preserves the existing workspace policy. The merged preferences are used by assistant and copilot input/output checks and by instrumented tool argument/result checks, including documentation search. A partial update merges safety fields with the saved object. This configuration uses the existing assistant update endpoint and does not add a separate safety API.
+
+The profile shows the actual effective action instead of a workspace-inheritance option. The preferences response includes canonical `runtime_metadata.safety_defaults` for assistant and copilot checks, resolved by the same server policy used at runtime. Opening the profile or saving another field does not turn an inherited value into an explicit override; selecting a safety action does. Until the effective value is available, an inherited control is disabled and shows a loading or unavailable label rather than a guessed default. The workspace defaults remain available through the preferences API; there is no separate workspace safety editor in the current interface.
+
+### Custom input and output checks — prepared October 11 package
+
+An agent can save business conditions in `config.safety_settings.custom_rules` through the existing profile update. Each rule has an ID, name, input or output direction, condition, action and enabled flag. A rule may also include a static handoff message. There can be at most 20 rules per agent. Rules take effect after Save; the enabled rules for each direction are evaluated in saved order, and the first matching rule determines the action. With no enabled rules for that direction, there is no custom-check model request.
+
+| Direction | What is checked | Available actions |
+| --- | --- | --- |
+| `input` | The current customer text, before the agent starts its main work and before a routed agent continues. | `handoff` or `block` stops the automatic work. |
+| `output` | The final public reply, including a fallback summary of completed actions. | `handoff` or `block` stops the reply; `rewrite` permits one text-only repair. |
+
+If a condition matches an input stop, the agent does not continue its main work for that request. If an output rule asks for a repair, the replacement is checked against all enabled output conditions and the platform safety policy. Only a passing replacement can be returned. The repair cannot call or repeat tools. A failed check, failed repair or replacement that fails either check transfers the conversation through the system handoff path.
+
+The optional handoff message is read from the saved, enabled rule on the agent that stopped the reply. Text included in a model or response payload cannot replace that saved message. Disabled, deleted or direction-mismatched rules supply no custom message. Saved text containing a secret-shaped value is blocked from public delivery. The system sends an approved static message once with the handoff, including when the ordinary human-handoff tool and its message are disabled. A newer customer message or a change in conversation control, status or active agent can invalidate the attempt; an invalidated attempt sends neither the message nor the handoff.
+
+These checks classify text candidates up to 10,000 characters. Longer or invalid candidates are rejected before the custom-check request and stop the automatic reply. The same text limit applies to a repaired reply. Image and audio understanding retain their own capabilities; these custom text checks do not validate media or medical diagnoses.
+
+The installation administrator selects the custom-check model with `CAPTAIN_CUSTOM_GUARDRAIL_MODEL`, whose current default is `openai/gpt-6-luna`. The model must support structured output. Microsoft Decision 1 is used for outcome reasons separately; it does not replace this guardrail model. Provider moderation remains a separate setting and retains its current `fail_open` default when the moderation provider is unavailable. A custom-check failure still stops the automatic reply.
+
+This section describes the prepared implementation. Availability depends on the deployed revision and its verification.
 
 ## Playground controls and measurements
 
@@ -58,7 +79,41 @@ Synthetic tools retain the production schemas and use shared domain validation w
 
 External message delivery, opaque custom HTTP tools, MCP connections and skill scripts remain blocked in this playground. Signed run policies also govern delayed provider commands. A revoked approval cannot authorize a new MedElement write; already sent legacy commands retain their reconciliation path without a second send. Normal production agent operations retain their own policy.
 
-External-agent requests use server-owned history. `playground_action: session` reads or edits a scenario, `reset` starts a fresh session, `permissions` controls real access, and `confirm` approves the exact pending action. A normal request sends `message_content` with the session ID. Temporary model overrides remain per request. Profile and playground controls are grouped under the settings gear; parameters without confirmed model support are neither shown nor sent.
+External-agent requests use server-owned history. `playground_action: session` reads or edits a scenario, `reset` starts a fresh session, `permissions` controls real access, and `confirm` approves the exact pending action. A normal request sends `message_content` with the session ID. Temporary model overrides remain per request. Parameters without confirmed model support are neither shown nor sent. The prepared October 11 profile displays model controls directly; playground settings occupy the right column.
+
+## Standalone agents — prepared October 11 package
+
+The expanded October 11 package passed its selected isolated regression checks, including corrected cases repeated on the final affected sources. These results combine several runs; they are not a full-repository test run on one final snapshot. Deployed DEV acceptance and review of converted-scenario warnings remain required before production promotion. This page does not assert deployment. Availability depends on the deployed version.
+
+Former scenarios become independent agents. Each agent has its own instructions, model, tools, capabilities, safety settings, follow-ups and knowledge access. A channel selects the agent that starts a conversation. In the profile, administrators choose which other agents it may hand a conversation to. The chosen agent continues the same conversation with its own instructions and permitted tools. Profile and channel changes take effect after Save.
+
+For a message containing several independent requests, agents can keep a shared request list with assigned agents, progress and results. Completed requests remain completed across handoffs. Recorded actions are protected from accidental repetition. If an operation's outcome is uncertain, it must be checked before another attempt.
+
+Knowledge documents and FAQ entries can be shared with selected agents without copying them. Each agent can only search the material it is allowed to access. Changes to FAQ text alone do not change its access permissions.
+
+Existing scenario settings and history are preserved during conversion. Administrators see warnings for instructions that need review, particularly when a scenario previously depended on information written only in its parent's instructions. The parent instructions are not copied into the new agent.
+
+The playground supports the same handoffs and shows the answering agent and remaining requests. Its caller and synthetic records remain temporary. Real-data reading and changes are separate controls; each real change requires confirmation of that particular action. Text conversations are the scope of this first package.
+
+### Instructions and capabilities in the expanded package
+
+Enabled legacy user rules are appended to that agent's instructions once. Disabled rules are retained in an inert migration archive and do not enter the model's prompt. The legacy instruction-rules editor is removed. Custom input and output checks use `safety_settings.custom_rules` as described above. Agent skill bindings and skill scripts are removed without copying skill instructions into the prompt. The global skill catalog used outside the agent remains separate.
+
+Capability switches determine whether platform tools such as FAQ search and human handoff are available. Mentioning a tool in instructions does not enable it. Required platform constraints remain active, including confirmation of business operations and FAQ fallback when the current instructions and verified facts do not answer a business question. Prompt preview remains available in this release.
+
+### Outcome reasons in the expanded package
+
+Closing a conversation or handing it to staff takes effect immediately. A separate background classifier then selects a reporting reason. It starts with at most six public messages from that exact conversation at the time of the action; it can request one expansion to twenty messages. Private notes, later messages and another conversation's messages are excluded. An insufficient or failed classification is recorded explicitly and does not reverse the action or send another customer message.
+
+The dedicated classifier model is configurable in the administration console and defaults to `microsoft/microsoft-decision-1`. It selects a saved reason through OpenRouter's Decisions API; it has no business tools and does not receive the primary agent's instructions. The service records the requested and served model, duration and usage without inventing a textual explanation. An existing explicit administrator model selection is retained. A verified FAQ lookup with no answer supplies the mandatory FAQ-miss reason directly without another model request. Standard reasons cannot be deleted. “Other” is always available; FAQ-miss cannot be disabled while both FAQ and human handoff are enabled. Locked reasons have no switch.
+
+### AI reports in the expanded package
+
+Reports → AI agents shows saved public outgoing AI messages, distinct conversations touched by those messages or AI outcomes, closures and handovers to staff. Daily charts and per-agent rows use each event's own date in the workspace time zone; they do not restrict the data to conversations first created in that period. Periods are limited to 90 days and can be filtered by an existing agent in the account.
+
+Outcome counts are events: one conversation may close or transfer more than once. A closure does not mean a sale succeeded, and a saved outgoing message does not prove delivery. Per-agent distinct conversation counts can overlap. Completed reason classifications, pending work, failures, insufficient context and older unclassified events are shown separately.
+
+Messages whose native authorship was cleared when an agent was deleted cannot be attributed retrospectively. Surviving native outcome history remains visible. Cost and response latency are not presented as business metrics until their attribution and coverage are reliable; request telemetry remains in the agent's technical logs.
 
 ## Prepared compact related-record summaries
 

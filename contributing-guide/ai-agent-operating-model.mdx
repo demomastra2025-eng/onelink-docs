@@ -135,6 +135,25 @@ The isolated hotfix gate must cover provider receipt success without immediate r
 
 Synthetic playground verification uses temporary session JSON, shared scheduling validation and native tool schemas. Real writes require reads plus approval of the exact tool, target, payload and record snapshot. Verify revocation and reset races at the final provider write gate, not only the UI toggle. Unsupported transports return an explicit denial. Native Ruby checks require isolated PostgreSQL, pgvector and Redis; component tests alone do not verify these boundaries. Do not use customer databases, send customer messages or invoke live provider mutations for the gate.
 
+### Prepared October 11 custom guardrail boundaries
+
+The prepared implementation stores per-agent checks in `config.safety_settings.custom_rules`. Read `enterprise/lib/captain/safety/custom_rules_config.rb` and the services under `enterprise/app/services/captain/safety/` before changing this behavior. The profile supports at most 20 rules, with a stable ID, name, direction, condition, action, enabled flag and optional static message. Within the current `input` or `output` direction, enabled conditions keep their saved order and the checker selects the first matching ID. The server resolves the action from the saved rule. No enabled rules for that direction means no custom-check model request.
+
+Preserve these runtime boundaries:
+
+- `CustomRulesRuntime.check_input!` runs before the main agent starts work and again for a routed destination before it continues. A matched stop or unavailable check prevents that agent's main work.
+- `AgentRunnerService` checks the final public text using the responding agent's profile. This includes deterministic summaries of completed tools and public exception fallbacks, even when the response also contains `error_class`.
+- An output `rewrite` gets at most one text-only repair. Recheck the replacement against all enabled output rules and `Llm::SafetyPolicy` before returning it. The repair has no tools; it cannot rerun tools, perform an action or add an unverified execution claim.
+- A block, handoff match, failed check, failed repair or rejected replacement stops the automatic reply. `ResponseBuilderJob` uses the system handoff path and rechecks the existing conversation, message, control and actor fence under the persistence lock. A stale run sends neither a handoff message nor a handoff.
+- The optional public handoff text comes from the currently saved, enabled rule with the matching ID and direction on the responding agent. Ignore payload-supplied message text. Check the saved text for sensitive information before sending it, and send it once with the fenced handoff. This path works when the ordinary human-handoff tool or its message is disabled.
+- Strip `custom_guardrail` and authorization markers from ordinary model output. Only server-generated stop envelopes carry those fields into the handoff path.
+
+Custom checks accept text candidates of at most 10,000 characters. Invalid candidate types and longer strings are rejected before inference; they do not silently truncate a check. The rewrite engine also rejects invalid or oversized text. The last customer-message excerpt used for output checks is bounded to 2,000 characters and remains untrusted context. Text checks do not establish image, audio or medical validation.
+
+`CAPTAIN_CUSTOM_GUARDRAIL_MODEL` is a separate installation setting with the current default `openai/gpt-6-luna`. The selected model must support the structured rule-ID response. The native Microsoft Decision 1 adapter is limited to asynchronous handoff/completion reason classification; it does not replace custom guardrails. Provider moderation uses its separate `CAPTAIN_MODERATION_MODEL` and existing policy; its unavailable-provider default remains `fail_open`. Custom-check failures stop the automatic reply independently of that moderation setting.
+
+Verification must cover input stops, destination and response actors, forged metadata, final and fallback output checks, the single repair and its recheck, saved static text, disabled or deleted rules, secret-shaped text and stale handoff races. Benchmark scores do not establish that these runtime boundaries were tested. Record the exact local and server checks actually run; this section does not assert completed verification or deployment.
+
 ## Skill Selection
 
 The main coordinator skill is:
